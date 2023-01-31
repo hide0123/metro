@@ -2,15 +2,20 @@
 #include <fstream>
 #include "lcc.h"
 
-int main(int argc, char** argv) {
-  
-  std::ifstream ifs{ "test.txt" };
+std::string open_file(std::string const& path) {
+  std::ifstream ifs{ path };
 
   std::string source;
   
   for( std::string line; std::getline(ifs, line); )
     source += line;
+
+  return source;
+}
+
+int main(int argc, char** argv) {
   
+  auto const& source = open_file("test.txt");
 
   Lexer lexer{ source };
 

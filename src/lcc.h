@@ -12,6 +12,17 @@
     __FILE__, __LINE__, __VA_ARGS__), \
   exit(1)
 
+namespace Utils {
+  
+template <class ... Args>
+std::string format(char const* fmt, Args&&... args) {
+  static char buf[0x1000];
+  sprintf(buf, fmt, args...);
+  return buf;
+}
+
+} // namespace Utils
+
 enum TokenKind {
   TOK_Int,
   TOK_Float,
@@ -43,6 +54,8 @@ enum ASTKind {
   AST_Add,
   AST_Sub,
 
+  AST_Expr,
+
   AST_Function
 };
 
@@ -69,7 +82,33 @@ struct Value : Base {
   }
 };
 
-}
+struct Expr : Base {
+  struct Element {
+    ASTKind kind;
+    Base* ast;
+
+    explicit Element(ASTKind kind, Base* ast)
+      : kind(kind),
+        ast(ast)
+    {
+    }
+  };
+
+  Base* first;
+  std::vector<Element> elements;
+
+  Expr(Base* first)
+    : Base(AST_Expr, first->token),
+      first(first)
+  {
+  }
+
+  Element& append(ASTKind kind, Base* ast) {
+    return this->elements.emplace_back(kind, ast);
+  }
+};
+
+} // namespace AST
 
 enum TypeKind {
   TYPE_None,
@@ -95,11 +134,27 @@ struct TypeInfo {
 };
 
 struct Object {
+  TypeInfo type;
+  size_t ref_count;
 
+  virtual ~Object() { }
+
+protected:
+  Object(TypeInfo type)
+    : type(type),
+      ref_count(0)
+  {
+  }
 };
 
-struct ObjLong {
+struct ObjLong : Object {
+  int64_t value;
 
+  ObjLong(int64_t value)
+    : Object(TYPE_Int),
+      value(value)
+  {
+  }
 };
 
 class Lexer {
@@ -125,6 +180,8 @@ private:
 };
 
 class Parser {
+  using token_iter = std::list<Token>::const_iterator;
+
 public:
   Parser(std::list<Token> const& token_list);
   ~Parser();
@@ -133,6 +190,8 @@ public:
   AST::Base* parse();
 
   AST::Base* primary();
+  AST::Base* term();
+  AST::Base* expr();
 
 
 private:
@@ -143,12 +202,15 @@ private:
   bool eat(char const* s);
   
 
+  std::list<Token> const& token_list;
 
+  token_iter cur;
+  token_iter ate;
 };
 
 class TypeChecker {
 public:
-  
+
 
 
 private:
@@ -161,12 +223,34 @@ public:
   ~Evaluator();
 
 
-
+  Object* eval(AST::Base* ast);
+  
 
 private:
 
 
   std::map<AST::Value*, Object> immediate_objects;
 
+};
+
+
+
+class Error {
+public:
+  struct ErrLoc {
+
+  };
+
+  Error(ErrLoc loc, std::string const& msg)
+    : loc(loc),
+      msg(msg)
+  {
+  }
+
+
+private:
+
+  ErrLoc loc;
+  std::string msg;
 };
 
