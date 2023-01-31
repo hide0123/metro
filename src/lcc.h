@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <functional>
 
 enum TokenKind {
   TOK_Int,
@@ -18,10 +19,10 @@ struct Token {
   TokenKind kind;
   
   std::string_view str;
-  // Token* prev;
-  // Token* next;
 
-  Token(TokenKind kind)
+  
+
+  explicit Token(TokenKind kind)
     : kind(TOK_Int)
   {
   }
@@ -42,6 +43,15 @@ namespace AST {
 struct Base {
   ASTKind kind;
   Token const& token;
+
+  virtual ~Base() { }
+
+protected:
+  Base(ASTKind kind, Token const& token)
+    : kind(kind),
+      token(token)
+  {
+  }
 };
 
 }
@@ -55,12 +65,27 @@ public:
 
 
 private:
+  bool check();
+  char peek();
+  size_t pass_while(std::function<bool(char)> cond);
+  
+  size_t pass_space() {
+    return this->pass_while([] (char c) { return isspace(c); });
+  }
 
   std::string const& source;
   size_t position;
 };
 
 class Parser {
+public:
+  Parser(std::list<Token> const& token_list);
+  ~Parser();
+
+
+private:
+
+
 
 };
 
