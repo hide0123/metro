@@ -67,6 +67,7 @@ public:
 private:
   bool check();
   char peek();
+  bool match(std::string_view str);
   size_t pass_while(std::function<bool(char)> cond);
   
   size_t pass_space() {
