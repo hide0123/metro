@@ -1,9 +1,15 @@
 #pragma once
 
+#include <cstdio>
 #include <string>
 #include <vector>
 #include <list>
 #include <functional>
+
+#define panic(fmt, ...) \
+  fprintf(stderr, "\t#panic at %s:%d: " fmt "\n", \
+    __FILE__, __LINE__, __VA_ARGS__), \
+  exit(1)
 
 enum TokenKind {
   TOK_Int,
@@ -82,6 +88,11 @@ class Parser {
 public:
   Parser(std::list<Token> const& token_list);
   ~Parser();
+
+
+  AST::Base* parse();
+
+  AST::Base* primary();
 
 
 private:
