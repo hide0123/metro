@@ -1,0 +1,7 @@
+/build
+
+# binary
+lcc
+
+# sample source
+test.c
