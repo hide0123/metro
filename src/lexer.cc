@@ -27,7 +27,7 @@ static char const* punctuaters[] {
   ".",
   ";",
   ":",
-  
+
 };
 
 Lexer::Lexer(std::string const& source)
@@ -52,6 +52,8 @@ std::list<Token> Lexer::lex() {
 
     auto ch = this->peek();
     auto str = this->source.data() + this->position;
+
+    token.pos = this->position;
 
     // digits
     if( isdigit(ch) ) {

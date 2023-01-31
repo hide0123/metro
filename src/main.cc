@@ -20,7 +20,10 @@ int main(int argc, char** argv) {
     std::cout << tok.str << std::endl;
   }
 
-  
+  Parser parser{ token_list };
+
+  auto ast = parser.parse();
+
 
   return 0;
 }
