@@ -3,5 +3,6 @@
 # binary
 lcc
 
-# sample source
-test.c
+# text files
+test.txt
+memo.txt

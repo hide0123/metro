@@ -148,7 +148,6 @@ struct TypeInfo {
 
   std::vector<TypeInfo> type_params;
 
-
   TypeInfo(TypeKind kind = TYPE_None)
     : kind(kind),
       is_mutable(false)

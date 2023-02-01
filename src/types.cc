@@ -12,7 +12,9 @@ void Error::exit(int code) {
   std::exit(code);
 }
 
-
+//
+// TypeInfo
+// 文字列に変換
 std::string TypeInfo::to_string() const {
   static std::map<TypeKind, char const*> kind_name_map {
     { TYPE_Int, "int" },
@@ -30,8 +32,22 @@ std::string TypeInfo::to_string() const {
   return s;
 }
 
+//
+// TypeInfo
+// 同じかどうか比較する
 bool TypeInfo::equals(TypeInfo const& type) const {
-  return
-    this->kind == type.kind
-    && this->is_mutable == type.is_mutable;
+  if(
+    this->kind != type.kind
+    || this->is_mutable != type.is_mutable )
+      return false;
+
+  if( this->type_params.size() == type.type_params.size() )
+    for(
+      auto self_iter = this->type_params.begin();
+      auto&& tparam : type.type_params )
+        if( !(self_iter++)->equals(tparam) )
+          return false;
+
+  return false;
 }
+
