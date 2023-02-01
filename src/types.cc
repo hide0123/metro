@@ -19,6 +19,8 @@ std::string TypeInfo::to_string() const {
   static std::map<TypeKind, char const*> kind_name_map {
     { TYPE_Int, "int" },
     { TYPE_Float, "float" },
+    { TYPE_Char, "char" },
+    { TYPE_String, "string" },
   };
 
   assert(kind_name_map.contains(this->kind));
@@ -42,14 +44,15 @@ bool TypeInfo::equals(TypeInfo const& type) const {
       return false;
 
   if( !this->type_params.empty()
-    && this->type_params.size() == type.type_params.size() )
-    for(
-      auto self_iter = this->type_params.begin();
-      auto&& tparam : type.type_params )
-        if( !(self_iter++)->equals(tparam) )
-          return false;
+    && this->type_params.size() == type.type_params.size() ) {
+    for( auto self_iter = this->type_params.begin();
+        auto&& tparam : type.type_params ) {
+      if( !(self_iter++)->equals(tparam) )
+        return false;
+    }
+  }
 
-  return false;
+  return true;
 }
 
 bool TypeInfo::is_numeric() const {

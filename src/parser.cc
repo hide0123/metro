@@ -19,7 +19,8 @@ AST::Base* Parser::primary() {
     case TOK_Int:
     case TOK_Float:
     case TOK_Char:
-    case TOK_String: {
+    case TOK_String:
+    {
       auto ast = new AST::Value(*this->cur);
 
       this->next();
@@ -49,9 +50,9 @@ AST::Base* Parser::term() {
 
   while( this->check() ) {
     if( this->eat("*") )
-      AST::Expr::create(x)->append(AST_Mul, *this->ate, this->primary());
+      AST::Expr::create(x)->append(AST::Expr::EX_Mul, *this->ate, this->primary());
     else if( this->eat("/") )
-      AST::Expr::create(x)->append(AST_Div, *this->ate, this->primary());
+      AST::Expr::create(x)->append(AST::Expr::EX_Div, *this->ate, this->primary());
     else
       break;
   }
@@ -64,9 +65,9 @@ AST::Base* Parser::expr() {
 
   while( this->check() ) {
     if( this->eat("+") )
-      AST::Expr::create(x)->append(AST_Add, *this->ate, this->term());
+      AST::Expr::create(x)->append(AST::Expr::EX_Add, *this->ate, this->term());
     else if( this->eat("-") )
-      AST::Expr::create(x)->append(AST_Sub, *this->ate, this->term());
+      AST::Expr::create(x)->append(AST::Expr::EX_Sub, *this->ate, this->term());
     else
       break;
   }

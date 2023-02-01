@@ -8,10 +8,16 @@ TypeInfo TypeChecker::check(AST::Base* ast) {
 
   switch( ast->kind ) {
     case AST_Value: {
+      alert;
+
       switch( ((AST::Value*)ast)->token.kind ) {
         case TOK_Int: return TYPE_Int;
         case TOK_Float: return TYPE_Float;
+        case TOK_Char: return TYPE_Char;
+        case TOK_String: return TYPE_String;
       }
+
+      alert;
 
       todo_impl;
     }
@@ -20,15 +26,25 @@ TypeInfo TypeChecker::check(AST::Base* ast) {
       todo_impl;
 
     case AST_Expr: {
+      alert;
+
       auto expr = (AST::Expr*)ast;
 
       TypeInfo left = this->check(expr->first);
 
       for( auto&& elem : expr->elements ) {
-        auto const& right = this->check(elem.ast);
+        auto right = this->check(elem.ast);
 
-        if( auto res = this->is_valid_expr(elem.kind, left, right);
-            res == std::nullopt ) {
+        debug(
+          alert;
+
+          std::cout << left.to_string()
+            << ", " << right.to_string() << std::endl;
+        )
+
+        if(
+          auto res = this->is_valid_expr(elem.kind, left, right);
+          !res ) {
           Error(elem.op, "invalid operator")
             .emit()
             .exit();
@@ -40,6 +56,7 @@ TypeInfo TypeChecker::check(AST::Base* ast) {
 
       return left;
     }
+
   }
 
   return TYPE_None;
@@ -48,7 +65,7 @@ TypeInfo TypeChecker::check(AST::Base* ast) {
 //
 // 式が有効かどうかを、両辺の型をみて検査する
 std::optional<TypeInfo> TypeChecker::is_valid_expr(
-  ASTKind kind, TypeInfo const& lhs, TypeInfo const& rhs) {
+  AST::Expr::ExprKind kind, TypeInfo const& lhs, TypeInfo const& rhs) {
 
   if( lhs.equals(TYPE_None) || rhs.equals(TYPE_None) )
     return std::nullopt;
@@ -56,16 +73,16 @@ std::optional<TypeInfo> TypeChecker::is_valid_expr(
   switch( kind ) {
     //
     // add
-    case AST_Add: {
+    case AST::Expr::EX_Add: {
       if( lhs.equals(rhs) )
         return lhs;
-      
+
       break;
     }
 
     //
     // sub
-    case AST_Sub: {
+    case AST::Expr::EX_Sub: {
       // remove element from vector
       if( lhs.kind == TYPE_Vector ) {
         if( lhs.type_params[0].equals(rhs) ) {
@@ -84,7 +101,7 @@ std::optional<TypeInfo> TypeChecker::is_valid_expr(
 
     //
     // mul
-    case AST_Mul: {
+    case AST::Expr::EX_Mul: {
       if( rhs.is_numeric() )
         return lhs;
       
@@ -93,7 +110,7 @@ std::optional<TypeInfo> TypeChecker::is_valid_expr(
 
     //
     // div
-    case AST_Div: {
+    case AST::Expr::EX_Div: {
       if( lhs.is_numeric() && rhs.is_numeric() )
         return lhs;
     }

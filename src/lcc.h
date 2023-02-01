@@ -8,6 +8,16 @@
 #include <functional>
 #include <optional>
 
+#define metro_debug 1
+
+#if metro_debug
+  #include <iostream>
+
+  #define debug(...) __VA_ARGS__
+#else
+  #define debug(...)
+#endif
+
 #define alert \
   fprintf(stderr,"\t#alert at %s:%d\n",__FILE__,__LINE__)
 
@@ -61,12 +71,6 @@ enum ASTKind {
   AST_Value,
   AST_Variable,
 
-  AST_Mul,
-  AST_Div,
-
-  AST_Add,
-  AST_Sub,
-
   AST_Expr,
 
   AST_Function
@@ -106,12 +110,20 @@ struct Variable : Base {
 };
 
 struct Expr : Base {
+  enum ExprKind {
+    EX_Add,
+    EX_Sub,
+    EX_Mul,
+    EX_Div,
+
+  };
+
   struct Element {
-    ASTKind kind;
+    ExprKind kind;
     Token const& op;
     Base* ast;
 
-    explicit Element(ASTKind kind, Token const& op, Base* ast)
+    explicit Element(ExprKind kind, Token const& op, Base* ast)
       : kind(kind),
         op(op),
         ast(ast)
@@ -128,7 +140,7 @@ struct Expr : Base {
   {
   }
 
-  Element& append(ASTKind kind, Token const& op, Base* ast) {
+  Element& append(ExprKind kind, Token const& op, Base* ast) {
     return this->elements.emplace_back(kind, op, ast);
   }
 
@@ -251,7 +263,7 @@ public:
   TypeInfo check(AST::Base* ast);
   
   std::optional<TypeInfo> is_valid_expr(
-    ASTKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
+    AST::Expr::ExprKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
 
 private:
 
