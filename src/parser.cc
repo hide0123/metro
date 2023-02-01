@@ -27,7 +27,6 @@ AST::Base* Parser::primary() {
       return ast;
     }
 
-
     case TOK_Ident: {
       auto ast = new AST::Variable(*this->cur);
 
@@ -36,6 +35,9 @@ AST::Base* Parser::primary() {
       return ast;
     }
   }
+
+  alert;
+  viewvar("%d", this->cur->kind);
 
   Error(*this->cur, "invalid syntax")
     .emit()
@@ -47,9 +49,9 @@ AST::Base* Parser::term() {
 
   while( this->check() ) {
     if( this->eat("*") )
-      AST::Expr::create(x)->append(AST_Mul, this->primary());
+      AST::Expr::create(x)->append(AST_Mul, *this->ate, this->primary());
     else if( this->eat("/") )
-      AST::Expr::create(x)->append(AST_Div, this->primary());
+      AST::Expr::create(x)->append(AST_Div, *this->ate, this->primary());
     else
       break;
   }
@@ -62,9 +64,9 @@ AST::Base* Parser::expr() {
 
   while( this->check() ) {
     if( this->eat("+") )
-      AST::Expr::create(x)->append(AST_Add, this->term());
+      AST::Expr::create(x)->append(AST_Add, *this->ate, this->term());
     else if( this->eat("-") )
-      AST::Expr::create(x)->append(AST_Sub, this->term());
+      AST::Expr::create(x)->append(AST_Sub, *this->ate, this->term());
     else
       break;
   }
@@ -82,8 +84,7 @@ void Parser::next() {
 
 bool Parser::eat(char const* s) {
   if( this->cur->str == s ) {
-    this->ate = this->cur;
-    this->next();
+    this->ate = this->cur++;
     return true;
   }
 

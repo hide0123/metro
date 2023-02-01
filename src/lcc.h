@@ -6,6 +6,13 @@
 #include <list>
 #include <map>
 #include <functional>
+#include <optional>
+
+#define alert \
+  fprintf(stderr,"\t#alert at %s:%d\n",__FILE__,__LINE__)
+
+#define viewvar(fmt, v) \
+  fprintf(stderr,"\t#viewvar: " #v " = " fmt "\n", v)
 
 #define panic(fmt, ...) \
   fprintf(stderr, "\t#panic at %s:%d: " fmt "\n", \
@@ -101,10 +108,12 @@ struct Variable : Base {
 struct Expr : Base {
   struct Element {
     ASTKind kind;
+    Token const& op;
     Base* ast;
 
-    explicit Element(ASTKind kind, Base* ast)
+    explicit Element(ASTKind kind, Token const& op, Base* ast)
       : kind(kind),
+        op(op),
         ast(ast)
     {
     }
@@ -119,8 +128,8 @@ struct Expr : Base {
   {
   }
 
-  Element& append(ASTKind kind, Base* ast) {
-    return this->elements.emplace_back(kind, ast);
+  Element& append(ASTKind kind, Token const& op, Base* ast) {
+    return this->elements.emplace_back(kind, op, ast);
   }
 
   static Expr* create(Base* ast) {
@@ -157,6 +166,8 @@ struct TypeInfo {
   std::string to_string() const;
 
   bool equals(TypeInfo const& type) const;
+
+  bool is_numeric() const;
 };
 
 struct Object {
@@ -239,7 +250,8 @@ public:
 
   TypeInfo check(AST::Base* ast);
   
-  bool is_valid_expr(ASTKind kind, TypeInfo lhs, TypeInfo rhs);
+  std::optional<TypeInfo> is_valid_expr(
+    ASTKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
 
 private:
 
@@ -289,8 +301,11 @@ public:
     {
     }
 
-    // todo
-    // ErrLoc(AST::Base* pos)
+    ErrLoc(AST::Base const* ast)
+      : type(LOC_AST),
+        ast(ast)
+    {
+    }
   };
 
   Error(ErrLoc loc, std::string const& msg)

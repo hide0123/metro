@@ -57,6 +57,7 @@ std::list<Token> Lexer::lex() {
 
     // digits
     if( isdigit(ch) ) {
+      token.kind = TOK_Int;
       token.str = { str, this->pass_while(isdigit) };
     }
 

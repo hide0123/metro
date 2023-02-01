@@ -8,7 +8,7 @@ std::string open_file(std::string const& path) {
   std::string source;
   
   for( std::string line; std::getline(ifs, line); )
-    source += line;
+    source += line + '\n';
 
   return source;
 }
