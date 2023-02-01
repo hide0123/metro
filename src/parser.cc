@@ -1,7 +1,8 @@
 #include "lcc.h"
 
 Parser::Parser(std::list<Token> const& token_list)
-  : token_list(token_list)
+  : token_list(token_list),
+    cur(token_list.begin())
 {
 }
 
@@ -15,18 +16,60 @@ AST::Base* Parser::parse() {
 
 AST::Base* Parser::primary() {
   switch( this->cur->kind ) {
+    case TOK_Int:
+    case TOK_Float:
+    case TOK_Char:
+    case TOK_String: {
+      auto ast = new AST::Value(*this->cur);
 
+      this->next();
+
+      return ast;
+    }
+
+
+    case TOK_Ident: {
+      auto ast = new AST::Variable(*this->cur);
+
+      this->next();
+
+      return ast;
+    }
   }
 
-  
+  Error(*this->cur, "invalid syntax")
+    .emit()
+    .exit();
 }
 
 AST::Base* Parser::term() {
+  auto x = this->primary();
 
+  while( this->check() ) {
+    if( this->eat("*") )
+      AST::Expr::create(x)->append(AST_Mul, this->primary());
+    else if( this->eat("/") )
+      AST::Expr::create(x)->append(AST_Div, this->primary());
+    else
+      break;
+  }
+
+  return x;
 }
 
 AST::Base* Parser::expr() {
+  auto x = this->term();
 
+  while( this->check() ) {
+    if( this->eat("+") )
+      AST::Expr::create(x)->append(AST_Add, this->term());
+    else if( this->eat("-") )
+      AST::Expr::create(x)->append(AST_Sub, this->term());
+    else
+      break;
+  }
+
+  return x;
 }
 
 bool Parser::check() {

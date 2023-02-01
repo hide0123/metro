@@ -12,6 +12,8 @@
     __FILE__, __LINE__, __VA_ARGS__), \
   exit(1)
 
+#define todo_impl panic("implement here %s", __func__)
+
 namespace Utils {
   
 template <class ... Args>
@@ -41,15 +43,19 @@ struct Token {
   size_t pos;
 
   explicit Token(TokenKind kind)
-    : kind(TOK_Int),
+    : kind(kind),
       pos(0)
   {
   }
+
 };
 
 enum ASTKind {
   AST_Value,
   AST_Variable,
+
+  AST_Mul,
+  AST_Div,
 
   AST_Add,
   AST_Sub,
@@ -82,6 +88,16 @@ struct Value : Base {
   }
 };
 
+struct Variable : Base {
+  size_t index;
+
+  Variable(Token const& tok)
+    : Base(AST_Variable, tok),
+      index(0)
+  {
+  }
+};
+
 struct Expr : Base {
   struct Element {
     ASTKind kind;
@@ -105,6 +121,13 @@ struct Expr : Base {
 
   Element& append(ASTKind kind, Base* ast) {
     return this->elements.emplace_back(kind, ast);
+  }
+
+  static Expr* create(Base* ast) {
+    if( ast->kind != AST_Expr )
+      return new Expr(ast);
+
+    return (Expr*)ast;
   }
 };
 
@@ -131,6 +154,10 @@ struct TypeInfo {
       is_mutable(false)
   {
   }
+
+  std::string to_string() const;
+
+  bool equals(TypeInfo const& type) const;
 };
 
 struct Object {
@@ -211,7 +238,9 @@ private:
 class TypeChecker {
 public:
 
-
+  TypeInfo check(AST::Base* ast);
+  
+  bool is_valid_expr(ASTKind kind, TypeInfo lhs, TypeInfo rhs);
 
 private:
 
@@ -224,7 +253,7 @@ public:
 
 
   Object* eval(AST::Base* ast);
-  
+
 
 private:
 
@@ -238,7 +267,31 @@ private:
 class Error {
 public:
   struct ErrLoc {
+    enum LocationType {
+      LOC_Position,
+      LOC_Token,
+      LOC_AST
+    };
 
+    LocationType type;
+
+    union {
+      size_t pos;
+      Token const* token;
+      AST::Base const* ast;
+    };
+
+    // todo
+    // ErrLoc(size_t pos)
+
+    ErrLoc(Token const& token)
+      : type(LOC_Token),
+        token(&token)
+    {
+    }
+
+    // todo
+    // ErrLoc(AST::Base* pos)
   };
 
   Error(ErrLoc loc, std::string const& msg)
@@ -246,6 +299,11 @@ public:
       msg(msg)
   {
   }
+
+  Error& emit();
+
+  [[noreturn]]
+  void exit(int code = 1);
 
 
 private:

@@ -60,8 +60,22 @@ std::list<Token> Lexer::lex() {
       token.str = { str, this->pass_while(isdigit) };
     }
 
+    // string
+    else if( ch == '"' ) {
+      token.kind = TOK_String;
+
+      this->position++;
+
+      token.str = { str,
+        this->pass_while([] (char c) { return c != '"'; }) };
+      
+      this->position++;
+    }
+
     // identifier
     else if( isalpha(ch) || ch == '_' ) {
+      token.kind = TOK_Ident;
+
       token.str = { str,
         this->pass_while(
           [] (char c) { return isalnum(c) || c == '_'; }) };
@@ -73,6 +87,7 @@ std::list<Token> Lexer::lex() {
           std::end(punctuaters),
           [&] (std::string_view&& s) {
             if( this->match(s) ) {
+              token.kind = TOK_Punctuater;
               token.str = s;
               this->position += s.length();
               return false;
@@ -86,6 +101,8 @@ std::list<Token> Lexer::lex() {
 
     this->pass_space();
   }
+
+  ret.emplace_back(TOK_End);
 
   return ret;
 }

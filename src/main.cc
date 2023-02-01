@@ -30,5 +30,12 @@ int main(int argc, char** argv) {
   auto ast = parser.parse();
 
 
+  TypeChecker checker;
+
+  auto type = checker.check(ast);
+
+  std::cout << type.to_string() << std::endl;
+
+
   return 0;
 }
