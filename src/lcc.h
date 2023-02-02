@@ -84,8 +84,12 @@ struct Base {
 
   virtual ~Base() { }
 
+  virtual std::string to_string() const {
+    return std::string(this->token.str);
+  }
+
 protected:
-  Base(ASTKind kind, Token const& token)
+  explicit Base(ASTKind kind, Token const& token)
     : kind(kind),
       token(token)
   {
@@ -97,6 +101,8 @@ struct Value : Base {
     : Base(AST_Value, tok)
   {
   }
+
+  std::string to_string() const;
 };
 
 struct Variable : Base {
@@ -140,13 +146,15 @@ struct Expr : Base {
   {
   }
 
+  std::string to_string() const;
+
   Element& append(ExprKind kind, Token const& op, Base* ast) {
     return this->elements.emplace_back(kind, op, ast);
   }
 
-  static Expr* create(Base* ast) {
+  static Expr* create(Base*& ast) {
     if( ast->kind != AST_Expr )
-      return new Expr(ast);
+      ast = new Expr(ast);
 
     return (Expr*)ast;
   }

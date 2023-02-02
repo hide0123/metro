@@ -29,6 +29,8 @@ int main(int argc, char** argv) {
 
   auto ast = parser.parse();
 
+  std::cout << ast->to_string() << std::endl;
+
 
   TypeChecker checker;
 
