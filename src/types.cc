@@ -2,6 +2,27 @@
 #include <iostream>
 #include "lcc.h"
 
+// --------------------------------------------------------
+//  Object
+// --------------------------------------------------------
+
+void Object::initialize() {
+  Object::obj_none = new ObjNone;
+}
+
+std::string ObjNone::to_string() const {
+  return "none";
+}
+
+std::string ObjLong::to_string() const {
+  return std::to_string(this->value);
+}
+
+
+// --------------------------------------------------------
+//  Error
+// --------------------------------------------------------
+
 Error& Error::emit() {
   std::cerr << this->msg << std::endl;
 
@@ -11,6 +32,10 @@ Error& Error::emit() {
 void Error::exit(int code) {
   std::exit(code);
 }
+
+// --------------------------------------------------------
+//  TypeInfo
+// --------------------------------------------------------
 
 //
 // TypeInfo
@@ -59,3 +84,5 @@ bool TypeInfo::is_numeric() const {
   return
     this->kind == TYPE_Int || this->kind == TYPE_Float;
 }
+
+// --------------------------------------------------------

@@ -190,9 +190,21 @@ struct TypeInfo {
   bool is_numeric() const;
 };
 
+// ---------------------------------------------
+// ---------------------------------------------
+
+class Application;
+
+struct ObjNone;
 struct Object {
   TypeInfo type;
   size_t ref_count;
+
+  static ObjNone* obj_none;
+
+  static void initialize();
+
+  virtual std::string to_string() const = 0;
 
   virtual ~Object() { }
 
@@ -202,17 +214,43 @@ protected:
       ref_count(0)
   {
   }
+
+  friend class Application;
+};
+
+struct ObjNone : Object {
+  ~ObjNone() { }
+
+  std::string to_string() const;
+
+private:
+  ObjNone() {}
+
+  friend class Object;
 };
 
 struct ObjLong : Object {
   int64_t value;
 
-  ObjLong(int64_t value)
+  std::string to_string() const;
+
+  explicit ObjLong(int64_t value)
     : Object(TYPE_Int),
       value(value)
   {
   }
 };
+
+struct ObjFloat : Object {
+  float value;
+
+  std::string to_string() const;
+
+  ObjFloat(float )
+};
+
+// ---------------------------------------------
+// ---------------------------------------------
 
 class Lexer {
 public:
@@ -283,7 +321,7 @@ public:
   ~Evaluator();
 
 
-  Object* eval(AST::Base* ast);
+  Object* evaluate(AST::Base* ast);
 
 
 private:
@@ -344,5 +382,22 @@ private:
 
   ErrLoc loc;
   std::string msg;
+};
+
+
+
+class Application {
+
+public:
+  Application();
+  ~Application();
+
+  void initialize();
+
+
+
+private:
+
+
 };
 

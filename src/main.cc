@@ -2,6 +2,23 @@
 #include <fstream>
 #include "lcc.h"
 
+
+Application::Application() {
+
+}
+
+Application::~Application() {
+
+}
+
+void Application::initialize() {
+
+
+  Object::initialize();
+
+
+}
+
 std::string open_file(std::string const& path) {
   std::ifstream ifs{ path };
 
@@ -37,6 +54,13 @@ int main(int argc, char** argv) {
   auto type = checker.check(ast);
 
   std::cout << type.to_string() << std::endl;
+
+
+  Evaluator evaluator;
+
+  auto obj = evaluator.evaluate(ast);
+
+  std::cout << obj->to_string() << std::endl;
 
 
   return 0;
