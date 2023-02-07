@@ -39,7 +39,40 @@ Object* Evaluator::evaluate(AST::Base* ast) {
     case AST_Value: {
       return Evaluator::create_object((AST::Value*)ast);
     }
+
+    case AST_Expr: {
+
+      auto x = (AST::Expr*)ast;
+
+      auto ret = this->evaluate(x->first);
+
+      for( auto&& elem : x->elements ) {
+        auto item = this->evaluate(elem.ast);
+
+        switch( elem.kind ) {
+          case AST::Expr::EX_Add:
+            ret = Evaluator::add_object(ret, item);
+            break;
+        }
+      }
+
+      return ret;
+    }
   }
 
   return Object::obj_none;
+}
+
+Object* Evaluator::add_object(Object* left, Object* right) {
+  // todo: if left is vector
+
+  auto ret = left->clone();
+
+  switch( left->type.kind ) {
+    case TYPE_Int:
+      ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
+      break;
+  }
+
+  return ret;
 }

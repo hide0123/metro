@@ -37,21 +37,12 @@ TypeInfo TypeChecker::check(AST::Base* ast) {
       todo_impl;
 
     case AST_Expr: {
-      alert;
-
       auto expr = (AST::Expr*)ast;
 
       TypeInfo left = this->check(expr->first);
 
       for( auto&& elem : expr->elements ) {
         auto right = this->check(elem.ast);
-
-        debug(
-          alert;
-
-          std::cout << left.to_string()
-            << ", " << right.to_string() << std::endl;
-        )
 
         if(
           auto res = this->is_valid_expr(elem.kind, left, right);

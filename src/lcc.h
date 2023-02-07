@@ -218,6 +218,8 @@ struct Object {
 
   virtual std::string to_string() const = 0;
 
+  virtual Object* clone() const = 0;
+
   virtual ~Object() { }
 
 protected:
@@ -234,6 +236,7 @@ struct ObjNone : Object {
   ~ObjNone() { }
 
   std::string to_string() const;
+  ObjNone* clone() const;
 
 private:
   ObjNone()
@@ -248,6 +251,7 @@ struct ObjLong : Object {
   int64_t value;
 
   std::string to_string() const;
+  ObjLong* clone() const;
 
   explicit ObjLong(int64_t value)
     : Object(TYPE_Int),
@@ -260,6 +264,7 @@ struct ObjFloat : Object {
   float value;
 
   std::string to_string() const;
+  ObjFloat* clone() const;
 
   explicit ObjFloat(float value)
     : Object(TYPE_Float),
@@ -358,6 +363,7 @@ public:
 
   Object* evaluate(AST::Base* ast);
 
+  Object* add_object(Object* left, Object* right);
 
 private:
 

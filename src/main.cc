@@ -42,23 +42,28 @@ int main(int argc, char** argv) {
 
   auto const& token_list = lexer.lex();
 
-  for( auto&& tok : token_list ) {
-    std::cout << tok.str << std::endl;
-  }
+  debug(
+    for( auto&& tok : token_list ) {
+      std::cout << tok.str << std::endl;
+    }
+  )
 
   Parser parser{ token_list };
 
   auto ast = parser.parse();
 
-  std::cout << ast->to_string() << std::endl;
+  debug(
+    std::cout << ast->to_string() << std::endl;
+  )
 
 
   TypeChecker checker;
 
   auto type = checker.check(ast);
 
-  std::cout << type.to_string() << std::endl;
-
+  debug(
+    std::cout << type.to_string() << std::endl;
+  )
 
   Evaluator evaluator;
 

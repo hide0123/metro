@@ -25,6 +25,19 @@ std::string ObjFloat::to_string() const {
   return std::to_string(this->value);
 }
 
+ObjNone* ObjNone::clone() const {
+  return new ObjNone; // ???
+}
+
+ObjLong* ObjLong::clone() const {
+  return new ObjLong(this->value);
+}
+
+ObjFloat* ObjFloat::clone() const {
+  return new ObjFloat(this->value);
+}
+
+
 // --------------------------------------------------------
 //  Error
 // --------------------------------------------------------
