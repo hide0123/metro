@@ -98,7 +98,7 @@ std::list<Token> Lexer::lex() {
             return true;
           }) ) {
       
-      panic("unknown token at %lld", this->position);
+      panic("unknown token at %zu", this->position);
     }
 
     this->pass_space();

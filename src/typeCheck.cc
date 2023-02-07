@@ -1,5 +1,7 @@
 #include "lcc.h"
 
+std::map<AST::Value*, TypeInfo> TypeChecker::value_type_cache;
+
 //
 // 型チェック
 TypeInfo TypeChecker::check(AST::Base* ast) {
@@ -8,20 +10,29 @@ TypeInfo TypeChecker::check(AST::Base* ast) {
 
   switch( ast->kind ) {
     case AST_Value: {
-      alert;
+      TypeInfo ret;
 
       switch( ((AST::Value*)ast)->token.kind ) {
-        case TOK_Int: return TYPE_Int;
-        case TOK_Float: return TYPE_Float;
-        case TOK_Char: return TYPE_Char;
-        case TOK_String: return TYPE_String;
+        case TOK_Int:
+          ret = TYPE_Int;
+          break;
+
+        case TOK_Float:
+          ret = TYPE_Float;
+          break;
+
+        case TOK_Char:
+          ret = TYPE_Char;
+          break;
+
+        case TOK_String:
+          ret = TYPE_String;
+          break;
       }
 
-      alert;
-
-      todo_impl;
+      return this->value_type_cache[(AST::Value*)ast] = ret;
     }
-    
+
     case AST_Variable:
       todo_impl;
 

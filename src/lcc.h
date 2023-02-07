@@ -42,6 +42,10 @@ std::string format(char const* fmt, Args&&... args) {
 
 } // namespace Utils
 
+// ---------------------------------------------
+//  Token
+// ---------------------------------------------
+
 enum TokenKind {
   TOK_Int,
   TOK_Float,
@@ -66,6 +70,10 @@ struct Token {
   }
 
 };
+
+// ---------------------------------------------
+//  AST
+// ---------------------------------------------
 
 enum ASTKind {
   AST_Value,
@@ -162,6 +170,10 @@ struct Expr : Base {
 
 } // namespace AST
 
+// ---------------------------------------------
+//  TypeInfo
+// ---------------------------------------------
+
 enum TypeKind {
   TYPE_None,
   TYPE_Int,
@@ -191,10 +203,10 @@ struct TypeInfo {
 };
 
 // ---------------------------------------------
+//  Object
 // ---------------------------------------------
 
 class Application;
-
 struct ObjNone;
 struct Object {
   TypeInfo type;
@@ -224,7 +236,10 @@ struct ObjNone : Object {
   std::string to_string() const;
 
 private:
-  ObjNone() {}
+  ObjNone()
+    : Object(TYPE_None)
+  {
+  }
 
   friend class Object;
 };
@@ -246,10 +261,15 @@ struct ObjFloat : Object {
 
   std::string to_string() const;
 
-  ObjFloat(float )
+  explicit ObjFloat(float value)
+    : Object(TYPE_Float),
+      value(0)
+  {
+  }
 };
 
 // ---------------------------------------------
+//  Lexer
 // ---------------------------------------------
 
 class Lexer {
@@ -303,7 +323,14 @@ private:
   token_iter ate;
 };
 
+// ---------------------------------------------
+//  TypeChecker
+// ---------------------------------------------
+
+class Evaluator;
 class TypeChecker {
+  friend class Evaluator;
+
 public:
 
   TypeInfo check(AST::Base* ast);
@@ -311,9 +338,17 @@ public:
   std::optional<TypeInfo> is_valid_expr(
     AST::Expr::ExprKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
 
+  static void initialize();
+
 private:
 
+  static std::map<AST::Value*, TypeInfo> value_type_cache;
+
 };
+
+// ---------------------------------------------
+//  Evaluator
+// ---------------------------------------------
 
 class Evaluator {
 public:
@@ -326,12 +361,15 @@ public:
 
 private:
 
+  Object* create_object(AST::Value* ast);
 
-  std::map<AST::Value*, Object> immediate_objects;
-
+  std::map<AST::Value*, Object*> immediate_objects;
 };
 
 
+// ---------------------------------------------
+//  Error
+// ---------------------------------------------
 
 class Error {
 public:

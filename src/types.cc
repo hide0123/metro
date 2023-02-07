@@ -6,6 +6,8 @@
 //  Object
 // --------------------------------------------------------
 
+ObjNone* Object::obj_none;
+
 void Object::initialize() {
   Object::obj_none = new ObjNone;
 }
@@ -18,6 +20,10 @@ std::string ObjLong::to_string() const {
   return std::to_string(this->value);
 }
 
+std::string ObjFloat::to_string() const {
+  // 処理まったく上と同じだからどうにかしろ
+  return std::to_string(this->value);
+}
 
 // --------------------------------------------------------
 //  Error

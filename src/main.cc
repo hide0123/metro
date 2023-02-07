@@ -34,6 +34,10 @@ int main(int argc, char** argv) {
   
   auto const& source = open_file("test.txt");
 
+  Application app;
+
+  app.initialize();
+
   Lexer lexer{ source };
 
   auto const& token_list = lexer.lex();
