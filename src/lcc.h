@@ -353,6 +353,7 @@ private:
   void next();
 
   bool eat(char const* s);
+  void expect(char const* s);
   
 
   std::list<Token> const& token_list;
@@ -362,11 +363,11 @@ private:
 };
 
 // ---------------------------------------------
-//  TypeChecker
+//  Checker
 // ---------------------------------------------
 
 class Evaluator;
-class TypeChecker {
+class Checker {
   friend class Evaluator;
 
 public:

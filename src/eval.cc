@@ -9,8 +9,13 @@ Evaluator::~Evaluator() {
   
 }
 
+//
+// Evaluator::create_object()
+//
+// 即値・リテラルの AST からオブジェクトを作成する
+// すでに作成済みのものであれば、既存のものを返す
 Object* Evaluator::create_object(AST::Value* ast) {
-  auto type = TypeChecker::value_type_cache[ast];
+  auto type = Checker::value_type_cache[ast];
 
   auto& obj = this->immediate_objects[ast];
 

@@ -1,10 +1,10 @@
 #include "lcc.h"
 
-std::map<AST::Value*, TypeInfo> TypeChecker::value_type_cache;
+std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
 //
 // 型チェック
-TypeInfo TypeChecker::check(AST::Base* ast) {
+TypeInfo Checker::check(AST::Base* ast) {
   if( !ast )
     return TYPE_None;
 
@@ -66,7 +66,7 @@ TypeInfo TypeChecker::check(AST::Base* ast) {
 
 //
 // 式が有効かどうかを、両辺の型をみて検査する
-std::optional<TypeInfo> TypeChecker::is_valid_expr(
+std::optional<TypeInfo> Checker::is_valid_expr(
   AST::Expr::ExprKind kind, TypeInfo const& lhs, TypeInfo const& rhs) {
 
   if( lhs.equals(TYPE_None) || rhs.equals(TYPE_None) )

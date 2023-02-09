@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
   )
 
 
-  TypeChecker checker;
+  Checker checker;
 
   auto type = checker.check(ast);
 

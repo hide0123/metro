@@ -14,8 +14,11 @@ AST::Base* Parser::parse() {
   return this->expr();
 }
 
+//
+// primary
 AST::Base* Parser::primary() {
   switch( this->cur->kind ) {
+    // 即値・リテラル
     case TOK_Int:
     case TOK_Float:
     case TOK_Char:
@@ -28,6 +31,7 @@ AST::Base* Parser::primary() {
       return ast;
     }
 
+    // 識別子
     case TOK_Ident: {
       // .str を取るために一時保存
       auto ident = this->cur;
@@ -37,8 +41,21 @@ AST::Base* Parser::primary() {
       this->next();
 
       // かっこ があれば 関数呼び出し
-      if( this->eat("()") ) {
-        auto callFunc = new AST::CallFunc(
+      if( this->eat("(") ) {
+        // AST 作成
+        auto callFunc = new AST::CallFunc(*ident);
+
+        // 引数をパースする
+        if( !this->eat(")") ) {
+          do {
+            // 式を追加
+            callFunc->args.emplace_back(this->expr());
+          } while( this->eat(",") ); // カンマがある限り続く
+
+          this->expect(";");
+        }
+
+        return callFunc;
       }
 
       // なければ 変数
@@ -99,4 +116,14 @@ bool Parser::eat(char const* s) {
   }
 
   return false;
+}
+
+void Parser::expect(char const* s) {
+  if( !this->eat(s) ) {
+    Error(*this->cur,
+      "expected '" + std::string(s) + "' but fount '"
+        + std::string(this->cur->str) + "'")
+      .emit()
+      .exit();
+  }
 }
