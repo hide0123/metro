@@ -29,11 +29,20 @@ AST::Base* Parser::primary() {
     }
 
     case TOK_Ident: {
-      auto ast = new AST::Variable(*this->cur);
+      // .str を取るために一時保存
+      auto ident = this->cur;
 
+      // 変数か関数呼び出しか 現時点でわからないので、
+      // ひとつ先に進める
       this->next();
 
-      return ast;
+      // かっこ があれば 関数呼び出し
+      if( this->eat("()") ) {
+        auto callFunc = new AST::CallFunc(
+      }
+
+      // なければ 変数
+      return new AST::Variable(*this->cur);
     }
   }
 

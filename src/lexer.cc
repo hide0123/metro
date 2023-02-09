@@ -23,10 +23,11 @@ static char const* punctuaters[] {
   "[",
   "]",
   
-  ",",
-  ".",
-  ";",
-  ":",
+  ",", // comma
+  ".", // dot
+
+  ";", // semicoron
+  ":", // colon
 
 };
 

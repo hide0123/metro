@@ -63,12 +63,13 @@ struct Token {
 
   size_t pos;
 
+  static Token const semi;
+
   explicit Token(TokenKind kind)
     : kind(kind),
       pos(0)
   {
   }
-
 };
 
 // ---------------------------------------------
@@ -76,10 +77,24 @@ struct Token {
 // ---------------------------------------------
 
 enum ASTKind {
+  AST_None,
+
   AST_Value,
   AST_Variable,
+  AST_CallFunc,
+
+  AST_If,
+  AST_Loop,
 
   AST_Expr,
+
+  AST_For,
+  AST_While,
+  AST_Switch,
+
+  AST_Scope,
+
+  AST_Let,
 
   AST_Function
 };
@@ -104,6 +119,13 @@ protected:
   }
 };
 
+struct None : Base {
+  None(Token const& token)
+    : Base(AST_None, token)
+  {
+  }
+};
+
 struct Value : Base {
   Value(Token const& tok)
     : Base(AST_Value, tok)
@@ -119,6 +141,17 @@ struct Variable : Base {
   Variable(Token const& tok)
     : Base(AST_Variable, tok),
       index(0)
+  {
+  }
+};
+
+struct CallFunc : Base {
+  std::string_view name;
+  std::vector<Base*> args;
+
+  CallFunc(Token const& name)
+    : Base(AST_CallFunc, name),
+      name(name.str)
   {
   }
 };
@@ -364,6 +397,9 @@ public:
   Object* evaluate(AST::Base* ast);
 
   Object* add_object(Object* left, Object* right);
+  Object* sub_object(Object* left, Object* right);
+  Object* mul_object(Object* left, Object* right);
+  Object* div_object(Object* left, Object* right);
 
 private:
 
