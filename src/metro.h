@@ -40,6 +40,13 @@ std::string format(char const* fmt, Args&&... args) {
   return buf;
 }
 
+namespace String {
+
+std::wstring to_wstr(std::string const& str);
+std::string to_str(std::wstring const& str);
+
+} // namespace Utils::String
+
 } // namespace Utils
 
 // ---------------------------------------------
@@ -99,6 +106,8 @@ enum ASTKind {
   AST_Function
 };
 
+struct BuiltinFunc;
+
 namespace AST {
 
 struct Base {
@@ -145,7 +154,6 @@ struct Variable : Base {
   }
 };
 
-struct BuiltinFunc;
 struct CallFunc : Base {
   std::string_view name;
   std::vector<Base*> args;
@@ -219,7 +227,8 @@ enum TypeKind {
   TYPE_Float,
   TYPE_Char,
   TYPE_String,
-  TYPE_Vector
+  TYPE_Vector,
+  TYPE_Args,
 };
 
 struct TypeInfo {
@@ -312,16 +321,34 @@ struct ObjFloat : Object {
   }
 };
 
+struct ObjString : Object {
+  std::wstring value;
+
+  std::string to_string() const;
+  ObjString* clone() const;
+
+  explicit ObjString(std::wstring value = L"")
+    : Object(TYPE_String),
+      value(value)
+  {
+  }
+};
+
 // ---------------------------------------------
 //  BuiltinFunc
 // ---------------------------------------------
 struct BuiltinFunc {
-  using Implementation = std::function<Object*(std::vector<AST::Base*>)>;
+  using Implementation =
+    std::function<Object*(std::vector<Object*>&&)>;
 
-  std::string name;
-  
+  std::string name;     // 関数名
 
-  BuiltinFunc();
+  TypeInfo result_type;             // 戻り値の型
+  std::vector<TypeInfo> arg_types;  // 引数の型
+
+  Implementation impl; // 処理
+
+  // BuiltinFunc();
 
   static std::vector<BuiltinFunc> const& get_builtin_list();
 };
@@ -395,6 +422,10 @@ public:
 
   TypeInfo check(AST::Base* ast);
   
+  // 関数呼び出しが正しいか検査する
+  void check_function_call(AST::CallFunc* ast);
+
+  // 式の両辺の型が正しいかどうか検査する
   std::optional<TypeInfo> is_valid_expr(
     AST::Expr::ExprKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
 

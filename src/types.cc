@@ -1,6 +1,6 @@
 #include <cassert>
 #include <iostream>
-#include "lcc.h"
+#include "metro.h"
 
 
 // --------------------------------------------------------
@@ -26,6 +26,10 @@ std::string ObjFloat::to_string() const {
   return std::to_string(this->value);
 }
 
+std::string ObjString::to_string() const {
+  return Utils::String::to_str(this->value);
+}
+
 ObjNone* ObjNone::clone() const {
   return new ObjNone; // ???
 }
@@ -36,6 +40,10 @@ ObjLong* ObjLong::clone() const {
 
 ObjFloat* ObjFloat::clone() const {
   return new ObjFloat(this->value);
+}
+
+ObjString* ObjString::clone() const {
+  return new ObjString(this->value);
 }
 
 
@@ -66,6 +74,7 @@ std::string TypeInfo::to_string() const {
     { TYPE_Float, "float" },
     { TYPE_Char, "char" },
     { TYPE_String, "string" },
+    { TYPE_Args, "args" }
   };
 
   assert(kind_name_map.contains(this->kind));

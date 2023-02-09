@@ -1,6 +1,23 @@
 #include <iostream>
 #include <fstream>
-#include "lcc.h"
+#include <codecvt>
+#include <locale>
+#include "metro.h"
+
+namespace Utils::String {
+
+static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>
+  conv;
+
+std::wstring to_wstr(std::string const& str) {
+  return conv.from_bytes(str);
+}
+
+std::string to_str(std::wstring const& str) {
+  return conv.to_bytes(str);
+}
+
+} // namespace Utils::String
 
 
 Application::Application() {
@@ -11,6 +28,7 @@ Application::~Application() {
 
 }
 
+// 初期化
 void Application::initialize() {
 
 
@@ -19,6 +37,8 @@ void Application::initialize() {
 
 }
 
+//
+// テキストファイルを開く
 std::string open_file(std::string const& path) {
   std::ifstream ifs{ path };
 

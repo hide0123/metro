@@ -7,20 +7,22 @@ Checker
 
   ------------------------------------------------------------ */
 
-#include "lcc.h"
+#include "metro.h"
 
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
 //
-TypeInfo Checker::check(AST::Base* ast) {
-  if( !ast )
+TypeInfo Checker::check(AST::Base* _ast) {
+  if( !_ast )
     return TYPE_None;
 
-  switch( ast->kind ) {
+  switch( _ast->kind ) {
     case AST_Value: {
       TypeInfo ret;
 
-      switch( ((AST::Value*)ast)->token.kind ) {
+      auto ast = (AST::Value*)_ast;
+
+      switch( ast->token.kind ) {
         case TOK_Int:
           ret = TYPE_Int;
           break;
@@ -38,27 +40,50 @@ TypeInfo Checker::check(AST::Base* ast) {
           break;
       }
 
-      return this->value_type_cache[(AST::Value*)ast] = ret;
+      return this->value_type_cache[ast] = ret;
     }
 
-    case AST_Variable:
-      todo_impl;
+    // 変数
+    case AST_Variable: {
+      auto ast = (AST::Value*)_ast;
 
+      // インデックス設定すること
+
+      todo_impl;
+    }
+
+    //
+    // 関数呼び出し
     case AST_CallFunc: {
+      auto ast = (AST::CallFunc*)_ast;
 
       auto const& buitinfunc_list =
         BuiltinFunc::get_builtin_list();
 
+      for( auto&& arg : ast->args ) {
+        this->check(arg);
+      }
 
-      break;
+      for( auto&& builtinfunc : buitinfunc_list ) {
+        if( ast->name == builtinfunc.name ) {
+          ast->is_builtin = true;
+          ast->builtin_func = &builtinfunc;
+          return builtinfunc.result_type;
+        }
+      }
+      
+
+      Error(ast, "undefined function name")
+        .emit()
+        .exit();
     }
 
     case AST_Expr: {
-      auto expr = (AST::Expr*)ast;
+      auto ast = (AST::Expr*)_ast;
 
-      TypeInfo left = this->check(expr->first);
+      TypeInfo left = this->check(ast->first);
 
-      for( auto&& elem : expr->elements ) {
+      for( auto&& elem : ast->elements ) {
         auto right = this->check(elem.ast);
 
         if(
@@ -80,6 +105,12 @@ TypeInfo Checker::check(AST::Base* ast) {
 
   return TYPE_None;
 }
+
+
+void Checker::check_function_call(AST::CallFunc* ast) {
+  // todo
+}
+
 
 //
 // 式が有効かどうかを、両辺の型をみて検査する

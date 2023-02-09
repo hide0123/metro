@@ -1,4 +1,4 @@
-#include "lcc.h"
+#include "metro.h"
 
 Parser::Parser(std::list<Token> const& token_list)
   : token_list(token_list),
@@ -52,7 +52,8 @@ AST::Base* Parser::primary() {
             callFunc->args.emplace_back(this->expr());
           } while( this->eat(",") ); // カンマがある限り続く
 
-          this->expect(";");
+          // 閉じかっこ
+          this->expect(")");
         }
 
         return callFunc;
@@ -121,7 +122,7 @@ bool Parser::eat(char const* s) {
 void Parser::expect(char const* s) {
   if( !this->eat(s) ) {
     Error(*this->cur,
-      "expected '" + std::string(s) + "' but fount '"
+      "expected '" + std::string(s) + "' but found '"
         + std::string(this->cur->str) + "'")
       .emit()
       .exit();

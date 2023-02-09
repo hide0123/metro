@@ -1,5 +1,5 @@
 #include <cassert>
-#include "lcc.h"
+#include "metro.h"
 
 Evaluator::Evaluator() {
   
@@ -27,7 +27,18 @@ Object* Evaluator::create_object(AST::Value* ast) {
       obj = new ObjLong(std::stoi(ast->token.str.data()));
       break;
 
+    case TYPE_String:
+      obj = new ObjString(Utils::String::to_wstr(
+        std::string(ast->token.str)
+      ));
+
+      break;
+
     default:
+      debug(
+        std::cout << type.to_string() << std::endl
+      );
+
       todo_impl;
   }
 
@@ -49,10 +60,22 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
+    // 関数呼び出し
     case AST_CallFunc: {
       auto ast = (AST::CallFunc*)_ast;
 
-      
+      std::vector<Object*> args;
+
+      for( auto&& arg : ast->args ) {
+        args.emplace_back(this->evaluate(arg));
+      }
+
+      // 組み込み関数
+      if( ast->is_builtin ) {
+        return ast->builtin_func->impl(std::move(args));
+      }
+
+
 
       break;
     }
