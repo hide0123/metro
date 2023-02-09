@@ -145,13 +145,19 @@ struct Variable : Base {
   }
 };
 
+struct BuiltinFunc;
 struct CallFunc : Base {
   std::string_view name;
   std::vector<Base*> args;
 
+  bool is_builtin;
+  BuiltinFunc const* builtin_func;
+
   CallFunc(Token const& name)
     : Base(AST_CallFunc, name),
-      name(name.str)
+      name(name.str),
+      is_builtin(false),
+      builtin_func(nullptr)
   {
   }
 };
@@ -305,6 +311,21 @@ struct ObjFloat : Object {
   {
   }
 };
+
+// ---------------------------------------------
+//  BuiltinFunc
+// ---------------------------------------------
+struct BuiltinFunc {
+  using Implementation = std::function<Object*(std::vector<AST::Base*>)>;
+
+  std::string name;
+  
+
+  BuiltinFunc();
+
+  static std::vector<BuiltinFunc> const& get_builtin_list();
+};
+
 
 // ---------------------------------------------
 //  Lexer

@@ -1,9 +1,17 @@
+/* ------------------------------------------------------------
+
+Checker
+
+意味解析を行う
+型推論、型チェック、など
+
+  ------------------------------------------------------------ */
+
 #include "lcc.h"
 
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
 //
-// 型チェック
 TypeInfo Checker::check(AST::Base* ast) {
   if( !ast )
     return TYPE_None;
@@ -35,6 +43,15 @@ TypeInfo Checker::check(AST::Base* ast) {
 
     case AST_Variable:
       todo_impl;
+
+    case AST_CallFunc: {
+
+      auto const& buitinfunc_list =
+        BuiltinFunc::get_builtin_list();
+
+
+      break;
+    }
 
     case AST_Expr: {
       auto expr = (AST::Expr*)ast;
