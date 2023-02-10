@@ -101,6 +101,15 @@ TypeInfo Checker::check(AST::Base* _ast) {
       return left;
     }
 
+    case AST_Let: {
+
+      
+
+      break;
+    }
+
+    default:
+      todo_impl;
   }
 
   return TYPE_None;

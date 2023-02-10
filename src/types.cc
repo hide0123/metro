@@ -2,12 +2,21 @@
 #include <iostream>
 #include "metro.h"
 
-
 // --------------------------------------------------------
 //  Object
 // --------------------------------------------------------
 
 ObjNone* Object::obj_none;
+
+Object::Object(TypeInfo type)
+  : type(type),
+    ref_count(0)
+{
+}
+
+Object::~Object() {
+
+}
 
 void Object::initialize() {
   Object::obj_none = new ObjNone;

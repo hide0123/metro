@@ -1,8 +1,9 @@
 #include <cassert>
 #include "metro.h"
 
-Evaluator::Evaluator() {
-  
+Evaluator::Evaluator(GarbageCollector const& gc)
+  : gc(gc)
+{
 }
 
 Evaluator::~Evaluator() {
@@ -104,6 +105,17 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     }
 
     case AST_Scope: {
+
+      break;
+    }
+
+    case AST_Let: {
+      auto ast = (AST::VariableDeclaration*)_ast;
+
+      if( ast->init ) {
+        
+      }
+
 
       break;
     }

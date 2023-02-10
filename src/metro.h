@@ -84,6 +84,8 @@ struct Token {
 // ---------------------------------------------
 
 enum ASTKind {
+  AST_Type,
+
   AST_None,
 
   AST_Value,
@@ -215,12 +217,53 @@ struct Expr : Base {
   }
 };
 
+//
+// 変数定義
+struct Type;
+struct VariableDeclaration : Base {
+  std::string_view name;
+  Type* type;
+  Base* init;
+
+  explicit VariableDeclaration(Token const& token)
+    : Base(AST_Let, token),
+      type(nullptr),
+      init(nullptr)
+  {
+  }
+};
+
+struct Scope : Base {
+  std::vector<Base*> list;
+
+  Base*& append(Base* item) {
+    return this->list.emplace_back(item);
+  }
+
+  explicit Scope(Token const& token)
+    : Base(AST_Scope, token)
+  {
+  }
+};
+
+struct Type : Base {
+  std::string_view name;
+  std::vector<Type*> paramaters;
+  bool is_mutable;
+
+  explicit Type(Token const& token)
+    : Base(AST_Type, token),
+      is_mutable(false)
+  {
+  }
+};
+
+
 } // namespace AST
 
 // ---------------------------------------------
 //  TypeInfo
 // ---------------------------------------------
-
 enum TypeKind {
   TYPE_None,
   TYPE_Int,
@@ -268,14 +311,10 @@ struct Object {
 
   virtual Object* clone() const = 0;
 
-  virtual ~Object() { }
+  virtual ~Object();
 
 protected:
-  Object(TypeInfo type)
-    : type(type),
-      ref_count(0)
-  {
-  }
+  Object(TypeInfo type);
 
   friend class Application;
 };
@@ -292,7 +331,7 @@ private:
   {
   }
 
-  friend class Object;
+  friend struct Object;
 };
 
 struct ObjLong : Object {
@@ -316,7 +355,7 @@ struct ObjFloat : Object {
 
   explicit ObjFloat(float value)
     : Object(TYPE_Float),
-      value(0)
+      value(value)
   {
   }
 };
@@ -440,10 +479,10 @@ private:
 // ---------------------------------------------
 //  Evaluator
 // ---------------------------------------------
-
+class GarbageCollector;
 class Evaluator {
 public:
-  Evaluator();
+  explicit Evaluator(GarbageCollector const&);
   ~Evaluator();
 
 
@@ -458,7 +497,28 @@ private:
 
   Object* create_object(AST::Value* ast);
 
+  
+
   std::map<AST::Value*, Object*> immediate_objects;
+
+  GarbageCollector const& gc;
+};
+
+// ---------------------------------------------
+//  Garbage Collector
+// ---------------------------------------------
+class GarbageCollector {
+public:
+
+  GarbageCollector();
+  ~GarbageCollector();
+
+  void register_object(Object* obj);
+
+
+private:
+
+
 };
 
 
