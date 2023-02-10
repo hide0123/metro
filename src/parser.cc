@@ -10,8 +10,14 @@ Parser::~Parser() {
 
 }
 
-AST::Base* Parser::parse() {
-  return this->expr();
+AST::Program Parser::parse() {
+  AST::Program program;
+
+  while( this->check() ) {
+    program.append(this->top());
+  }
+
+  return program;
 }
 
 //
@@ -100,6 +106,22 @@ AST::Base* Parser::expr() {
   }
 
   return x;
+}
+
+AST::Base* Parser::top() {
+  if( this->cur->str == "fn" ) {
+    return this->parse_function();
+  }
+
+  return this->expect();
+}
+
+AST::Scope* Parser::parse_scope() {
+
+}
+
+AST::Function* Parser::parse_function() {
+
 }
 
 bool Parser::check() {

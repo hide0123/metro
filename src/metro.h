@@ -246,15 +246,58 @@ struct Scope : Base {
   }
 };
 
+struct Function : Base {
+  struct Argument {
+    Token const& name;
+    AST::Type* type;
+
+    explicit Argument(Token const& name, AST::Type* type)
+      : name(name),
+        type(type)
+    {
+    }
+  };
+
+  Token const& name;
+  std::vector<Argument> args;
+
+  Argument& append_argument(Token const& name, AST::Type* type) {
+    return this->args.emplace_back(name, type);
+  }
+
+  explicit Function(Token const& token, Token const& name)
+    : Base(AST_Function, token),  
+      name(name)
+  {
+  }
+};
+
 struct Type : Base {
-  std::string_view name;
+  Token const& name;
   std::vector<Type*> paramaters;
   bool is_mutable;
 
-  explicit Type(Token const& token)
+  explicit Type(Token const& token, Token const& name)
     : Base(AST_Type, token),
+      name(name),
       is_mutable(false)
   {
+  }
+};
+
+struct Program {
+  std::vector<Base*> list;
+
+  Base*& append(Base* item) {
+    
+  }
+
+  Program() { }
+
+  ~Program() {
+    for( auto&& ast : this->list ) {
+      delete ast;
+    }
   }
 };
 
@@ -396,7 +439,6 @@ struct BuiltinFunc {
 // ---------------------------------------------
 //  Lexer
 // ---------------------------------------------
-
 class Lexer {
 public:
   Lexer(std::string const& source);
@@ -419,6 +461,10 @@ private:
   size_t position;
 };
 
+
+// ---------------------------------------------
+//  Parser
+// ---------------------------------------------
 class Parser {
   using token_iter = std::list<Token>::const_iterator;
 
@@ -427,12 +473,13 @@ public:
   ~Parser();
 
 
-  AST::Base* parse();
+  AST::Program parse();
 
   AST::Base* primary();
   AST::Base* term();
   AST::Base* expr();
 
+  AST::Base* top();
 
 private:
 
@@ -441,7 +488,11 @@ private:
 
   bool eat(char const* s);
   void expect(char const* s);
-  
+
+  AST::Scope* parse_scope();
+  AST::Function* parse_function();
+
+  AST::Type* parse_typename();
 
   std::list<Token> const& token_list;
 
@@ -452,7 +503,6 @@ private:
 // ---------------------------------------------
 //  Checker
 // ---------------------------------------------
-
 class Evaluator;
 class Checker {
   friend class Evaluator;
