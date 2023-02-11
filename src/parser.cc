@@ -10,14 +10,14 @@ Parser::~Parser() {
 
 }
 
-AST::Program Parser::parse() {
-  AST::Program program;
+AST::Base* Parser::parse() {
+  auto root_scope = new AST::Scope(*this->cur);
 
   while( this->check() ) {
-    program.append(this->top());
+    root_scope->append(this->top());
   }
 
-  return program;
+  return root_scope;
 }
 
 //
@@ -113,14 +113,73 @@ AST::Base* Parser::top() {
     return this->parse_function();
   }
 
-  return this->expect();
+  return this->expr();
 }
 
+//
+// Parser::parse_scope()
+//
+// スコープをパースする
+// "{" を読み取った後に呼び出すこと
 AST::Scope* Parser::parse_scope() {
 
+  TODO;
 }
 
+AST::Scope* Parser::expect_scope() {
+  if( auto ast = this->parse_scope(); !ast ) {
+    return ast;
+  }
+
+  Error(
+    *({ auto tok = this->cur; --tok; }),
+    "expected scope after this token"
+  )
+    .emit()
+    .exit();
+}
+
+//
+// Parser::parse_function()
+//
+// 関数をパースする
+// "fn" がある位置で呼び出すこと
 AST::Function* Parser::parse_function() {
+  auto func =
+    new AST::Function(
+      *this->expect("fn"), *this->expect_identifier()
+    );
+
+  this->expect("(");
+
+  if( !this->eat(")") ) {
+    do {
+      auto arg_name_token =
+        this->expect_identifier();
+      
+      this->expect(":");
+
+      func->append_argument(
+        *arg_name_token, this->expect_typename());
+    } while( this->eat(",") );
+    
+    this->expect(")");
+  }
+
+  this->expect("->");
+
+  func->code = this->expect_scope();
+
+  return func;
+}
+
+AST::Type* Parser::parse_typename() {
+  auto name_token = this->expect_identifier();
+
+
+}
+
+AST::Type* Parser::expect_typename() {
 
 }
 
@@ -141,7 +200,7 @@ bool Parser::eat(char const* s) {
   return false;
 }
 
-void Parser::expect(char const* s) {
+Parser::token_iter Parser::expect(char const* s) {
   if( !this->eat(s) ) {
     Error(*this->cur,
       "expected '" + std::string(s) + "' but found '"
@@ -149,4 +208,17 @@ void Parser::expect(char const* s) {
       .emit()
       .exit();
   }
+
+  return this->ate;
+}
+
+Parser::token_iter Parser::expect_identifier() {
+  if( this->cur->kind != TOK_Ident ) {
+    Error(*this->cur, "expected identifier")
+      .emit()
+      .exit();
+  }
+
+  this->ate = this->cur++;
+  return this->ate;
 }

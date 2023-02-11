@@ -74,21 +74,39 @@ void Error::exit(int code) {
 //  TypeInfo
 // --------------------------------------------------------
 
+static std::vector<std::string> const all_type_names {
+  "none",
+  "int",
+  "float",
+  "char",
+  "string",
+  "vector",
+  "args"
+};
+
+std::vector<std::string> const& TypeInfo::get_name_list() {
+  return ::all_type_names;
+}
+
 //
 // TypeInfo
 // 文字列に変換
 std::string TypeInfo::to_string() const {
   static std::map<TypeKind, char const*> kind_name_map {
+    { TYPE_None, "none" },
     { TYPE_Int, "int" },
     { TYPE_Float, "float" },
     { TYPE_Char, "char" },
     { TYPE_String, "string" },
+    { TYPE_Vector, "vector" },
     { TYPE_Args, "args" }
   };
 
-  assert(kind_name_map.contains(this->kind));
+  assert(static_cast<int>(this->kind)
+    < ::all_type_names.size());
 
-  std::string s = kind_name_map[this->kind];
+  std::string s =
+    ::all_type_names[static_cast<int>(this->kind)];
 
   if( this->is_mutable ) {
     s += " mut";

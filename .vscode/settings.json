@@ -48,6 +48,8 @@
     "cstring": "cpp",
     "fstream": "cpp",
     "map": "cpp",
-    "optional": "cpp"
+    "optional": "cpp",
+    "codecvt": "cpp",
+    "ctime": "cpp"
   }
 }

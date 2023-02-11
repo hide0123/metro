@@ -102,8 +102,17 @@ TypeInfo Checker::check(AST::Base* _ast) {
     }
 
     case AST_Let: {
-
       
+      
+
+      break;
+    }
+
+    case AST_Scope: {
+      auto ast = (AST::Scope*)_ast;
+
+
+
 
       break;
     }

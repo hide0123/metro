@@ -104,7 +104,13 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return ret;
     }
 
+    // scope
     case AST_Scope: {
+      auto ast = (AST::Scope*)_ast;
+
+      for( auto&& item : ast->list ) {
+        this->evaluate(item);
+      }
 
       break;
     }

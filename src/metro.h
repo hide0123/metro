@@ -21,7 +21,7 @@
 #define alert \
   fprintf(stderr,"\t#alert at %s:%d\n",__FILE__,__LINE__)
 
-#define viewvar(fmt, v) \
+#define print_variable(fmt, v) \
   fprintf(stderr,"\t#viewvar: " #v " = " fmt "\n", v)
 
 #define panic(fmt, ...) \
@@ -30,6 +30,8 @@
   exit(1)
 
 #define todo_impl panic("implement here %s", __func__)
+
+#define TODO todo_impl
 
 namespace Utils {
   
@@ -260,6 +262,7 @@ struct Function : Base {
 
   Token const& name;
   std::vector<Argument> args;
+  AST::Scope* code;
 
   Argument& append_argument(Token const& name, AST::Type* type) {
     return this->args.emplace_back(name, type);
@@ -267,7 +270,8 @@ struct Function : Base {
 
   explicit Function(Token const& token, Token const& name)
     : Base(AST_Function, token),  
-      name(name)
+      name(name),
+      code(nullptr)
   {
   }
 };
@@ -285,21 +289,6 @@ struct Type : Base {
   }
 };
 
-struct Program {
-  std::vector<Base*> list;
-
-  Base*& append(Base* item) {
-    
-  }
-
-  Program() { }
-
-  ~Program() {
-    for( auto&& ast : this->list ) {
-      delete ast;
-    }
-  }
-};
 
 
 } // namespace AST
@@ -328,6 +317,8 @@ struct TypeInfo {
       is_mutable(false)
   {
   }
+
+  static std::vector<std::string> const& get_name_list();
 
   std::string to_string() const;
 
@@ -473,7 +464,7 @@ public:
   ~Parser();
 
 
-  AST::Program parse();
+  AST::Base* parse();
 
   AST::Base* primary();
   AST::Base* term();
@@ -487,12 +478,17 @@ private:
   void next();
 
   bool eat(char const* s);
-  void expect(char const* s);
+  token_iter expect(char const* s);
 
-  AST::Scope* parse_scope();
-  AST::Function* parse_function();
+  token_iter expect_identifier();
 
   AST::Type* parse_typename();
+  AST::Type* expect_typename();
+
+  AST::Scope* parse_scope();
+  AST::Scope* expect_scope();
+
+  AST::Function* parse_function();
 
   std::list<Token> const& token_list;
 
@@ -531,6 +527,19 @@ private:
 // ---------------------------------------------
 class GarbageCollector;
 class Evaluator {
+
+  struct FunctionStack {
+    AST::Function const* ast;
+
+    Object* result;
+
+    explicit FunctionStack(AST::Function const* ast)
+      : ast(ast),
+        result(nullptr)
+    {
+    }
+  };
+
 public:
   explicit Evaluator(GarbageCollector const&);
   ~Evaluator();
@@ -547,7 +556,8 @@ private:
 
   Object* create_object(AST::Value* ast);
 
-  
+  std::vector<Object*> variable_stack;
+  std::vector<FunctionStack> call_stack;
 
   std::map<AST::Value*, Object*> immediate_objects;
 
