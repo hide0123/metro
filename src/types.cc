@@ -92,16 +92,6 @@ std::vector<std::string> const& TypeInfo::get_name_list() {
 // TypeInfo
 // 文字列に変換
 std::string TypeInfo::to_string() const {
-  static std::map<TypeKind, char const*> kind_name_map {
-    { TYPE_None, "none" },
-    { TYPE_Int, "int" },
-    { TYPE_Float, "float" },
-    { TYPE_Char, "char" },
-    { TYPE_String, "string" },
-    { TYPE_Vector, "vector" },
-    { TYPE_Args, "args" }
-  };
-
   assert(static_cast<int>(this->kind)
     < ::all_type_names.size());
 

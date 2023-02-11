@@ -2,10 +2,14 @@
 #include "metro.h"
 
 static char const* punctuaters[] {
+  "->",
+  
   "==",
   "!=",
+
   "<=",
   ">=",
+
   "<<",
   ">>",
   "<",

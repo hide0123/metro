@@ -94,14 +94,15 @@ enum ASTKind {
   AST_Variable,
   AST_CallFunc,
 
-  AST_If,
-  AST_Loop,
-
   AST_Expr,
 
+  AST_If,
+  AST_Switch,
+  AST_Return,
+
+  AST_Loop,
   AST_For,
   AST_While,
-  AST_Switch,
 
   AST_Scope,
 
@@ -235,6 +236,16 @@ struct VariableDeclaration : Base {
   }
 };
 
+struct Return : Base {
+  AST::Base* expr;
+
+  explicit Return(Token const& token)
+    : Base(AST_Return, token),
+      expr(nullptr)
+  {
+  }
+};
+
 struct Scope : Base {
   std::vector<Base*> list;
 
@@ -262,6 +273,8 @@ struct Function : Base {
 
   Token const& name;
   std::vector<Argument> args;
+
+  AST::Type* result_type;
   AST::Scope* code;
 
   Argument& append_argument(Token const& name, AST::Type* type) {
@@ -271,19 +284,18 @@ struct Function : Base {
   explicit Function(Token const& token, Token const& name)
     : Base(AST_Function, token),  
       name(name),
+      result_type(nullptr),
       code(nullptr)
   {
   }
 };
 
 struct Type : Base {
-  Token const& name;
   std::vector<Type*> paramaters;
   bool is_mutable;
 
-  explicit Type(Token const& token, Token const& name)
+  explicit Type(Token const& token)
     : Base(AST_Type, token),
-      name(name),
       is_mutable(false)
   {
   }
@@ -480,6 +492,9 @@ private:
   bool eat(char const* s);
   token_iter expect(char const* s);
 
+  bool eat_semi();
+  token_iter expect_semi();
+
   token_iter expect_identifier();
 
   AST::Type* parse_typename();
@@ -489,6 +504,13 @@ private:
   AST::Scope* expect_scope();
 
   AST::Function* parse_function();
+
+  // 引数 ast を、return 文でラップする
+  AST::Return* new_return_stmt(AST::Base* ast);
+
+  auto& to_return_stmt(AST::Base*& ast) {
+    return ast = (AST::Base*)this->new_return_stmt(ast);
+  }
 
   std::list<Token> const& token_list;
 

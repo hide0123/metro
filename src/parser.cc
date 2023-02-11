@@ -23,6 +23,13 @@ AST::Base* Parser::parse() {
 //
 // primary
 AST::Base* Parser::primary() {
+  //
+  // スコープ
+  if( this->cur->str == "{" )
+    return this->parse_scope();
+
+  //
+  // トークンの種類ごとの処理
   switch( this->cur->kind ) {
     // 即値・リテラル
     case TOK_Int:
@@ -65,13 +72,13 @@ AST::Base* Parser::primary() {
         return callFunc;
       }
 
-      // なければ 変数
+      // 開きかっこがなければ 変数
       return new AST::Variable(*this->cur);
     }
   }
 
   alert;
-  viewvar("%d", this->cur->kind);
+  print_variable("%d", this->cur->kind);
 
   Error(*this->cur, "invalid syntax")
     .emit()
@@ -120,14 +127,35 @@ AST::Base* Parser::top() {
 // Parser::parse_scope()
 //
 // スコープをパースする
-// "{" を読み取った後に呼び出すこと
 AST::Scope* Parser::parse_scope() {
+  auto ast =
+    new AST::Scope(*this->expect("{"));
+  
+  // 空だったら帰る
+  if( this->eat("}") )
+    return ast;
 
-  TODO;
+  while( this->check() ) {
+    auto& item = ast->append(this->expr());
+
+    if( this->eat_semi() ) {
+      if( !this->eat("}") )
+        return ast;
+      
+      continue;
+    }
+
+    this->expect("}");
+    break;
+  }
+
+  this->to_return_stmt(*ast->list.rbegin());
+
+  return ast;
 }
 
 AST::Scope* Parser::expect_scope() {
-  if( auto ast = this->parse_scope(); !ast ) {
+  if( auto ast = this->parse_scope(); ast ) {
     return ast;
   }
 
@@ -148,39 +176,53 @@ AST::Function* Parser::parse_function() {
   auto func =
     new AST::Function(
       *this->expect("fn"), *this->expect_identifier()
-    );
+    ); // AST 作成
 
-  this->expect("(");
+  this->expect("("); // 引数リストの開きカッコ
 
+  // 閉じかっこがなければ、引数を読み取っていく
   if( !this->eat(")") ) {
     do {
       auto arg_name_token =
-        this->expect_identifier();
+        this->expect_identifier(); // 引数名のトークン
       
-      this->expect(":");
+      this->expect(":"); // コロン
 
+      // 型
       func->append_argument(
         *arg_name_token, this->expect_typename());
-    } while( this->eat(",") );
+    } while( this->eat(",") ); // カンマがあれば続ける
     
-    this->expect(")");
+    this->expect(")"); // 閉じかっこ
   }
 
-  this->expect("->");
+  this->expect("->"); // 型指定トークン
 
-  func->code = this->expect_scope();
+  func->result_type = this->expect_typename(); // 戻り値の型
+
+  func->code = this->expect_scope(); // 処理 (スコープ)
 
   return func;
 }
 
 AST::Type* Parser::parse_typename() {
-  auto name_token = this->expect_identifier();
+  auto ast =
+    new AST::Type(*this->expect_identifier());
 
+  // todo: 修飾子を読み取る
 
+  return ast;
 }
 
 AST::Type* Parser::expect_typename() {
+  if( auto ast = this->parse_typename(); ast )
+    return ast;
 
+  Error(*({ auto tok = this->cur; --tok; }),
+    "expected typename after this token"
+  )
+    .emit()
+    .exit();
 }
 
 bool Parser::check() {
@@ -212,6 +254,14 @@ Parser::token_iter Parser::expect(char const* s) {
   return this->ate;
 }
 
+bool Parser::eat_semi() {
+  return this->eat(";");
+}
+
+Parser::token_iter Parser::expect_semi() {
+  return this->expect(";");
+}
+
 Parser::token_iter Parser::expect_identifier() {
   if( this->cur->kind != TOK_Ident ) {
     Error(*this->cur, "expected identifier")
@@ -221,4 +271,12 @@ Parser::token_iter Parser::expect_identifier() {
 
   this->ate = this->cur++;
   return this->ate;
+}
+
+AST::Return* Parser::new_return_stmt(AST::Base* ast) {
+  auto ret = new AST::Return(ast->token);
+
+  ret->expr = ast;
+
+  return ret;
 }
