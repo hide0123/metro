@@ -11,7 +11,13 @@ Checker
 
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
-//
+/**
+ * @brief _ast の型を評価する
+ * 
+ * 
+ * @param _ast 
+ * @return TypeInfo 
+ */
 TypeInfo Checker::check(AST::Base* _ast) {
   if( !_ast )
     return TYPE_None;
@@ -108,6 +114,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
       break;
     }
 
+    //
+    // スコープ
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
@@ -130,10 +138,17 @@ void Checker::check_function_call(AST::CallFunc* ast) {
 }
 
 
-//
-// 式が有効かどうかを、両辺の型をみて検査する
+/**
+ * @brief 演算子に対する両辺の型が適切かどうかチェックする
+ * 
+ * @param kind 
+ * @param lhs 
+ * @param rhs 
+ * @return std::optional<TypeInfo> 
+ */
 std::optional<TypeInfo> Checker::is_valid_expr(
-  AST::Expr::ExprKind kind, TypeInfo const& lhs, TypeInfo const& rhs) {
+  AST::Expr::ExprKind kind,
+  TypeInfo const& lhs, TypeInfo const& rhs) {
 
   if( lhs.equals(TYPE_None) || rhs.equals(TYPE_None) )
     return std::nullopt;

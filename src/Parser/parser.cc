@@ -2,7 +2,8 @@
 
 Parser::Parser(std::list<Token> const& token_list)
   : token_list(token_list),
-    cur(token_list.begin())
+    cur(token_list.begin()),
+    ate(token_list.begin())
 {
 }
 
@@ -15,6 +16,13 @@ AST::Base* Parser::parse() {
 
   while( this->check() ) {
     root_scope->append(this->top());
+
+    if( this->ate->str == "}" ) {
+      continue;
+    }
+    else if( this->check() ) {
+      this->expect_semi();
+    }
   }
 
   return root_scope;

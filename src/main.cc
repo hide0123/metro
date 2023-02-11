@@ -37,8 +37,12 @@ void Application::initialize() {
 
 }
 
-//
-// テキストファイルを開く
+/**
+ * @brief テキストファイルを開く
+ * 
+ * @param path 
+ * @return std::string 
+ */
 std::string open_file(std::string const& path) {
   std::ifstream ifs{ path };
 

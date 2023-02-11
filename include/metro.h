@@ -29,6 +29,9 @@
     __FILE__, __LINE__, __VA_ARGS__), \
   exit(1)
 
+#define alert_ctor \
+  debug(fprintf("\t#alert_ctor ", ))
+
 #define todo_impl panic("implement here %s", __func__)
 
 #define TODO todo_impl
@@ -291,7 +294,7 @@ struct Function : Base {
 };
 
 struct Type : Base {
-  std::vector<Type*> paramaters;
+  std::vector<Type*> parameters;
   bool is_mutable;
 
   explicit Type(Token const& token)

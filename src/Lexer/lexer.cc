@@ -1,7 +1,7 @@
 #include <cstring>
 #include "metro.h"
 
-static char const* punctuaters[] {
+static char const* punctuators[] {
   "->",
   
   "==",
@@ -30,7 +30,7 @@ static char const* punctuaters[] {
   ",", // comma
   ".", // dot
 
-  ";", // semicoron
+  ";", // semicolon
   ":", // colon
 
 };
@@ -88,10 +88,10 @@ std::list<Token> Lexer::lex() {
           [] (char c) { return isalnum(c) || c == '_'; }) };
     }
 
-    // punctuater
+    // punctuator
     else if( std::all_of(
-          std::begin(punctuaters),
-          std::end(punctuaters),
+          std::begin(punctuators),
+          std::end(punctuators),
           [&] (std::string_view&& s) {
             if( this->match(s) ) {
               token.kind = TOK_Punctuater;
