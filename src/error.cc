@@ -1,4 +1,8 @@
-#include "metro.h"
+#include <iostream>
+
+#include "AST.h"
+
+#include "Error.h"
 
 Error::ErrLoc::ErrLoc(size_t pos)
   : type(LOC_Position),

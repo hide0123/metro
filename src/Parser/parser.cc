@@ -1,4 +1,9 @@
-#include "metro.h"
+#include "common.h"
+
+#include "AST.h"
+#include "Parser.h"
+
+#include "Error.h"
 
 Parser::Parser(std::list<Token> const& token_list)
   : token_list(token_list),
