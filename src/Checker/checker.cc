@@ -21,11 +21,11 @@ Checker::~Checker() {
 }
 
 /**
- * @brief _ast の型を評価する
+ * @brief 構文木の意味解析、型チェックなど行う
  * 
  * 
  * @param _ast 
- * @return TypeInfo 
+ * @return 評価された _ast の型 (TypeInfo)
  */
 TypeInfo Checker::check(AST::Base* _ast) {
   if( !_ast )
@@ -70,30 +70,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
     //
     // 関数呼び出し
     case AST_CallFunc: {
-      auto ast = (AST::CallFunc*)_ast;
-
-      // 組み込み関数リスト取得
-      auto const& buitinfunc_list =
-        BuiltinFunc::get_builtin_list();
-
-      // 引数
-      for( auto&& arg : ast->args ) {
-        this->check(arg);
-      }
-
-      // 同じ名前のビルトインを探す
-      for( auto&& builtinfunc : buitinfunc_list ) {
-        if( ast->name == builtinfunc.name ) {
-          ast->is_builtin = true;
-          ast->builtin_func = &builtinfunc;
-          return builtinfunc.result_type;
-        }
-      }
-
-
-      Error(ast, "undefined function name")
-        .emit()
-        .exit();
+      return this->check_function_call((AST::CallFunc*)_ast);
     }
 
     case AST_Expr: {
@@ -184,6 +161,7 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
     }
   }
 
+  // なければユーザー定義関数を探す
   if( auto func = this->find_function(ast->name); func ) {
     ast->callee = func;
 

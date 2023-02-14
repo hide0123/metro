@@ -11,7 +11,7 @@ Parser::~Parser() {
 
 }
 
-AST::Base* Parser::parse() {
+AST::Scope* Parser::parse() {
   auto root_scope = new AST::Scope(*this->cur);
 
   while( this->check() ) {

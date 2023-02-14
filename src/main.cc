@@ -78,10 +78,14 @@ int main(int argc, char** argv) {
 
   debug(
     std::cout << ast->to_string() << std::endl;
+
+    // Parser::parse() から必ず AST::Scope*
+    //  が返ってくるはずなので 確認をする
+    assert(ast->kind == AST_Scope);
   )
 
 
-  Checker checker;
+  Checker checker{ ast };
 
   auto type = checker.check(ast);
 

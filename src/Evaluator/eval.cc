@@ -10,11 +10,14 @@ Evaluator::~Evaluator() {
   
 }
 
-//
-// Evaluator::create_object()
-//
-// 即値・リテラルの AST からオブジェクトを作成する
-// すでに作成済みのものであれば、既存のものを返す
+/**
+ * @brief 即値・リテラルの AST からオブジェクトを作成する
+ * 
+ * @note すでに作成済みのものであれば、既存のものを返す
+ * 
+ * @param ast 
+ * @return 作成されたオブジェクト (Object*)
+ */
 Object* Evaluator::create_object(AST::Value* ast) {
   auto type = Checker::value_type_cache[ast];
 

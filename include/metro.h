@@ -12,6 +12,7 @@
 
 #if metro_debug
   #include <iostream>
+  #include <cassert>
 
   #define debug(...) __VA_ARGS__
 #else
@@ -482,7 +483,7 @@ public:
   ~Parser();
 
 
-  AST::Base* parse();
+  AST::Scope* parse();
 
   AST::Base* primary();
   AST::Base* term();
