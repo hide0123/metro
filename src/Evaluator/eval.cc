@@ -76,7 +76,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
         return ast->builtin_func->impl(std::move(args));
       }
 
-
+      
 
       break;
     }

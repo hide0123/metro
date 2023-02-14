@@ -11,6 +11,15 @@ Checker
 
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
+Checker::Checker(AST::Scope* root)
+  : root(root)
+{
+}
+
+Checker::~Checker() {
+
+}
+
 /**
  * @brief _ast の型を評価する
  * 
@@ -63,13 +72,16 @@ TypeInfo Checker::check(AST::Base* _ast) {
     case AST_CallFunc: {
       auto ast = (AST::CallFunc*)_ast;
 
+      // 組み込み関数リスト取得
       auto const& buitinfunc_list =
         BuiltinFunc::get_builtin_list();
 
+      // 引数
       for( auto&& arg : ast->args ) {
         this->check(arg);
       }
 
+      // 同じ名前のビルトインを探す
       for( auto&& builtinfunc : buitinfunc_list ) {
         if( ast->name == builtinfunc.name ) {
           ast->is_builtin = true;
@@ -77,7 +89,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
           return builtinfunc.result_type;
         }
       }
-      
+
 
       Error(ast, "undefined function name")
         .emit()
@@ -119,10 +131,28 @@ TypeInfo Checker::check(AST::Base* _ast) {
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
-
-
+      for( auto&& item : ast->list ) {
+        this->check(item);
+      }
 
       break;
+    }
+
+    //
+    // 関数
+    case AST_Function: {
+
+      break;
+    }
+
+    case AST_Type: {
+      auto ast = (AST::Type*)_ast;
+
+      if( ast->token.str == "int" ) return TYPE_Int;
+
+      Error(ast, "unknown type name")
+        .emit()
+        .exit();
     }
 
     default:
@@ -133,8 +163,36 @@ TypeInfo Checker::check(AST::Base* _ast) {
 }
 
 
-void Checker::check_function_call(AST::CallFunc* ast) {
-  // todo
+TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
+  // 組み込み関数リスト取得
+  auto const& buitinfunc_list =
+    BuiltinFunc::get_builtin_list();
+
+  // 引数
+  for( auto&& arg : ast->args ) {
+    this->check(arg);
+  }
+
+  // 同じ名前のビルトインを探す
+  for( auto&& builtinfunc : buitinfunc_list ) {
+    if( ast->name == builtinfunc.name ) {
+      ast->is_builtin = true;
+      ast->builtin_func = &builtinfunc;
+      return builtinfunc.result_type;
+    }
+  }
+
+  if( auto func = this->find_function(ast->name); func ) {
+    ast->callee = func;
+
+    // todo: check matching of arguments
+
+    return this->check(func->result_type);
+  }
+
+  Error(ast, "undefined function name")
+    .emit()
+    .exit();
 }
 
 
@@ -205,4 +263,13 @@ std::optional<TypeInfo> Checker::is_valid_expr(
   return std::nullopt;
 }
 
+AST::Function* Checker::find_function(std::string_view name) {
+  for( auto&& item : this->root->list ) {
+    if( item->kind == AST_Function &&
+        ((AST::Function*)item)->name.str == name ) {
+      return (AST::Function*)item;
+    }
+  }
 
+  return nullptr;
+}

@@ -162,18 +162,21 @@ struct Variable : Base {
   }
 };
 
+struct Function;
 struct CallFunc : Base {
   std::string_view name;
   std::vector<Base*> args;
 
   bool is_builtin;
   BuiltinFunc const* builtin_func;
+  Function* callee;
 
   CallFunc(Token const& name)
     : Base(AST_CallFunc, name),
       name(name.str),
       is_builtin(false),
-      builtin_func(nullptr)
+      builtin_func(nullptr),
+      callee(nullptr)
   {
   }
 };
@@ -530,18 +533,25 @@ class Checker {
 
 public:
 
+  Checker(AST::Scope* root);
+  ~Checker();
+
   TypeInfo check(AST::Base* ast);
   
   // 関数呼び出しが正しいか検査する
-  void check_function_call(AST::CallFunc* ast);
+  TypeInfo check_function_call(AST::CallFunc* ast);
 
   // 式の両辺の型が正しいかどうか検査する
   std::optional<TypeInfo> is_valid_expr(
     AST::Expr::ExprKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
 
+  AST::Function* find_function(std::string_view name);
+
   static void initialize();
 
 private:
+
+  AST::Scope* root;
 
   static std::map<AST::Value*, TypeInfo> value_type_cache;
 

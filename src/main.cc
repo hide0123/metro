@@ -89,6 +89,8 @@ int main(int argc, char** argv) {
     std::cout << type.to_string() << std::endl;
   )
 
+
+
   GarbageCollector gc;
 
   Evaluator evaluator{ gc };
@@ -96,7 +98,12 @@ int main(int argc, char** argv) {
 
   auto obj = evaluator.evaluate(ast);
 
-  std::cout << obj->to_string() << std::endl;
+  debug(
+    std::cout
+      << "-----------------------\n"
+      << "evaluated result:\n\n"
+      << obj->to_string() << std::endl;
+  );
 
 
   return 0;
