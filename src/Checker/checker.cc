@@ -154,7 +154,19 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
       this->call_count++;
 
+      auto& emu = this->scope_list.emplace_front();
+
+      for( auto&& arg : ast->args ) {
+        auto& var = emu.variables.emplace_back();
+
+        var.name = arg.name.str;
+        var.type = this->check(arg.type);
+      }
+
       this->check(ast->code);
+
+      ast->code->used_stack_size += ast->args.size();
+      this->scope_list.pop_back();
 
       this->call_count--;
 
@@ -334,7 +346,7 @@ std::optional<
     it++, stack_index += it->variables.size()
   ) {
     if( auto i = it->find_var(name); i >= 0 ) {
-      return std::make_tuple(it, stack_index, i);
+      return std::make_tuple(it, stack_index ? stack_index - 1 : 0, i);
     }
 
   }

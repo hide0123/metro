@@ -54,6 +54,8 @@ Object* Evaluator::create_object(AST::Value* ast) {
 Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
   auto& stack = this->call_stack.emplace_back(func);
 
+  
+
   return stack;
 }
 
