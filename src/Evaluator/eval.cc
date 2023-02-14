@@ -1,7 +1,7 @@
 #include <cassert>
 #include "metro.h"
 
-Evaluator::Evaluator(GarbageCollector const& gc)
+Evaluator::Evaluator(GarbageCollector& gc)
   : gc(gc)
 {
 }
@@ -82,6 +82,12 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
+    case AST_Variable: {
+      auto ast = (AST::Variable*)_ast;
+      
+      return this->object_stack[ast->index];
+    }
+
     //
     // 関数呼び出し
     case AST_CallFunc: {
@@ -154,16 +160,27 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
         this->evaluate(item);
       }
 
+      for( size_t i = 0; i < ast->used_stack_size; i++ ) {
+        auto obj = this->pop_object();
+
+        obj->ref_count--;
+      }
+
+      gc.clean();
+
       break;
     }
 
     case AST_Let: {
       auto ast = (AST::VariableDeclaration*)_ast;
 
-      if( ast->init ) {
-        
-      }
+      auto obj = this->evaluate(ast->init);
 
+      obj->ref_count++;
+
+      this->gc.register_object(obj);
+
+      this->object_stack.emplace_back(obj);
 
       break;
     }

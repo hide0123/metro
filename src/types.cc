@@ -12,10 +12,11 @@ Object::Object(TypeInfo type)
   : type(type),
     ref_count(0)
 {
+  alert_ctor;
 }
 
 Object::~Object() {
-
+  alert_dtor;
 }
 
 void Object::initialize() {

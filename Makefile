@@ -1,4 +1,5 @@
-TARGET	= lcc
+
+TARGET	= metro
 
 CC		= clang
 CXX		= clang++

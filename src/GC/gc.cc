@@ -12,4 +12,7 @@ void GarbageCollector::register_object(Object* obj) {
   
 }
 
+void GarbageCollector::clean() {
+
+}
 

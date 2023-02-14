@@ -61,11 +61,22 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
     // 変数
     case AST_Variable: {
-      auto ast = (AST::Value*)_ast;
+      auto ast = (AST::Variable*)_ast;
 
       // インデックス設定すること
 
-      todo_impl;
+      if( auto res = this->find_variable(ast->token.str); res.has_value() ) {
+        auto [emu_iter, stack_index, emu_index]
+          = res.value();
+        
+        ast->index = stack_index;
+
+        return emu_iter->variables[emu_index].type;
+      }
+
+      Error(ast->token, "undefined variable name")
+        .emit()
+        .exit();
     }
 
     //
@@ -102,8 +113,29 @@ TypeInfo Checker::check(AST::Base* _ast) {
     //
     // 変数定義
     case AST_Let: {
+      auto ast = (AST::VariableDeclaration*)_ast;
       
-      
+      auto& scope_emu = this->get_cur_scope();
+
+      if( !ast->type ) {
+        todo_impl;
+      }
+
+      auto type = this->check(ast->type);
+
+      this->check(ast->init);
+
+      if( auto i = scope_emu.find_var(ast->name); i >= 0 ) {
+        scope_emu.variables[i].type = type;
+      }
+      else {
+        auto& var = scope_emu.variables.emplace_back();
+
+        var.name = ast->name;
+        var.type = type;
+
+        scope_emu.ast->used_stack_size++;
+      }
 
       break;
     }
@@ -111,12 +143,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
     //
     // スコープ
     case AST_Scope: {
-      auto ast = (AST::Scope*)_ast;
-
-      for( auto&& item : ast->list ) {
-        this->check(item);
-      }
-
+      this->enter_scope((AST::Scope*)_ast);
       break;
     }
 
@@ -202,6 +229,20 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
 }
 
 
+void Checker::enter_scope(AST::Scope* ast) {
+  
+  auto& emu = this->scope_list.emplace_front();
+
+  emu.ast = ast;
+
+  for( auto&& item : ast->list ) {
+    this->check(item);
+  }
+
+  this->scope_list.pop_front();
+}
+
+
 /**
  * @brief 演算子に対する両辺の型が適切かどうかチェックする
  * 
@@ -278,4 +319,30 @@ AST::Function* Checker::find_function(std::string_view name) {
   }
 
   return nullptr;
+}
+
+std::optional<
+  std::tuple<std::list<Checker::ScopeEmu>::iterator, size_t, size_t>
+>
+  Checker::find_variable(std::string_view name) {
+
+  size_t stack_index{ };
+
+  for(
+    auto it = this->scope_list.begin();
+    it != this->scope_list.end();
+    it++, stack_index += it->variables.size()
+  ) {
+    if( auto i = it->find_var(name); i >= 0 ) {
+      return std::make_tuple(it, stack_index, i);
+    }
+
+  }
+
+  return std::nullopt;
+}
+
+
+Checker::ScopeEmu& Checker::get_cur_scope() {
+  return *this->scope_list.begin();
 }

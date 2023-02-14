@@ -15,6 +15,7 @@ static char const* punctuators[] {
   "<",
   ">",
 
+  "=",
   "+",
   "-",
   "*",
