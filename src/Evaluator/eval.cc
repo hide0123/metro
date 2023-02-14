@@ -135,25 +135,12 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       auto ret = this->evaluate(x->first);
 
       for( auto&& elem : x->elements ) {
-        auto item = this->evaluate(elem.ast);
-
-        switch( elem.kind ) {
-          case AST::Expr::EX_Add:
-            ret = Evaluator::add_object(ret, item);
-            break;
-          
-          case AST::Expr::EX_Sub:
-            ret = Evaluator::sub_object(ret, item);
-            break;
-
-          case AST::Expr::EX_Mul:
-            ret = Evaluator::mul_object(ret, item);
-            break;
-
-          case AST::Expr::EX_Mul:
-            ret = Evaluator::mul_object(ret, item);
-            break;
-        }
+        ret = Evaluator::compute_expr_operator(
+          elem.op,
+          elem.kind,
+          ret,
+          this->evaluate(elem.ast)
+        );
       }
 
       return ret;
@@ -198,38 +185,32 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
   return new ObjNone;
 }
 
-Object* Evaluator::add_object(Object* left, Object* right) {
-  // todo: if left is vector
+Object* Evaluator::compute_expr_operator(
+  Token const& op_token,
+  AST::Expr::ExprKind kind,
+  Object* left,
+  Object* right
+) {
+  using EX = AST::Expr::ExprKind;
 
   auto ret = left->clone();
 
-  switch( left->type.kind ) {
-    case TYPE_Int:
-      ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
-      break;
+  switch( kind ) {
+    case EX::EX_Add: {
 
-    default:
-      todo_impl;
+      switch( left->type.kind ) {
+        case TYPE_Int:
+          ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
+          break;
+      }
+
+      break;
+    }
   }
 
   return ret;
 }
-
-Object* Evaluator::sub_object(Object* left, Object* right) {
-  auto ret = left->clone();
-
-  switch( left->type.kind ) {
-    case TYPE_Int:
-      ((ObjLong*)ret)->value -= ((ObjLong*)right)->value;
-      break;
-
-    default:
-      todo_impl;
-  }
-
-  return ret;
-}
-
+  
 Object*& Evaluator::push_object(Object* obj) {
   return this->object_stack.emplace_back(obj);
 }

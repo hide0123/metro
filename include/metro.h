@@ -591,10 +591,12 @@ public:
 
   //
   // 演算子
-  Object* add_object(Object* left, Object* right);
-  Object* sub_object(Object* left, Object* right);
-  Object* mul_object(Object* left, Object* right);
-  Object* div_object(Object* left, Object* right);
+  static Object* compute_expr_operator(
+    Token const& op_token,
+    AST::Expr::ExprKind kind,
+    Object* left,
+    Object* right
+  );
 
 
 private:
