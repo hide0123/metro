@@ -12,7 +12,8 @@ Checker
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
 Checker::Checker(AST::Scope* root)
-  : root(root)
+  : root(root),
+    call_count(0)
 {
 }
 
@@ -98,6 +99,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
       return left;
     }
 
+    //
+    // 変数定義
     case AST_Let: {
       
       
@@ -120,8 +123,29 @@ TypeInfo Checker::check(AST::Base* _ast) {
     //
     // 関数
     case AST_Function: {
+      auto ast = (AST::Function*)_ast;
 
-      break;
+      this->call_count++;
+
+      this->check(ast->code);
+
+      this->call_count--;
+
+      return this->check(ast->result_type);
+    }
+
+    //
+    // return 文
+    case AST_Return: {
+      auto ast = (AST::Return*)_ast;
+
+      if( this->call_count == 0 ) {
+        Error(ast, "cannot use return-statement here")
+          .emit()
+          .exit();
+      }
+
+      return this->check(ast->expr);
     }
 
     //

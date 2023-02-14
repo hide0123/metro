@@ -1,7 +1,7 @@
 #include <iostream>
 #include "metro.h"
 
-static Object* print_impl(std::vector<Object*>&& args) {
+static Object* print_impl(std::vector<Object*> const& args) {
   size_t len = 0;
 
   for( auto&& arg : args ) {
@@ -29,8 +29,8 @@ static std::vector<BuiltinFunc> const _builtin_functions {
     .name = "println",
     .result_type = TYPE_Int,
     .arg_types = { TYPE_Args },
-    .impl = [] (std::vector<Object*>&& args) -> Object* {
-      auto ret = print_impl(std::move(args));
+    .impl = [] (std::vector<Object*> const& args) -> Object* {
+      auto ret = print_impl(args);
 
       std::cout << "\n";
       ((ObjLong*)ret)->value += 1;

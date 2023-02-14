@@ -19,7 +19,8 @@ Object::~Object() {
 }
 
 void Object::initialize() {
-  Object::obj_none = new ObjNone;
+
+
 }
 
 std::string ObjNone::to_string() const {

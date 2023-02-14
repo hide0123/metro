@@ -27,9 +27,9 @@ AST::Scope* Parser::parse_scope() {
     auto& item = ast->append(this->expr());
 
     if( this->eat_semi() ) {
-      if( !this->eat("}") )
+      if( this->eat("}") )
         return ast;
-      
+
       continue;
     }
 

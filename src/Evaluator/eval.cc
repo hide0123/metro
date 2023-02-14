@@ -71,7 +71,7 @@ Evaluator::FunctionStack& Evaluator::get_current_func_stack() {
 
 Object* Evaluator::evaluate(AST::Base* _ast) {
   if( !_ast )
-    return Object::obj_none;
+    return new ObjNone;
 
   switch( _ast->kind ) {
     case AST_None:
@@ -96,7 +96,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       // 組み込み関数
       if( ast->is_builtin ) {
-        return ast->builtin_func->impl(std::move(args));
+        return ast->builtin_func->impl(args);
       }
 
       // ユーザー定義関数
@@ -105,7 +105,10 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       // コールスタック作成
       this->enter_function(func);
 
-      // 引数を
+      // 引数をスタックに追加
+      for( auto&& obj : args ) {
+        this->push_object(obj);
+      }
 
       // 関数実行
       this->evaluate(func->code);
@@ -114,15 +117,19 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       auto result =
         this->get_current_func_stack().result;
 
-      // スタック削除
+      // コールスタック削除
       this->leave_function(func);
+
+      // スタックからオブジェクトを削除
+      this->pop_object_with_count(args.size());
 
       // 戻り値を返す
       return result;
     }
 
+    //
+    // 式
     case AST_Expr: {
-
       auto x = (AST::Expr*)_ast;
 
       auto ret = this->evaluate(x->first);
@@ -137,6 +144,14 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
           
           case AST::Expr::EX_Sub:
             ret = Evaluator::sub_object(ret, item);
+            break;
+
+          case AST::Expr::EX_Mul:
+            ret = Evaluator::mul_object(ret, item);
+            break;
+
+          case AST::Expr::EX_Mul:
+            ret = Evaluator::mul_object(ret, item);
             break;
         }
       }
@@ -167,7 +182,11 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     }
 
     case AST_Return: {
+      auto ast = (AST::Return*)_ast;
 
+      auto& func_stack = this->get_current_func_stack();
+
+      func_stack.result = this->evaluate(ast->expr);
 
       break;
     }
@@ -176,7 +195,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       todo_impl;
   }
 
-  return Object::obj_none;
+  return new ObjNone;
 }
 
 Object* Evaluator::add_object(Object* left, Object* right) {
@@ -209,4 +228,22 @@ Object* Evaluator::sub_object(Object* left, Object* right) {
   }
 
   return ret;
+}
+
+Object*& Evaluator::push_object(Object* obj) {
+  return this->object_stack.emplace_back(obj);
+}
+
+Object* Evaluator::pop_object() {
+  auto obj = *this->object_stack.rbegin();
+
+  this->object_stack.pop_back();
+
+  return obj;
+}
+
+void Evaluator::pop_object_with_count(size_t count) {
+  for( size_t i = 0; i < count; i++ ) {
+    this->pop_object();
+  }
 }

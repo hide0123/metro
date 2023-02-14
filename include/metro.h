@@ -373,18 +373,13 @@ protected:
 };
 
 struct ObjNone : Object {
-  ~ObjNone() { }
-
   std::string to_string() const;
   ObjNone* clone() const;
 
-private:
-  ObjNone()
+  explicit ObjNone()
     : Object(TYPE_None)
   {
   }
-
-  friend struct Object;
 };
 
 struct ObjLong : Object {
@@ -431,7 +426,7 @@ struct ObjString : Object {
 // ---------------------------------------------
 struct BuiltinFunc {
   using Implementation =
-    std::function<Object*(std::vector<Object*>&&)>;
+    std::function<Object*(std::vector<Object*> const&)>;
 
   std::string name;     // 関数名
 
@@ -554,6 +549,11 @@ private:
 
   AST::Scope* root;
 
+  //
+  // 関数呼び出しの階層（深さ）
+  // 0 であるときに return 文に当たるとエラー
+  int call_count;
+
   static std::map<AST::Value*, TypeInfo> value_type_cache;
 
 };
@@ -633,6 +633,29 @@ private:
    * @return FunctionStack& 
    */
   FunctionStack& get_current_func_stack();
+
+
+  /**
+   * @brief オブジェクトをスタックに追加する
+   * 
+   * @param obj 
+   * @return Object*& (追加されたオブジェクトへの参照)
+   */
+  Object*& push_object(Object* obj);
+
+
+  /**
+   * @brief スタックからオブジェクトを１個削除
+   * 
+   * @return Object* (スタックから削除されたオブジェクト)
+   */
+  Object* pop_object();
+
+
+  /**
+   * @brief スタックから指定された数だけオブジェクトを削除する
+   */
+  void pop_object_with_count(size_t count);
 
 
   //

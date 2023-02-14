@@ -66,33 +66,13 @@ int main(int argc, char** argv) {
 
   auto const& token_list = lexer.lex();
 
-  debug(
-    for( auto&& tok : token_list ) {
-      std::cout << tok.str << std::endl;
-    }
-  )
-
   Parser parser{ token_list };
 
   auto ast = parser.parse();
 
-  debug(
-    std::cout << ast->to_string() << std::endl;
-
-    // Parser::parse() から必ず AST::Scope*
-    //  が返ってくるはずなので 確認をする
-    assert(ast->kind == AST_Scope);
-  )
-
-
   Checker checker{ ast };
 
   auto type = checker.check(ast);
-
-  debug(
-    std::cout << type.to_string() << std::endl;
-  )
-
 
 
   GarbageCollector gc;
@@ -102,12 +82,12 @@ int main(int argc, char** argv) {
 
   auto obj = evaluator.evaluate(ast);
 
-  debug(
-    std::cout
-      << "-----------------------\n"
-      << "evaluated result:\n\n"
-      << obj->to_string() << std::endl;
-  );
+  // debug(
+  //   std::cout
+  //     << "-----------------------\n"
+  //     << "evaluated result:\n\n"
+  //     << obj->to_string() << std::endl;
+  // );
 
 
   return 0;
