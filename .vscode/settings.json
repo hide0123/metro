@@ -50,6 +50,10 @@
     "map": "cpp",
     "optional": "cpp",
     "codecvt": "cpp",
-    "ctime": "cpp"
+    "ctime": "cpp",
+    "cassert": "cpp",
+    "bitset": "cpp",
+    "set": "cpp",
+    "cinttypes": "cpp"
   }
 }

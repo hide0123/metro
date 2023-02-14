@@ -7,7 +7,14 @@ Checker
 
   ------------------------------------------------------------ */
 
-#include "metro.h"
+#include "common.h"
+
+#include "AST.h"
+#include "Object.h"
+#include "BuiltinFunc.h"
+
+#include "Error.h"
+#include "Checker.h"
 
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
@@ -141,6 +148,37 @@ TypeInfo Checker::check(AST::Base* _ast) {
     }
 
     //
+    // return 文
+    case AST_Return: {
+      auto ast = (AST::Return*)_ast;
+
+      if( this->call_count == 0 ) {
+        Error(ast, "cannot use return-statement here")
+          .emit()
+          .exit();
+      }
+
+      return this->check(ast->expr);
+    }
+
+    //
+    // if
+    case AST_If: {
+      auto ast = (AST::If*)_ast;
+
+      if( !this->check(ast->condition).equals(TYPE_Bool))  {
+        Error(ast->condition, "expected boolean expression")
+          .emit()
+          .exit();
+      }
+
+      this->check(ast->if_true);
+      this->check(ast->if_false);
+
+      break;
+    }
+
+    //
     // スコープ
     case AST_Scope: {
       this->enter_scope((AST::Scope*)_ast);
@@ -171,20 +209,6 @@ TypeInfo Checker::check(AST::Base* _ast) {
       this->call_count--;
 
       return this->check(ast->result_type);
-    }
-
-    //
-    // return 文
-    case AST_Return: {
-      auto ast = (AST::Return*)_ast;
-
-      if( this->call_count == 0 ) {
-        Error(ast, "cannot use return-statement here")
-          .emit()
-          .exit();
-      }
-
-      return this->check(ast->expr);
     }
 
     //
@@ -338,7 +362,7 @@ std::optional<
 >
   Checker::find_variable(std::string_view name) {
 
-  size_t stack_index{ };
+  size_t stack_index = 0;
 
   for(
     auto it = this->scope_list.begin();
@@ -348,7 +372,6 @@ std::optional<
     if( auto i = it->find_var(name); i >= 0 ) {
       return std::make_tuple(it, stack_index ? stack_index - 1 : 0, i);
     }
-
   }
 
   return std::nullopt;

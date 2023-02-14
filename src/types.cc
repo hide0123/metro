@@ -1,6 +1,11 @@
 #include <cassert>
 #include <iostream>
-#include "metro.h"
+
+#include "common.h"
+
+#include "Token.h"
+#include "Object.h"
+#include "TypeInfo.h"
 
 // --------------------------------------------------------
 //  Object
@@ -59,20 +64,6 @@ ObjString* ObjString::clone() const {
 
 
 // --------------------------------------------------------
-//  Error
-// --------------------------------------------------------
-
-Error& Error::emit() {
-  std::cerr << this->msg << std::endl;
-
-  return *this;
-}
-
-void Error::exit(int code) {
-  std::exit(code);
-}
-
-// --------------------------------------------------------
 //  TypeInfo
 // --------------------------------------------------------
 
@@ -80,6 +71,7 @@ static std::vector<std::string> const all_type_names {
   "none",
   "int",
   "float",
+  "bool",
   "char",
   "string",
   "vector",

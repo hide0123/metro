@@ -1,8 +1,20 @@
 #include <cassert>
-#include "metro.h"
 
-Evaluator::Evaluator(GarbageCollector& gc)
-  : gc(gc)
+#include "common.h"
+
+#include "AST.h"
+#include "Object.h"
+#include "BuiltinFunc.h"
+
+#include "Error.h"
+#include "Checker.h"
+#include "Evaluator.h"
+
+
+static ObjNone objnone;
+static ObjNone* none = &objnone;
+
+Evaluator::Evaluator()
 {
 }
 
@@ -54,7 +66,7 @@ Object* Evaluator::create_object(AST::Value* ast) {
 Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
   auto& stack = this->call_stack.emplace_back(func);
 
-  
+
 
   return stack;
 }
@@ -73,7 +85,7 @@ Evaluator::FunctionStack& Evaluator::get_current_func_stack() {
 
 Object* Evaluator::evaluate(AST::Base* _ast) {
   if( !_ast )
-    return new ObjNone;
+    return none;
 
   switch( _ast->kind ) {
     case AST_None:
@@ -197,11 +209,21 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       break;
     }
 
+    case AST_If: {
+      auto ast = (AST::If*)_ast;
+
+      if( ((ObjBool*)this->evaluate(ast->condition))->value ) {
+        this->evaluate(ast->if_true);
+      }
+
+      this->evaluate(ast->if_false);
+    }
+
     default:
       todo_impl;
   }
 
-  return new ObjNone;
+  return none;
 }
 
 Object* Evaluator::compute_expr_operator(

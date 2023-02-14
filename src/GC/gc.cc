@@ -1,4 +1,5 @@
-#include "metro.h"
+#include "Object.h"
+#include "GC.h"
 
 GarbageCollector::GarbageCollector() {
   

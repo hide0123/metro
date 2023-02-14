@@ -1,0 +1,249 @@
+#pragma once
+
+#include <string>
+#include <vector>
+#include "Token.h"
+
+// ---------------------------------------------
+//  AST
+// ---------------------------------------------
+
+enum ASTKind {
+  AST_Type,
+
+  AST_None,
+
+  AST_Value,
+  AST_Variable,
+  AST_CallFunc,
+
+  AST_Expr,
+
+  AST_If,
+  AST_Switch,
+  AST_Return,
+
+  AST_Loop,
+  AST_For,
+  AST_While,
+
+  AST_Scope,
+
+  AST_Let,
+
+  AST_Function
+};
+
+struct BuiltinFunc;
+
+namespace AST {
+
+struct Base {
+  ASTKind kind;
+  Token const& token;
+
+  virtual ~Base() { }
+
+  virtual std::string to_string() const;
+
+protected:
+  explicit Base(ASTKind kind, Token const& token)
+    : kind(kind),
+      token(token)
+  {
+  }
+};
+
+struct None : Base {
+  None(Token const& token)
+    : Base(AST_None, token)
+  {
+  }
+};
+
+struct Value : Base {
+  Value(Token const& tok)
+    : Base(AST_Value, tok)
+  {
+  }
+
+  std::string to_string() const;
+};
+
+struct Variable : Base {
+  size_t index;
+
+  Variable(Token const& tok)
+    : Base(AST_Variable, tok),
+      index(0)
+  {
+  }
+};
+
+struct Function;
+struct CallFunc : Base {
+  std::string_view name;
+  std::vector<Base*> args;
+
+  bool is_builtin;
+  BuiltinFunc const* builtin_func;
+  Function* callee;
+
+  CallFunc(Token const& name)
+    : Base(AST_CallFunc, name),
+      name(name.str),
+      is_builtin(false),
+      builtin_func(nullptr),
+      callee(nullptr)
+  {
+  }
+};
+
+struct Expr : Base {
+  enum ExprKind {
+    EX_Add,
+    EX_Sub,
+    EX_Mul,
+    EX_Div,
+
+    EX_Bigger,
+    EX_BiggerOrEqual,
+
+  };
+
+  struct Element {
+    ExprKind kind;
+    Token const& op;
+    Base* ast;
+
+    explicit Element(ExprKind kind, Token const& op, Base* ast)
+      : kind(kind),
+        op(op),
+        ast(ast)
+    {
+    }
+  };
+
+  Base* first;
+  std::vector<Element> elements;
+
+  Expr(Base* first)
+    : Base(AST_Expr, first->token),
+      first(first)
+  {
+  }
+
+  std::string to_string() const;
+
+  Element& append(ExprKind kind, Token const& op, Base* ast) {
+    return this->elements.emplace_back(kind, op, ast);
+  }
+
+  static Expr* create(Base*& ast) {
+    if( ast->kind != AST_Expr )
+      ast = new Expr(ast);
+
+    return (Expr*)ast;
+  }
+};
+
+//
+// 変数定義
+struct Type;
+struct VariableDeclaration : Base {
+  std::string_view name;
+  Type* type;
+  Base* init;
+
+  explicit VariableDeclaration(Token const& token)
+    : Base(AST_Let, token),
+      type(nullptr),
+      init(nullptr)
+  {
+  }
+};
+
+struct Return : Base {
+  AST::Base* expr;
+
+  explicit Return(Token const& token)
+    : Base(AST_Return, token),
+      expr(nullptr)
+  {
+  }
+};
+
+struct If : Base {
+  AST::Base* condition;
+  AST::Base* if_true;
+  AST::Base* if_false;
+
+  explicit If(Token const& token)
+    : Base(AST_If, token),
+    condition(nullptr),
+    if_true(nullptr),
+    if_false(nullptr)
+  {
+  }
+};
+
+struct Scope : Base {
+  std::vector<Base*> list;
+  size_t used_stack_size;
+
+  Base*& append(Base* item) {
+    return this->list.emplace_back(item);
+  }
+
+  explicit Scope(Token const& token)
+    : Base(AST_Scope, token),
+      used_stack_size(0)
+  {
+  }
+};
+
+struct Function : Base {
+  struct Argument {
+    Token const& name;
+    AST::Type* type;
+
+    explicit Argument(Token const& name, AST::Type* type)
+      : name(name),
+        type(type)
+    {
+    }
+  };
+
+  Token const& name;
+  std::vector<Argument> args;
+
+  AST::Type* result_type;
+  AST::Scope* code;
+
+  Argument& append_argument(Token const& name, AST::Type* type) {
+    return this->args.emplace_back(name, type);
+  }
+
+  explicit Function(Token const& token, Token const& name)
+    : Base(AST_Function, token),  
+      name(name),
+      result_type(nullptr),
+      code(nullptr)
+  {
+  }
+};
+
+struct Type : Base {
+  std::vector<Type*> parameters;
+  bool is_mutable;
+
+  explicit Type(Token const& token)
+    : Base(AST_Type, token),
+      is_mutable(false)
+  {
+  }
+};
+
+
+
+} // namespace AST

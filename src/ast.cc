@@ -1,6 +1,10 @@
-#include "metro.h"
+#include "AST.h"
 
 namespace AST {
+
+std::string Base::to_string() const {
+  return std::string(this->token.str);
+}
 
 std::string Value::to_string() const {
   if( this->token.kind == TOK_String )

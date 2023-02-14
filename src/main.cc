@@ -2,7 +2,16 @@
 #include <fstream>
 #include <codecvt>
 #include <locale>
-#include "metro.h"
+
+#include "AST.h"
+#include "Object.h"
+
+#include "Lexer.h"
+#include "Parser.h"
+#include "Checker.h"
+#include "Evaluator.h"
+
+#include "Application.h"
 
 namespace Utils::String {
 
@@ -54,41 +63,44 @@ std::string open_file(std::string const& path) {
   return source;
 }
 
-int main(int argc, char** argv) {
+int Application::main(int argc, char** argv) {
   
-  auto const& source = open_file("test.txt");
 
-  Application app;
+  Application::initialize();
+  
 
-  app.initialize();
+  this->source_code = open_file("test.txt");
 
-  Lexer lexer{ source };
+  //
+  // 字句解析
+  Lexer lexer{ this->source_code };
 
   auto const& token_list = lexer.lex();
 
+  // 構文解析
   Parser parser{ token_list };
 
   auto ast = parser.parse();
 
+  // 意味解析
   Checker checker{ ast };
 
   auto type = checker.check(ast);
 
 
-  GarbageCollector gc;
+  GarbageCollector gc; // ガベージコレクタ
 
-  Evaluator evaluator{ gc };
 
+  // 実行
+  Evaluator evaluator;
 
   auto obj = evaluator.evaluate(ast);
 
-  // debug(
-  //   std::cout
-  //     << "-----------------------\n"
-  //     << "evaluated result:\n\n"
-  //     << obj->to_string() << std::endl;
-  // );
 
 
   return 0;
+}
+
+int main(int argc, char** argv) {
+  return Application().main(argc, argv);
 }

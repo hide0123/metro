@@ -1,5 +1,10 @@
 #include <cstring>
-#include "metro.h"
+
+#include "common.h"
+
+#include "Token.h"
+#include "Lexer.h"
+#include "Error.h"
 
 static char const* punctuators[] {
   "->",

@@ -32,12 +32,12 @@
   exit(1)
 
 #define alert_ctor \
-  debug(fprintf(stderr,"\t#alert_ctor at %s:%d: %s\n",__FILE__,__LINE__,\
-  __func__))
+  debug(fprintf(stderr,"\t#alert_ctor at %s:%d: %s %p\n",__FILE__,__LINE__,\
+  __func__,this))
 
 #define alert_dtor \
-  debug(fprintf(stderr,"\t#alert_dtor at %s:%d: %s\n",__FILE__,__LINE__,\
-  __func__))
+  debug(fprintf(stderr,"\t#alert_dtor at %s:%d: %s %p\n",__FILE__,__LINE__,\
+  __func__,this))
 
 #define todo_impl panic("implement here %s", __func__)
 
@@ -131,9 +131,7 @@ struct Base {
 
   virtual ~Base() { }
 
-  virtual std::string to_string() const {
-    return std::string(this->token.str);
-  }
+  virtual std::string to_string() const;
 
 protected:
   explicit Base(ASTKind kind, Token const& token)
@@ -195,6 +193,9 @@ struct Expr : Base {
     EX_Mul,
     EX_Div,
 
+    EX_Bigger,
+    EX_BiggerOrEqual,
+
   };
 
   struct Element {
@@ -255,6 +256,20 @@ struct Return : Base {
   explicit Return(Token const& token)
     : Base(AST_Return, token),
       expr(nullptr)
+  {
+  }
+};
+
+struct If : Base {
+  AST::Base* condition;
+  AST::Base* if_true;
+  AST::Base* if_false;
+
+  explicit If(Token const& token)
+    : Base(AST_If, token),
+    condition(nullptr),
+    if_true(nullptr),
+    if_false(nullptr)
   {
   }
 };
@@ -327,6 +342,7 @@ enum TypeKind {
   TYPE_None,
   TYPE_Int,
   TYPE_Float,
+  TYPE_Bool,
   TYPE_Char,
   TYPE_String,
   TYPE_Vector,
@@ -372,6 +388,10 @@ struct Object {
 
   virtual Object* clone() const = 0;
 
+  virtual bool is_numeric() const {
+    return false;
+  }
+
   virtual ~Object();
 
 protected:
@@ -396,6 +416,10 @@ struct ObjLong : Object {
   std::string to_string() const;
   ObjLong* clone() const;
 
+  bool is_numeric() const {
+    return true;
+  }
+
   explicit ObjLong(int64_t value)
     : Object(TYPE_Int),
       value(value)
@@ -409,8 +433,30 @@ struct ObjFloat : Object {
   std::string to_string() const;
   ObjFloat* clone() const;
 
+  bool is_numeric() const {
+    return true;
+  }
+
   explicit ObjFloat(float value)
     : Object(TYPE_Float),
+      value(value)
+  {
+  }
+};
+
+struct ObjBool : Object {
+  bool value;
+
+  std::string to_string() const {
+    return value ? "true" : "false";
+  }
+
+  ObjBool* clone() const {
+    return new ObjBool(this->value);
+  }
+
+  explicit ObjBool(bool value)
+    : Object(TYPE_Bool),
       value(value)
   {
   }
@@ -653,9 +699,27 @@ private:
 };
 
 // ---------------------------------------------
+//  Garbage Collector
+// ---------------------------------------------
+class GarbageCollector {
+public:
+
+  GarbageCollector();
+  ~GarbageCollector();
+
+  void register_object(Object* obj);
+
+  void clean();
+
+
+private:
+
+
+};
+
+// ---------------------------------------------
 //  Evaluator
 // ---------------------------------------------
-class GarbageCollector;
 class Evaluator {
 
   struct FunctionStack {
@@ -671,7 +735,7 @@ class Evaluator {
   };
 
 public:
-  explicit Evaluator(GarbageCollector& gc);
+  Evaluator();
   ~Evaluator();
 
   /**
@@ -770,26 +834,7 @@ private:
 
   //
   // ガベージコレクタ
-  GarbageCollector& gc;
-};
-
-// ---------------------------------------------
-//  Garbage Collector
-// ---------------------------------------------
-class GarbageCollector {
-public:
-
-  GarbageCollector();
-  ~GarbageCollector();
-
-  void register_object(Object* obj);
-
-  void clean();
-
-
-private:
-
-
+  GarbageCollector gc;
 };
 
 
@@ -814,20 +859,9 @@ public:
       AST::Base const* ast;
     };
 
-    // todo
-    // ErrLoc(size_t pos)
-
-    ErrLoc(Token const& token)
-      : type(LOC_Token),
-        token(&token)
-    {
-    }
-
-    ErrLoc(AST::Base const* ast)
-      : type(LOC_AST),
-        ast(ast)
-    {
-    }
+    ErrLoc(size_t pos);
+    ErrLoc(Token const& token);
+    ErrLoc(AST::Base const* ast);
   };
 
   Error(ErrLoc loc, std::string const& msg)
@@ -852,16 +886,19 @@ private:
 
 class Application {
 
+
 public:
   Application();
   ~Application();
 
-  void initialize();
+  int main(int argc, char** argv);
 
-
+  static void initialize(); // これいるのか？
 
 private:
 
+
+  std::string source_code;
 
 };
 

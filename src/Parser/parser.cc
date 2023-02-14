@@ -134,9 +134,17 @@ AST::Base* Parser::stmt() {
   //
   // if 文
   if( this->eat("if") ) {
+    auto ast = new AST::If(*this->ate);
 
-    todo_impl;
+    ast->condition = this->expr();
 
+    ast->if_true = this->expect_scope();
+
+    if( this->eat("else") ) {
+      ast->if_false = this->stmt();
+    }
+
+    return ast;
   }
 
   //

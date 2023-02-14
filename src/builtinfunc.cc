@@ -1,5 +1,7 @@
 #include <iostream>
-#include "metro.h"
+
+#include "Object.h"
+#include "BuiltinFunc.h"
 
 static Object* print_impl(std::vector<Object*> const& args) {
   size_t len = 0;
