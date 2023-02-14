@@ -145,6 +145,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
       break;
     }
 
+    //
+    // 型
     case AST_Type: {
       auto ast = (AST::Type*)_ast;
 

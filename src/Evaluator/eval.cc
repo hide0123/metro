@@ -48,6 +48,24 @@ Object* Evaluator::create_object(AST::Value* ast) {
   return obj;
 }
 
+Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
+  auto& stack = this->call_stack.emplace_back(func);
+
+  return stack;
+}
+
+void Evaluator::leave_function(AST::Function* func) {
+  auto& stack = *this->call_stack.rbegin();
+
+  debug(assert(stack.ast == func));
+
+  this->call_stack.pop_back();
+}
+
+Evaluator::FunctionStack& Evaluator::get_current_func_stack() {
+  return *this->call_stack.rbegin();
+}
+
 Object* Evaluator::evaluate(AST::Base* _ast) {
   if( !_ast )
     return Object::obj_none;
@@ -67,6 +85,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       std::vector<Object*> args;
 
+      // 引数
       for( auto&& arg : ast->args ) {
         args.emplace_back(this->evaluate(arg));
       }
@@ -76,9 +95,18 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
         return ast->builtin_func->impl(std::move(args));
       }
 
-      
+      auto func = ast->callee;
 
-      break;
+      this->enter_function(func);
+
+      this->evaluate(func->code);
+
+      auto result =
+        this->get_current_func_stack().result;
+
+      this->leave_function(func);
+
+      return result;
     }
 
     case AST_Expr: {

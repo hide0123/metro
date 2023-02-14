@@ -591,6 +591,11 @@ private:
 
   Object* create_object(AST::Value* ast);
 
+  FunctionStack& enter_function(AST::Function* func);
+  void leave_function(AST::Function* func);
+
+  FunctionStack& get_current_func_stack();
+
   std::vector<Object*> variable_stack;
   std::vector<FunctionStack> call_stack;
 

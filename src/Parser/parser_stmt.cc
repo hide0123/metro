@@ -8,10 +8,13 @@ AST::Base* Parser::top() {
   return this->expr();
 }
 
-//
-// Parser::parse_scope()
-//
-// スコープをパースする
+/**
+ * @brief スコープをパースする
+ * 
+ * @note 最後にセミコロンがない場合、最後の要素を return 文にする
+ * 
+ * @return AST::Scope* 
+ */
 AST::Scope* Parser::parse_scope() {
   auto ast =
     new AST::Scope(*this->expect("{"));
@@ -39,6 +42,13 @@ AST::Scope* Parser::parse_scope() {
   return ast;
 }
 
+/**
+ * @brief スコープを求める
+ * 
+ * @return
+ *   スコープを読み取れた場合は AST::Scope*
+ *   なければエラー
+ */
 AST::Scope* Parser::expect_scope() {
   if( auto ast = this->parse_scope(); ast ) {
     return ast;
@@ -52,11 +62,13 @@ AST::Scope* Parser::expect_scope() {
     .exit();
 }
 
-//
-// Parser::parse_function()
-//
-// 関数をパースする
-// "fn" がある位置で呼び出すこと
+/**
+ * @brief 関数をパースする
+ * 
+ * @note 必ず "fn" トークンがある位置で呼び出すこと
+ * 
+ * @return AST::Function* 
+ */
 AST::Function* Parser::parse_function() {
   auto func =
     new AST::Function(
