@@ -73,6 +73,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
       return this->check_function_call((AST::CallFunc*)_ast);
     }
 
+    //
+    // 式
     case AST_Expr: {
       auto ast = (AST::Expr*)_ast;
 

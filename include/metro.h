@@ -580,28 +580,77 @@ public:
   explicit Evaluator(GarbageCollector const&);
   ~Evaluator();
 
-
+  /**
+   * @brief 構文木を評価する（実行）
+   * 
+   * @param ast 
+   * @return Object* 
+   */
   Object* evaluate(AST::Base* ast);
 
+
+  //
+  // 演算子
   Object* add_object(Object* left, Object* right);
   Object* sub_object(Object* left, Object* right);
   Object* mul_object(Object* left, Object* right);
   Object* div_object(Object* left, Object* right);
 
+
 private:
 
+  /**
+   * @brief 即値・リテラルの構文木からオブジェクトを作成する
+   * 
+   * @note すでに作成済みであればそれを返す
+   * 
+   * @param ast 
+   * @return Object*
+   */
   Object* create_object(AST::Value* ast);
 
+
+  /**
+   * @brief 
+   * 
+   * @param func 
+   * @return FunctionStack& 
+   */
   FunctionStack& enter_function(AST::Function* func);
+
+
+  /**
+   * @brief 
+   * 
+   * @param func 
+   */
   void leave_function(AST::Function* func);
 
+
+  /**
+   * @brief 現在のコールスタックを取得する
+   * 
+   * @return FunctionStack& 
+   */
   FunctionStack& get_current_func_stack();
 
-  std::vector<Object*> variable_stack;
+
+  //
+  // オブジェクトスタック
+  // 変数・引数で使う
+  std::vector<Object*> object_stack;
+
+  //
+  // コールスタック
+  // 関数呼び出し用
   std::vector<FunctionStack> call_stack;
 
+  //
+  // 即値・リテラル
   std::map<AST::Value*, Object*> immediate_objects;
 
+  //
+  // ガベージコレクタ
   GarbageCollector const& gc;
 };
 

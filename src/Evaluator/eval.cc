@@ -82,6 +82,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
+    //
     // 関数呼び出し
     case AST_CallFunc: {
       auto ast = (AST::CallFunc*)_ast;
@@ -98,17 +99,25 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
         return ast->builtin_func->impl(std::move(args));
       }
 
+      // ユーザー定義関数
       auto func = ast->callee;
 
+      // コールスタック作成
       this->enter_function(func);
 
+      // 引数を
+
+      // 関数実行
       this->evaluate(func->code);
 
+      // 戻り値を取得
       auto result =
         this->get_current_func_stack().result;
 
+      // スタック削除
       this->leave_function(func);
 
+      // 戻り値を返す
       return result;
     }
 
@@ -152,6 +161,12 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       if( ast->init ) {
         
       }
+
+
+      break;
+    }
+
+    case AST_Return: {
 
 
       break;
