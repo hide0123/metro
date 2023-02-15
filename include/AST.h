@@ -17,6 +17,8 @@ enum ASTKind {
   AST_Variable,
   AST_CallFunc,
 
+  AST_Compare,
+
   AST_Expr,
 
   AST_If,
@@ -99,16 +101,67 @@ struct CallFunc : Base {
   }
 };
 
+struct Compare : Base {
+  enum CmpKind {
+    CMP_LeftBigger,       // >
+    CMP_RightBigger,      // <
+    CMP_LeftBigOrEqual,   // >=
+    CMP_RightBigOrEqual,  // <=
+    CMP_Equal,
+    CMP_NotEqual,
+  };
+
+  struct Element {
+    CmpKind kind;
+    Token const& op;
+    Base* ast;
+
+    Element(CmpKind kind, Token const& op, Base* ast)
+      : kind(kind),
+        op(op),
+        ast(ast)
+    {
+    }
+  };
+
+  Base* first;
+  std::vector<Element> elements;
+
+  Compare(Base* first)
+    : Base(AST_Compare, first->token),
+      first(first)
+  {
+  }
+
+  Element& append(CmpKind kind, Token const& op, Base* ast) {
+    return this->elements.emplace_back(kind, op, ast);
+  }
+
+  static Compare* create(Base*& ast) {
+    if( ast->kind != AST_Compare )
+      ast = new Compare(ast);
+
+    return (Compare*)ast;
+  }
+};
+
 struct Expr : Base {
   enum ExprKind {
     EX_Add,
     EX_Sub,
     EX_Mul,
     EX_Div,
+    EX_Mod,
+    
+    EX_LShift,  // <<
+    EX_RShift,  // >>
 
-    EX_Bigger,
-    EX_BiggerOrEqual,
+    EX_BitAND,  // &
+    EX_BitXOR,  // ^
+    EX_BitOR,   // |
 
+    EX_And,   // &&
+    EX_Or,    // ||
   };
 
   struct Element {

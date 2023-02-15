@@ -12,10 +12,12 @@
 
 
 static ObjNone objnone;
+
 static ObjNone* none = &objnone;
 
 Evaluator::Evaluator()
 {
+  ::objnone.ref_count = 1;
 }
 
 Evaluator::~Evaluator() {

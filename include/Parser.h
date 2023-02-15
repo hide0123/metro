@@ -17,7 +17,13 @@ public:
   AST::Scope* parse();
 
   AST::Base* primary();
-  AST::Base* term();
+  AST::Base* mul();
+  AST::Base* add();
+
+  AST::Base* shift();
+  AST::Base* compare();
+  AST::Base* bit_op();
+  
   AST::Base* expr();
 
   AST::Base* stmt();

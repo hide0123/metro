@@ -54,6 +54,8 @@
     "cassert": "cpp",
     "bitset": "cpp",
     "set": "cpp",
-    "cinttypes": "cpp"
+    "cinttypes": "cpp",
+    "chrono": "cpp",
+    "ratio": "cpp"
   }
 }

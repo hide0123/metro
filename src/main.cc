@@ -28,14 +28,20 @@ std::string to_str(std::wstring const& str) {
 
 } // namespace Utils::String
 
+static Application* app_inst;
 
 Application::Application() {
-
+  ::app_inst = this;
 }
 
 Application::~Application() {
-
+  ::app_inst = nullptr;
 }
+
+std::string const& Application::get_source_code() {
+  return this->source_code;
+}
+
 
 // 初期化
 void Application::initialize() {
@@ -44,6 +50,10 @@ void Application::initialize() {
   Object::initialize();
 
 
+}
+
+Application& Application::get_current_instance() {
+  return *::app_inst;
 }
 
 /**

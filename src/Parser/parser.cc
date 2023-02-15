@@ -5,6 +5,8 @@
 
 #include "Error.h"
 
+using EXKind = AST::Expr::ExprKind;
+
 Parser::Parser(std::list<Token> const& token_list)
   : token_list(token_list),
     cur(token_list.begin()),
@@ -94,14 +96,102 @@ AST::Base* Parser::primary() {
     .exit();
 }
 
-AST::Base* Parser::term() {
+AST::Base* Parser::mul() {
   auto x = this->primary();
 
   while( this->check() ) {
     if( this->eat("*") )
-      AST::Expr::create(x)->append(AST::Expr::EX_Mul, *this->ate, this->primary());
+      AST::Expr::create(x)->append(
+        EXKind::EX_Mul, *this->ate, this->primary());
     else if( this->eat("/") )
-      AST::Expr::create(x)->append(AST::Expr::EX_Div, *this->ate, this->primary());
+      AST::Expr::create(x)->append(
+        EXKind::EX_Div, *this->ate, this->primary());
+    else if( this->eat("%") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_Mod, *this->ate, this->primary());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::add() {
+  auto x = this->mul();
+
+  while( this->check() ) {
+    if( this->eat("+") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_Add, *this->ate, this->mul());
+    else if( this->eat("-") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_Sub, *this->ate, this->mul());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::shift() {
+  auto x = this->add();
+
+  while( this->check() ) {
+    if( this->eat("<<") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_LShift, *this->ate, this->add());
+    else if( this->eat(">>") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_RShift, *this->ate, this->add());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::compare() {
+  auto x = this->shift();
+
+  while( this->check() ) {
+    if( this->eat("==") )
+      AST::Compare::create(x)->append(
+        AST::Compare::CMP_Equal, *this->ate, this->compare());
+    else if( this->eat("!=") )
+      AST::Compare::create(x)->append(
+        AST::Compare::CMP_Equal, *this->ate, this->compare());
+    else if( this->eat(">=") )
+      AST::Compare::create(x)->append(
+        AST::Compare::CMP_LeftBigOrEqual, *this->ate, this->compare());
+    else if( this->eat("<=") )
+      AST::Compare::create(x)->append(
+        AST::Compare::CMP_RightBigOrEqual, *this->ate, this->compare());
+    else if( this->eat(">") )
+      AST::Compare::create(x)->append(
+        AST::Compare::CMP_LeftBigger, *this->ate, this->compare());
+    else if( this->eat("<") )
+      AST::Compare::create(x)->append(
+        AST::Compare::CMP_RightBigger, *this->ate, this->compare());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::bit_op() {
+  auto x = this->compare();
+
+  while( this->check() ) {
+    if( this->eat("&") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_BitAND, *this->ate, this->compare());
+    else if( this->eat("^") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_BitXOR, *this->ate, this->compare());
+    else if( this->eat("|") )
+      AST::Expr::create(x)->append(
+        EXKind::EX_BitOR, *this->ate, this->compare());
     else
       break;
   }
@@ -110,20 +200,8 @@ AST::Base* Parser::term() {
 }
 
 AST::Base* Parser::expr() {
-  auto x = this->term();
-
-  while( this->check() ) {
-    if( this->eat("+") )
-      AST::Expr::create(x)->append(AST::Expr::EX_Add, *this->ate, this->term());
-    else if( this->eat("-") )
-      AST::Expr::create(x)->append(AST::Expr::EX_Sub, *this->ate, this->term());
-    else
-      break;
-  }
-
-  return x;
+  return this->bit_op();
 }
-
 
 /**
  * @brief ステートメント

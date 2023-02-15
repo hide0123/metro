@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include "AST.h"
-
 #include "Error.h"
+#include "Application.h"
 
 Error::ErrLoc::ErrLoc(size_t pos)
   : type(LOC_Position),
@@ -23,6 +23,11 @@ Error::ErrLoc::ErrLoc(AST::Base const* ast)
 }
 
 Error& Error::emit() {
+
+  auto const& source =
+    Application::get_current_instance().get_source_code();
+
+
   std::cerr << this->msg << std::endl;
 
   return *this;

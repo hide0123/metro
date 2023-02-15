@@ -9,35 +9,49 @@
 static char const* punctuators[] {
   "->",
   
-  "==",
-  "!=",
-
-  "<=",
-  ">=",
+  "&&",
+  "||",
 
   "<<",
   ">>",
-  "<",
+
+  "==",
+  "!=",
+  ">=",
+  "<=",
   ">",
+  "<",
+
+  "!",
+  "?",
+
+  "&",
+  "^",
+  "|",
+  "~",
 
   "=",
   "+",
   "-",
   "*",
   "/",
-  
-  "(",
-  ")",
-  "{",
-  "}",
-  "[",
-  "]",
-  
+  "%",
+
   ",", // comma
   ".", // dot
 
   ";", // semicolon
   ":", // colon
+  
+  "(",
+  ")",
+  "[",
+  "]",
+  "{",
+  "}",
+  "<",
+  ">",
+  
 
 };
 
@@ -98,11 +112,27 @@ std::list<Token> Lexer::lex() {
     else if( std::all_of(
           std::begin(punctuators),
           std::end(punctuators),
-          [&] (std::string_view&& s) {
+          [&] (char const*& s) {
             if( this->match(s) ) {
               token.kind = TOK_Punctuater;
+
+              auto kind_offs = (&s - punctuators) / sizeof(char const*);
+
+              token.punct_kind =
+                static_cast<PunctuatorKind>(kind_offs);
+
+              if( token.punct_kind >= PU_Bracket ) {
+                kind_offs -= PU_Bracket;
+
+                token.bracket_kind =
+                  static_cast<BracketKind>(kind_offs / 2);
+                
+                token.is_bracket_opened =
+                  !(token.bracket_kind % 2);
+              }
+
               token.str = s;
-              this->position += s.length();
+              this->position += token.str.length();
               return false;
             }
 
