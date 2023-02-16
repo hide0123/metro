@@ -14,9 +14,12 @@ class Evaluator {
 
     Object* result;
 
+    bool is_returned;
+
     explicit FunctionStack(AST::Function const* ast)
       : ast(ast),
-        result(nullptr)
+        result(nullptr),
+        is_returned(false)
     {
     }
   };
@@ -42,6 +45,17 @@ public:
     Object* left,
     Object* right
   );
+
+
+  /**
+   * @brief 比較する
+   * 
+   * @return true 
+   * @return false 
+   */
+  static bool compute_compare(
+    Token const& op_token,
+    AST::Compare::CmpKind kind, Object* left, Object* right);
 
 
 private:

@@ -1,7 +1,8 @@
 /build
+/__pychache__
 
 # binary
-lcc
+metro
 
 # text files
 test.txt

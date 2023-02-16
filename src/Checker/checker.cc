@@ -118,6 +118,28 @@ TypeInfo Checker::check(AST::Base* _ast) {
     }
 
     //
+    // 比較式
+    case AST_Compare: {
+      auto ast = (AST::Compare*)_ast;
+
+      TypeInfo left = this->check(ast->first);
+
+      for( auto&& elem : ast->elements ) {
+        auto right = this->check(elem.ast);
+
+        if( !left.is_numeric() || !right.is_numeric() ) {
+          Error(elem.op, "invalid operator")
+            .emit()
+            .exit();
+        }
+
+        left = right;
+      }
+
+      return TYPE_Bool;
+    }
+
+    //
     // 変数定義
     case AST_Let: {
       auto ast = (AST::VariableDeclaration*)_ast;
@@ -224,6 +246,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
     }
 
     default:
+      debug(printf("%d\n",_ast->kind));
       todo_impl;
   }
 
@@ -344,6 +367,12 @@ std::optional<TypeInfo> Checker::is_valid_expr(
   }
 
   return std::nullopt;
+}
+
+bool Checker::check_compare(
+  AST::Compare::CmpKind kind, TypeInfo const& lhs, TypeInfo const& rhs) {
+
+  todo_impl;
 }
 
 AST::Function* Checker::find_function(std::string_view name) {

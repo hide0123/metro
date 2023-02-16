@@ -5,12 +5,23 @@ import glob
 from duplicate_checker import *
 from line_counter import *
 
+#
+# trim_with_c()
+#
+# 文字列をしていした文字で区切る
+def trim_with_c(s: str, c: str):
+  return s.split(c)
+
+#
+# trim_with_comma()
+#
+# 文字列を カンマで区切る
+def trim_with_comma(s, line):
+  return line[len(s):].split(',')
+
 def error(msg):
   print(msg)
   os._exit(1)
-
-def trim_with_comma(com, line):
-  return line[len(com):].split(',')
 
 # ------------------------------
 #  checker

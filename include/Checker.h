@@ -90,6 +90,19 @@ public:
 
 
   /**
+   * @brief 比較式の型をチェックする
+   * 
+   * @param kind 
+   * @param lhs 
+   * @param rhs 
+   * @return true 
+   * @return false 
+   */
+  bool check_compare(
+    AST::Compare::CmpKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
+
+
+  /**
    * @brief ユーザー定義関数を探す
    * 
    * @param name 

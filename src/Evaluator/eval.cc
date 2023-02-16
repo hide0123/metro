@@ -68,8 +68,6 @@ Object* Evaluator::create_object(AST::Value* ast) {
 Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
   auto& stack = this->call_stack.emplace_back(func);
 
-
-
   return stack;
 }
 
@@ -168,19 +166,44 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return ret;
     }
 
+    //
+    // 比較式
+    case AST_Compare: {
+      auto x = (AST::Compare*)_ast;
+
+      auto ret = this->evaluate(x->first);
+
+      for( auto&& elem : x->elements ) {
+        if( !Evaluator::compute_compare(
+          elem.op,
+          elem.kind,
+          ret,
+          this->evaluate(elem.ast)
+        ) ) {
+          return new ObjBool(false);
+        }
+      }
+
+      return new ObjBool(true);
+    }
+
     // scope
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
+      auto stack_size = this->object_stack.size();
+
       for( auto&& item : ast->list ) {
         this->evaluate(item);
+
+        if( !this->call_stack.empty() &&
+          this->get_current_func_stack().is_returned ) {
+          break;
+        }
       }
 
-      for( size_t i = 0; i < ast->used_stack_size; i++ ) {
-        auto obj = this->pop_object();
-
-        obj->ref_count--;
-      }
+      while( stack_size < this->object_stack.size() )
+        this->pop_object();
 
       gc.clean();
 
@@ -208,20 +231,24 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       func_stack.result = this->evaluate(ast->expr);
 
+      func_stack.is_returned = true;
+
       break;
     }
 
     case AST_If: {
       auto ast = (AST::If*)_ast;
 
-      if( ((ObjBool*)this->evaluate(ast->condition))->value ) {
+      if( ((ObjBool*)this->evaluate(ast->condition))->value )
         this->evaluate(ast->if_true);
-      }
+      else if( ast->if_false )
+        this->evaluate(ast->if_false);
 
-      this->evaluate(ast->if_false);
+      break;
     }
 
     default:
+      debug(printf("%d\n",_ast->kind));
       todo_impl;
   }
 
@@ -252,6 +279,41 @@ Object* Evaluator::compute_expr_operator(
   }
 
   return ret;
+}
+
+bool Evaluator::compute_compare(
+  Token const& op_token,
+  AST::Compare::CmpKind kind, Object* left, Object* right) {
+
+  using CK = AST::Compare::CmpKind;
+
+  float a = left->type.kind == TYPE_Int
+    ? ((ObjLong*)left)->value : ((ObjFloat*)left)->value;
+    
+  float b = right->type.kind == TYPE_Int
+    ? ((ObjLong*)right)->value : ((ObjFloat*)right)->value;
+    
+  switch( kind ) {
+    case CK::CMP_LeftBigger:
+      return a > b;
+    
+    case CK::CMP_RightBigger:
+      return a < b;
+
+    case CK::CMP_LeftBigOrEqual:
+      return a >= b;
+
+    case CK::CMP_RightBigOrEqual:
+      return a <= b;
+
+    case CK::CMP_Equal:
+      return a == b;
+    
+    case CK::CMP_NotEqual:
+      return a != b;
+  }
+
+  return false;
 }
   
 Object*& Evaluator::push_object(Object* obj) {

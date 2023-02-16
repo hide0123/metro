@@ -17,7 +17,6 @@ Object::Object(TypeInfo type)
   : type(type),
     ref_count(0)
 {
-  alert_ctor;
 }
 
 Object::~Object() {

@@ -233,9 +233,9 @@ struct If : Base {
 
   explicit If(Token const& token)
     : Base(AST_If, token),
-    condition(nullptr),
-    if_true(nullptr),
-    if_false(nullptr)
+      condition(nullptr),
+      if_true(nullptr),
+      if_false(nullptr)
   {
   }
 };
