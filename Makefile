@@ -60,6 +60,12 @@ clean:
 
 re: clean all
 
+run: all
+	@clear
+	@echo run $(TARGET)
+	@echo ----------------------------------------------------------------
+	@./metro
+
 install: all
 	@echo install...
 	@install $(notdir $(OUTPUT)) $(BINDIR)/$(TARGET)

@@ -16,6 +16,7 @@ static ObjNone objnone;
 static ObjNone* none = &objnone;
 
 Evaluator::Evaluator()
+  : cur_stack_index(0)
 {
   ::objnone.ref_count = 1;
 }
@@ -98,13 +99,16 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
     case AST_Variable: {
       auto ast = (AST::Variable*)_ast;
-      
-      return this->object_stack[ast->index];
+
+      return
+        this->object_stack[this->cur_stack_index + ast->index];
     }
 
     //
     // 関数呼び出し
     case AST_CallFunc: {
+      alert;
+
       auto ast = (AST::CallFunc*)_ast;
 
       std::vector<Object*> args;
@@ -125,23 +129,46 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       // コールスタック作成
       this->enter_function(func);
 
+      debug(
+        alert;
+        printf("obj stack size = %zu\n", this->object_stack.size());
+      )
+
+      // スタック位置を保存
+      auto save_index = this->cur_stack_index;
+      auto size_save = this->object_stack.size();
+
+      //
+      this->cur_stack_index = this->object_stack.size();
+
       // 引数をスタックに追加
       for( auto&& obj : args ) {
         this->push_object(obj);
       }
 
       // 関数実行
+      alert;
       this->evaluate(func->code);
 
       // 戻り値を取得
       auto result =
         this->get_current_func_stack().result;
 
+      assert(result != nullptr);
+
+      // スタックから引数を削除
+      this->pop_object_with_count(args.size());
+
+      // スタック位置を戻す
+      this->cur_stack_index = save_index;
+
       // コールスタック削除
       this->leave_function(func);
 
-      // スタックからオブジェクトを削除
-      this->pop_object_with_count(args.size());
+      debug(
+        alert;
+        printf("obj stack size = %zu\n", this->object_stack.size());
+      )
 
       // 戻り値を返す
       return result;
@@ -193,19 +220,32 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       auto stack_size = this->object_stack.size();
 
+      debug(printf(COL_MAGENTA "eval begin: AST_Scope %p" COL_DEFAULT "\n", ast);)
+
       for( auto&& item : ast->list ) {
+        alert;
+
         this->evaluate(item);
 
         if( !this->call_stack.empty() &&
           this->get_current_func_stack().is_returned ) {
+          
+          alert;
+          debug(printf("AST_Scope: returned!!\n");)
+
           break;
         }
       }
 
-      while( stack_size < this->object_stack.size() )
-        this->pop_object();
+      while( stack_size != this->object_stack.size() )
+         this->pop_object();
+
+      // for( size_t i = 0; i < ast->used_stack_size; i++ )
+      //   this->pop_object();
 
       gc.clean();
+
+      debug(printf(COL_MAGENTA "eval end: AST_Scope %p" COL_DEFAULT "\n", ast);)
 
       break;
     }
@@ -229,7 +269,18 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       auto& func_stack = this->get_current_func_stack();
 
-      func_stack.result = this->evaluate(ast->expr);
+      if( ast->expr ) {
+
+        func_stack.result = this->evaluate(ast->expr);
+
+        debug(
+          alert;
+          printf("func_stack.result: %p\n", func_stack.result);
+          std::cout << func_stack.result->to_string() << std::endl;
+        )
+      }
+      else
+        func_stack.result = none;
 
       func_stack.is_returned = true;
 
@@ -267,15 +318,34 @@ Object* Evaluator::compute_expr_operator(
 
   switch( kind ) {
     case EX::EX_Add: {
-
       switch( left->type.kind ) {
         case TYPE_Int:
           ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
           break;
       }
-
       break;
     }
+
+    case EX::EX_Sub: {
+      switch( left->type.kind ) {
+        case TYPE_Int:
+          ((ObjLong*)ret)->value -= ((ObjLong*)right)->value;
+          break;
+      }
+      break;
+    }
+
+    case EX::EX_Mul: {
+      switch( left->type.kind ) {
+        case TYPE_Int:
+          ((ObjLong*)ret)->value *= ((ObjLong*)right)->value;
+          break;
+      }
+      break;
+    }
+
+    default:
+      todo_impl;
   }
 
   return ret;

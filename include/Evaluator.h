@@ -122,6 +122,7 @@ private:
   //
   // オブジェクトスタック
   // 変数・引数で使う
+  size_t cur_stack_index;
   std::vector<Object*> object_stack;
 
   //
