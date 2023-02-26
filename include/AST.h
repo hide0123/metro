@@ -91,6 +91,8 @@ struct CallFunc : Base {
   BuiltinFunc const* builtin_func;
   Function* callee;
 
+  std::string to_string() const;
+
   CallFunc(Token const& name)
     : Base(AST_CallFunc, name),
       name(name.str),
@@ -267,16 +269,29 @@ struct Function : Base {
     }
   };
 
-  Token const& name;
-  std::vector<Argument> args;
+  Token const& name;            // 名前
+  std::vector<Argument> args;   // 引数
 
-  AST::Type* result_type;
-  AST::Scope* code;
+  AST::Type* result_type; // 戻り値の型
+  AST::Scope* code;       // 処理
 
+  /**
+   * @brief 引数を追加する
+   * 
+   * @param name 
+   * @param type 
+   * @return Argument& 
+   */
   Argument& append_argument(Token const& name, AST::Type* type) {
     return this->args.emplace_back(name, type);
   }
 
+  /**
+   * @brief Construct a new Function object
+   * 
+   * @param token 
+   * @param name 
+   */
   explicit Function(Token const& token, Token const& name)
     : Base(AST_Function, token),  
       name(name),

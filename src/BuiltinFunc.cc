@@ -7,7 +7,7 @@ static Object* print_impl(std::vector<Object*> const& args) {
   size_t len = 0;
 
   for( auto&& arg : args ) {
-    auto const& s = arg->to_string();
+    auto s = arg->to_string();
 
     std::cout << s;
 

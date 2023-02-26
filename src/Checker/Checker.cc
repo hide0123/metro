@@ -19,8 +19,7 @@ Checker
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
 Checker::Checker(AST::Scope* root)
-  : root(root),
-    call_count(0)
+  : root(root)
 {
 }
 
@@ -61,6 +60,9 @@ TypeInfo Checker::check(AST::Base* _ast) {
         case TOK_String:
           ret = TYPE_String;
           break;
+
+        default:
+          todo_impl;
       }
 
       return this->value_type_cache[ast] = ret;
@@ -70,15 +72,13 @@ TypeInfo Checker::check(AST::Base* _ast) {
     case AST_Variable: {
       auto ast = (AST::Variable*)_ast;
 
-      // インデックス設定すること
-
-      if( auto res = this->find_variable(ast->token.str); res.has_value() ) {
-        auto [emu_iter, stack_index, emu_index]
-          = res.value();
-        
-        ast->index = stack_index;
-
-        return emu_iter->variables[emu_index].type;
+      for(auto&&S:this->scope_list){
+        for(auto it=S.variables.rbegin();
+        it!=S.variables.rend();it++){
+          if(it->name==ast->token.str){
+            return it->type;
+          }
+        }
       }
 
       Error(ast->token, "undefined variable name")
@@ -113,6 +113,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
           left = res.value();
         }
       }
+
+      alertmsg("expr;;; "<<left.to_string());
 
       return left;
     }
@@ -150,20 +152,25 @@ TypeInfo Checker::check(AST::Base* _ast) {
         todo_impl;
       }
 
+      // this->variable_stack_offs++;
+
       auto type = this->check(ast->type);
 
       this->check(ast->init);
 
-      if( auto i = scope_emu.find_var(ast->name); i >= 0 ) {
-        scope_emu.variables[i].type = type;
+      if( auto p = scope_emu.find_var(ast->name); p ) {
+        // shadowing
+        p->type = type;
       }
       else {
-        auto& var = scope_emu.variables.emplace_back();
+        auto& V = scope_emu.variables.emplace_back(
+          ast->name,
+          type
+        );
 
-        var.name = ast->name;
-        var.type = type;
+        V.offs = this->variable_stack_offs++;
 
-        scope_emu.ast->used_stack_size++;
+        // scope_emu.ast->used_stack_size++;
       }
 
       break;
@@ -174,11 +181,15 @@ TypeInfo Checker::check(AST::Base* _ast) {
     case AST_Return: {
       auto ast = (AST::Return*)_ast;
 
-      if( this->call_count == 0 ) {
+      // 関数の中ではない
+      if( !this->get_cur_func() ) {
         Error(ast, "cannot use return-statement here")
           .emit()
           .exit();
       }
+      // 式がない
+      else if( !ast->expr )
+        break;
 
       return this->check(ast->expr);
     }
@@ -194,55 +205,111 @@ TypeInfo Checker::check(AST::Base* _ast) {
           .exit();
       }
 
-      this->check(ast->if_true);
-      this->check(ast->if_false);
+      auto xx = this->check(ast->if_true);
 
-      break;
+      if(!xx.equals(this->check(ast->if_false)))
+        Error(ast,"type mismatch")
+          .emit()
+          .exit();
+
+      return xx;
     }
 
     //
     // スコープ
     case AST_Scope: {
-      this->enter_scope((AST::Scope*)_ast);
+
+      auto ast = (AST::Scope*)_ast;
+
+      auto& emu = this->scope_list.emplace_front(ast);
+
+      auto voffs = this->variable_stack_offs;
+
+      for( auto&& item : ast->list ) {
+        auto ww = this->check(item);
+      }
+
+      this->variable_stack_offs = voffs;
+
+      this->scope_list.pop_front();
       break;
     }
 
     //
     // 関数
     case AST_Function: {
+
       auto ast = (AST::Function*)_ast;
 
-      this->call_count++;
+      this->function_history.emplace_front(ast);
 
-      auto& emu = this->scope_list.emplace_front();
+      // 関数のスコープ　実装があるところ
+      auto fn_scope = ast->code;
+      
+      // スコープ追加
+      auto& S = this->scope_list.emplace_front(fn_scope);
 
-      for( auto&& arg : ast->args ) {
-        auto& var = emu.variables.emplace_back();
+      for(auto it=ast->args.rbegin();it!=ast->args.rend();it++)
+        S.variables.emplace_back(
+          it->name.str,
+          this->check(it->type)
+        );
 
-        var.name = arg.name.str;
-        var.type = this->check(arg.type);
+      // for( auto&& arg : ast->args ) {
+      //   S.variables.emplace_back(
+      //     arg.name.str,
+      //     this->check(arg.type)
+      //   );
+      // }
+
+      auto res_type = this->check(ast->result_type);
+
+      for( auto&& x : ast->code->list ) {
+        this->check(x);
       }
+      
+      // スコープ削除
+      this->scope_list.pop_front();
 
-      this->check(ast->code);
+      this->function_history.pop_front();
 
-      ast->code->used_stack_size += ast->args.size();
-      this->scope_list.pop_back();
-
-      this->call_count--;
-
-      return this->check(ast->result_type);
+      // return res_type;
+      break;
     }
 
     //
     // 型
     case AST_Type: {
+      static struct{TypeKind a;char const* b;}
+        const names[]{
+        { TYPE_None, "none" },
+        { TYPE_Int, "int" },
+        { TYPE_Float, "float" },
+        { TYPE_Bool, "bool" },
+        { TYPE_Char, "char" },
+        { TYPE_String, "string" },
+        { TYPE_Vector, "vector" },
+        { TYPE_Args, "args" },
+      };
+
       auto ast = (AST::Type*)_ast;
 
-      if( ast->token.str == "int" ) return TYPE_Int;
+      TypeInfo ret;
+
+      for( auto&& x : names )
+        if( ast->token.str == x.b ) {
+          ret = x.a;
+          goto skiperror009;
+        }
 
       Error(ast, "unknown type name")
         .emit()
         .exit();
+
+    skiperror009:;
+      ret.is_mutable = ast->is_mutable;
+
+      return ret;
     }
 
     default:
@@ -277,7 +344,60 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
   if( auto func = this->find_function(ast->name); func ) {
     ast->callee = func;
 
-    // todo: check matching of arguments
+    // todo: 引数の一致確認を行う
+
+    // 仮引数 無し
+    //if( func->args.empty() ) {
+    if( 0 ) {
+      // ここのスコープ使わない
+      if( !ast->args.empty() ) {
+        Error(ast, "too many arguments")
+          .emit()
+          .exit();
+      }
+    }
+    // 仮引数 有り
+    else {
+    /// こっちに入る
+
+    // 定義側の引数
+    auto formal_arg_it = func->args.begin();
+
+    // 呼び出す方の引数
+    auto act_arg_it = ast->args.begin();
+
+    while( 1 ) {
+      auto arg = *act_arg_it;
+
+      if( auto Q=formal_arg_it==func->args.end();
+          Q!=(act_arg_it==ast->args.end()) ){
+      if( Q ) {// 定義側の引数
+        Error(arg,"too many arguments")
+        .emit().exit();
+      }
+      else{ // 呼び出し
+        Error(ast,"too few arguments")
+        .emit().exit();
+      }
+      alertmsg("WTF バグ起きたらこのメッセージ出る てか眠すぎ");
+      }
+      else if(Q){ // true!=true で、ループ終了
+        break;
+      }
+
+      auto aa = this->check(formal_arg_it->type);
+      auto bb = this->check(*act_arg_it);
+
+      if(!aa.equals(bb)){
+        Error(arg,"mismatched type")
+        .emit() ;
+      }
+
+      formal_arg_it++;
+      act_arg_it++;
+    }
+
+    } // 引数チェック終了
 
     return this->check(func->result_type);
   }
@@ -289,16 +409,27 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
 
 
 void Checker::enter_scope(AST::Scope* ast) {
-  
-  auto& emu = this->scope_list.emplace_front();
 
-  emu.ast = ast;
+  /*
+  alertmsg(ast->token.pos);
+  assert(ast != nullptr);
+
+  auto& emu = this->scope_list.emplace_front(ast);
+
+  alertmsg("emu.ast  " << emu.ast);
+  alertmsg("ast  " << ast);
 
   for( auto&& item : ast->list ) {
     this->check(item);
   }
 
+  // assert(emu.ast == ast);
+
+  alertmsg("Checker::enter_scope()");
+  alertmsg("used_stack_size: " << emu.ast->used_stack_size);
+
   this->scope_list.pop_front();
+  */
 }
 
 
@@ -391,6 +522,7 @@ std::optional<
 >
   Checker::find_variable(std::string_view name) {
 
+/*
   size_t stack_index = 0;
 
   for(
@@ -398,10 +530,12 @@ std::optional<
     it != this->scope_list.end();
     it++, stack_index += it->variables.size()
   ) {
-    if( auto i = it->find_var(name); i >= 0 ) {
-      return std::make_tuple(it, stack_index ? stack_index - 1 : 0, i);
+    if( auto p = it->find_var(name); ) {
+      return std::make_tuple(
+        it, stack_index ? stack_index - 1 : 0, i);
     }
   }
+  */
 
   return std::nullopt;
 }
@@ -409,4 +543,8 @@ std::optional<
 
 Checker::ScopeEmu& Checker::get_cur_scope() {
   return *this->scope_list.begin();
+}
+
+AST::Function* Checker::get_cur_func() {
+  return *this->function_history.begin();
 }

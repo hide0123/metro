@@ -25,6 +25,15 @@ class Checker {
     std::string_view name;
 
     TypeInfo type;
+
+    size_t offs;
+
+    explicit VariableEmu(std::string_view name, TypeInfo type)
+      : name(name),
+        type(type),
+        offs(0)
+    {
+    }
   };
 
   struct ScopeEmu {
@@ -32,15 +41,17 @@ class Checker {
 
     std::vector<VariableEmu> variables;
 
-    int find_var(std::string_view name) {
-      for( int i = 0; auto&& var : this->variables ) {
+    VariableEmu* find_var(std::string_view name) {
+      for( auto&& var : this->variables )
         if( var.name == name )
-          return i;
+          return &var;
 
-        i++;
-      }
+      return nullptr;
+    }
 
-      return -1;
+    explicit ScopeEmu(AST::Scope* ast)
+      : ast(ast)
+    {
     }
   };
 
@@ -133,11 +144,16 @@ private:
 
   ScopeEmu& get_cur_scope();
 
+  // 今いる関数を返す
+  // 関数の中にいなければ nullptr を返す
+  AST::Function* get_cur_func();
+
   AST::Scope* root;
 
-  int call_count;
-
   std::list<ScopeEmu> scope_list;
+  std::list<AST::Function*> function_history;
+
+  size_t variable_stack_offs = 0;
 
   static std::map<AST::Value*, TypeInfo> value_type_cache;
 

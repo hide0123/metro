@@ -128,7 +128,7 @@ private:
   //
   // コールスタック
   // 関数呼び出し用
-  std::vector<FunctionStack> call_stack;
+  std::list<FunctionStack> call_stack;
 
   //
   // 即値・リテラル

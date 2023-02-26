@@ -3,6 +3,8 @@
 #include <codecvt>
 #include <locale>
 
+#include "common.h"
+
 #include "AST.h"
 #include "Object.h"
 
@@ -92,19 +94,19 @@ int Application::main(int argc, char** argv) {
 
   auto ast = parser.parse();
 
+  alertmsg(ast->to_string());
+
   // 意味解析
   Checker checker{ ast };
 
   auto type = checker.check(ast);
 
+  alertmsg("check(ast) = " << type.to_string());
 
-  GarbageCollector gc; // ガベージコレクタ
 
+  Evaluator eval;
 
-  // 実行
-  Evaluator evaluator;
-
-  auto obj = evaluator.evaluate(ast);
+  eval.evaluate(ast);
 
 
 

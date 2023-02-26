@@ -25,6 +25,17 @@ std::string Expr::to_string() const {
   return s;
 }
 
+std::string CallFunc::to_string() const {
+  auto ret = std::string(this->name) + "(";
+
+  for( auto&& arg : this->args ) {
+    ret += arg->to_string();
+    if( arg != *this->args.rbegin() ) ret += ",";
+  }
+
+  return ret + ")";
+}
+
 
 } // namespace AST
 

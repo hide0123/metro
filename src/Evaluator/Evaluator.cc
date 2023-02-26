@@ -1,5 +1,8 @@
 #include <cassert>
 
+#include <thread>
+#include <chrono>
+
 #include "common.h"
 
 #include "AST.h"
@@ -25,66 +28,20 @@ Evaluator::~Evaluator() {
   
 }
 
-/**
- * @brief 即値・リテラルの AST からオブジェクトを作成する
- * 
- * @note すでに作成済みのものであれば、既存のものを返す
- * 
- * @param ast 
- * @return 作成されたオブジェクト (Object*)
- */
-Object* Evaluator::create_object(AST::Value* ast) {
-  auto type = Checker::value_type_cache[ast];
-
-  auto& obj = this->immediate_objects[ast];
-
-  if( obj )
-    return obj;
-
-  switch( type.kind ) {
-    case TYPE_Int:
-      obj = new ObjLong(std::stoi(ast->token.str.data()));
-      break;
-
-    case TYPE_String:
-      obj = new ObjString(Utils::String::to_wstr(
-        std::string(ast->token.str)
-      ));
-
-      break;
-
-    default:
-      debug(
-        std::cout << type.to_string() << std::endl
-      );
-
-      todo_impl;
-  }
-
-  assert(obj != nullptr);
-
-  return obj;
-}
-
-Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
-  auto& stack = this->call_stack.emplace_back(func);
-
-  return stack;
-}
-
-void Evaluator::leave_function(AST::Function* func) {
-  auto& stack = *this->call_stack.rbegin();
-
-  debug(assert(stack.ast == func));
-
-  this->call_stack.pop_back();
-}
-
-Evaluator::FunctionStack& Evaluator::get_current_func_stack() {
-  return *this->call_stack.rbegin();
-}
-
 Object* Evaluator::evaluate(AST::Base* _ast) {
+  debug(
+    /*
+    std::this_thread::sleep_for(
+      std::chrono::milliseconds(100)
+    );
+
+    if(!_ast){
+      alertmsg("_ast == nullptr")
+      return none;
+    }
+    */
+  )
+
   if( !_ast )
     return none;
 
@@ -100,8 +57,13 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     case AST_Variable: {
       auto ast = (AST::Variable*)_ast;
 
+      alertmsg("cur_stack_index: " << this->cur_stack_index);
+      alertmsg(ast->index);
+
       return
-        this->object_stack[this->cur_stack_index + ast->index];
+        this->object_stack[
+          this->object_stack.size() - 1 - ast->index
+        ];
     }
 
     //
@@ -111,19 +73,24 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       auto ast = (AST::CallFunc*)_ast;
 
+      alertmsg("callfunc: " << ast->name);
+
       std::vector<Object*> args;
 
       // 引数
       for( auto&& arg : ast->args ) {
+        alertmsg(arg->to_string());
+
         args.emplace_back(this->evaluate(arg));
       }
 
       // 組み込み関数
       if( ast->is_builtin ) {
+        alertmsg("this is built-in!!");
         return ast->builtin_func->impl(args);
       }
 
-      // ユーザー定義関数
+     // ユーザー定義関数
       auto func = ast->callee;
 
       // コールスタック作成
@@ -131,7 +98,11 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       debug(
         alert;
-        printf("obj stack size = %zu\n", this->object_stack.size());
+
+        printf(
+          "obj stack size = %zu\n",
+          this->object_stack.size()
+        );
       )
 
       // スタック位置を保存
@@ -148,13 +119,20 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       // 関数実行
       alert;
-      this->evaluate(func->code);
+      auto xyz = this->evaluate(func->code);
+
+      alertmsg(xyz->to_string());
 
       // 戻り値を取得
       auto result =
         this->get_current_func_stack().result;
 
       assert(result != nullptr);
+
+      alertmsg(
+        "value returned from '"<<ast->name<<"' = "
+        << result->to_string()
+      )
 
       // スタックから引数を削除
       this->pop_object_with_count(args.size());
@@ -199,16 +177,19 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       auto x = (AST::Compare*)_ast;
 
       auto ret = this->evaluate(x->first);
+      Object* xxx{};
 
       for( auto&& elem : x->elements ) {
         if( !Evaluator::compute_compare(
           elem.op,
           elem.kind,
           ret,
-          this->evaluate(elem.ast)
+          xxx = this->evaluate(elem.ast)
         ) ) {
           return new ObjBool(false);
         }
+
+        ret = xxx;
       }
 
       return new ObjBool(true);
@@ -220,32 +201,25 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       auto stack_size = this->object_stack.size();
 
-      debug(printf(COL_MAGENTA "eval begin: AST_Scope %p" COL_DEFAULT "\n", ast);)
-
       for( auto&& item : ast->list ) {
-        alert;
-
         this->evaluate(item);
 
         if( !this->call_stack.empty() &&
           this->get_current_func_stack().is_returned ) {
           
-          alert;
-          debug(printf("AST_Scope: returned!!\n");)
-
           break;
         }
       }
 
       while( stack_size != this->object_stack.size() )
-         this->pop_object();
+        this->pop_object();
 
       // for( size_t i = 0; i < ast->used_stack_size; i++ )
       //   this->pop_object();
 
-      gc.clean();
+      // this->pop_object_with_count(ast->used_stack_size);
 
-      debug(printf(COL_MAGENTA "eval end: AST_Scope %p" COL_DEFAULT "\n", ast);)
+      gc.clean();
 
       break;
     }
@@ -283,6 +257,8 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
         func_stack.result = none;
 
       func_stack.is_returned = true;
+
+      assert(func_stack.result != nullptr);
 
       break;
     }
@@ -402,4 +378,63 @@ void Evaluator::pop_object_with_count(size_t count) {
   for( size_t i = 0; i < count; i++ ) {
     this->pop_object();
   }
+}
+
+/**
+ * @brief 即値・リテラルの AST からオブジェクトを作成する
+ * 
+ * @note すでに作成済みのものであれば、既存のものを返す
+ * 
+ * @param ast 
+ * @return 作成されたオブジェクト (Object*)
+ */
+Object* Evaluator::create_object(AST::Value* ast) {
+  auto type = Checker::value_type_cache[ast];
+
+  auto& obj = this->immediate_objects[ast];
+
+  if( obj )
+    return obj;
+
+  switch( type.kind ) {
+    case TYPE_Int:
+      obj = new ObjLong(std::stoi(ast->token.str.data()));
+      break;
+
+    case TYPE_String:
+      obj = new ObjString(Utils::String::to_wstr(
+        std::string(ast->token.str)
+      ));
+
+      break;
+
+    default:
+      debug(
+        std::cout << type.to_string() << std::endl
+      );
+
+      todo_impl;
+  }
+
+  assert(obj != nullptr);
+
+  return obj;
+}
+
+Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
+  auto& stack = this->call_stack.emplace_front(func);
+
+  return stack;
+}
+
+void Evaluator::leave_function(AST::Function* func) {
+  auto& stack = this->get_current_func_stack();
+
+  debug(assert(stack.ast == func));
+
+  this->call_stack.pop_front();
+}
+
+Evaluator::FunctionStack& Evaluator::get_current_func_stack() {
+  return *this->call_stack.begin();
 }

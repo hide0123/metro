@@ -12,10 +12,12 @@ BUILD	= build
 INCLUDE	= include
 SOURCES	= src \
 	src/Checker \
+	src/Compiler \
 	src/Evaluator \
 	src/GC \
 	src/Lexer \
-	src/Parser
+	src/Parser \
+	src/Types
 
 OPTFLAGS		= -O0 -g
 WARNFLAGS		= -Wall -Wextra -Wno-switch
@@ -50,7 +52,9 @@ all: $(BUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 release: $(BUILD)
-	@$(MAKE) --no-print-directory OPTFLAGS="-O3" DBGFLAGS="" LDFLAGS="-Wl,--gc-sections" -C $(BUILD) -f $(CURDIR)/Makefile
+	@$(MAKE) --no-print-directory OPTFLAGS="-O3" \
+	DBGFLAGS="" LDFLAGS="-Wl,--gc-sections" \
+	-C $(BUILD) -f $(CURDIR)/Makefile
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@

@@ -79,21 +79,14 @@ AST::Base* Parser::primary() {
       // 開きかっこがなければ 変数
       return new AST::Variable(*ident);
     }
+
+    default:
+      Error(*this->cur, "invalid syntax")
+        .emit()
+        .exit();
   }
   
   return this->stmt();
-
-  alert;
-  print_variable("%d", this->cur->kind);
-  
-  debug(
-    std::cout << this->cur->str << std::endl;
-    std::cout << this->cur->pos << std::endl;
-  )
-
-  Error(*this->cur, "invalid syntax")
-    .emit()
-    .exit();
 }
 
 AST::Base* Parser::mul() {
