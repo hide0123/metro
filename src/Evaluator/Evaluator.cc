@@ -127,6 +127,10 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       auto result =
         this->get_current_func_stack().result;
 
+      if(!result){
+        result=none;
+      }
+
       assert(result != nullptr);
 
       alertmsg(

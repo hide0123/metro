@@ -367,12 +367,10 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
     auto act_arg_it = ast->args.begin();
 
     while( 1 ) {
-      auto arg = *act_arg_it;
-
       if( auto Q=formal_arg_it==func->args.end();
           Q!=(act_arg_it==ast->args.end()) ){
       if( Q ) {// 定義側の引数
-        Error(arg,"too many arguments")
+        Error(*act_arg_it,"too many arguments")
         .emit().exit();
       }
       else{ // 呼び出し
@@ -384,6 +382,8 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
       else if(Q){ // true!=true で、ループ終了
         break;
       }
+
+      auto arg = *act_arg_it;
 
       auto aa = this->check(formal_arg_it->type);
       auto bb = this->check(*act_arg_it);
