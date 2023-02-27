@@ -58,8 +58,6 @@ private:
     return ast = (AST::Base*)this->new_return_stmt(ast);
   }
 
-  std::list<Token> const& token_list;
-
   token_iter cur;
   token_iter ate;
 };

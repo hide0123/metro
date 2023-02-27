@@ -26,7 +26,7 @@ std::vector<std::string> const& TypeInfo::get_name_list() {
 // 文字列に変換
 std::string TypeInfo::to_string() const {
   assert(static_cast<int>(this->kind)
-    < ::all_type_names.size());
+    < (int)::all_type_names.size());
 
   std::string s =
     ::all_type_names[static_cast<int>(this->kind)];

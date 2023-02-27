@@ -28,7 +28,7 @@
 
 
 #define __THISFILE__ \
-  (__FILE__ + std::size("/home/letz/sources/cpp/letzc"))
+  __FILE__
 
 #if METRO_DEBUG
   #include <iostream>
@@ -152,7 +152,7 @@ struct Color {
 
   std::string to_str() const {
     char aa[50];
-    sprintf(aa, "\033[38;2;%d;%d;%dm\0", r, g, b);
+    sprintf(aa, "\033[38;2;%d;%d;%dm", r, g, b);
     return aa;
   }
 

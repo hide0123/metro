@@ -40,7 +40,6 @@ public:
   //
   // 演算子
   static Object* compute_expr_operator(
-    Token const& op_token,
     AST::Expr::ExprKind kind,
     Object* left,
     Object* right
@@ -54,7 +53,6 @@ public:
    * @return false 
    */
   static bool compute_compare(
-    Token const& op_token,
     AST::Compare::CmpKind kind, Object* left, Object* right);
 
 
@@ -122,7 +120,6 @@ private:
   //
   // オブジェクトスタック
   // 変数・引数で使う
-  size_t cur_stack_index;
   std::vector<Object*> object_stack;
 
   //

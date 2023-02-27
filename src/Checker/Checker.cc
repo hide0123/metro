@@ -233,7 +233,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
       auto ast = (AST::Scope*)_ast;
 
-      auto& emu = this->scope_list.emplace_front(ast);
+      this->scope_list.emplace_front(ast);
 
       auto voffs = this->variable_stack_offs;
 
@@ -419,32 +419,6 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
     .exit();
 }
 
-
-void Checker::enter_scope(AST::Scope* ast) {
-
-  /*
-  alertmsg(ast->token.pos);
-  assert(ast != nullptr);
-
-  auto& emu = this->scope_list.emplace_front(ast);
-
-  alertmsg("emu.ast  " << emu.ast);
-  alertmsg("ast  " << ast);
-
-  for( auto&& item : ast->list ) {
-    this->check(item);
-  }
-
-  // assert(emu.ast == ast);
-
-  alertmsg("Checker::enter_scope()");
-  alertmsg("used_stack_size: " << emu.ast->used_stack_size);
-
-  this->scope_list.pop_front();
-  */
-}
-
-
 /**
  * @brief 演算子に対する両辺の型が適切かどうかチェックする
  * 
@@ -512,12 +486,6 @@ std::optional<TypeInfo> Checker::is_valid_expr(
   return std::nullopt;
 }
 
-bool Checker::check_compare(
-  AST::Compare::CmpKind kind, TypeInfo const& lhs, TypeInfo const& rhs) {
-
-  todo_impl;
-}
-
 AST::Function* Checker::find_function(std::string_view name) {
   for( auto&& item : this->root->list ) {
     if( item->kind == AST_Function &&
@@ -527,29 +495,6 @@ AST::Function* Checker::find_function(std::string_view name) {
   }
 
   return nullptr;
-}
-
-std::optional<
-  std::tuple<std::list<Checker::ScopeEmu>::iterator, size_t, size_t>
->
-  Checker::find_variable(std::string_view name) {
-
-/*
-  size_t stack_index = 0;
-
-  for(
-    auto it = this->scope_list.begin();
-    it != this->scope_list.end();
-    it++, stack_index += it->variables.size()
-  ) {
-    if( auto p = it->find_var(name); ) {
-      return std::make_tuple(
-        it, stack_index ? stack_index - 1 : 0, i);
-    }
-  }
-  */
-
-  return std::nullopt;
 }
 
 

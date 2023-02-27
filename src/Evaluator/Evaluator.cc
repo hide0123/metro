@@ -18,7 +18,6 @@ static ObjNone objnone;
 static ObjNone* none = &objnone;
 
 Evaluator::Evaluator()
-  : cur_stack_index(0)
 {
   ::objnone.ref_count = 1;
 }
@@ -87,13 +86,6 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       // コールスタック作成
       this->enter_function(func);
 
-      // スタック位置を保存
-      // auto save_index = this->cur_stack_index;
-      auto size_save = this->object_stack.size();
-
-      //
-      // this->cur_stack_index = this->object_stack.size();
-
       // 引数をスタックに追加
       for( auto&& obj : args ) {
         this->push_object(obj);
@@ -115,9 +107,6 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       // スタック戻す
       this->pop_object_with_count(args.size());
 
-      // スタック位置を戻す
-      // this->cur_stack_index = save_index;
-
       // コールスタック削除
       this->leave_function(func);
 
@@ -134,7 +123,6 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       for( auto&& elem : x->elements ) {
         ret = Evaluator::compute_expr_operator(
-          elem.op,
           elem.kind,
           ret,
           this->evaluate(elem.ast)
@@ -154,7 +142,6 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       for( auto&& elem : x->elements ) {
         if( !Evaluator::compute_compare(
-          elem.op,
           elem.kind,
           ret,
           xxx = this->evaluate(elem.ast)
@@ -257,7 +244,6 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 }
 
 Object* Evaluator::compute_expr_operator(
-  Token const& op_token,
   AST::Expr::ExprKind kind,
   Object* left,
   Object* right
@@ -302,7 +288,6 @@ Object* Evaluator::compute_expr_operator(
 }
 
 bool Evaluator::compute_compare(
-  Token const& op_token,
   AST::Compare::CmpKind kind, Object* left, Object* right) {
 
   using CK = AST::Compare::CmpKind;

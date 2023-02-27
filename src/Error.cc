@@ -24,8 +24,8 @@ Error::ErrLoc::ErrLoc(AST::Base const* ast)
 
 Error& Error::emit() {
 
-  auto const& source =
-    Application::get_current_instance().get_source_code();
+  // auto const& source =
+  //   Application::get_current_instance().get_source_code();
 
 
   std::cerr << this->msg << std::endl;

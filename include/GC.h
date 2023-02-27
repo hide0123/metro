@@ -15,8 +15,11 @@ public:
 
   void clean();
 
+  void execute();
+
 
 private:
 
+  std::vector<Object*> objects;
 
 };

@@ -77,11 +77,10 @@ std::string open_file(std::string const& path) {
 }
 
 int Application::main(int argc, char** argv) {
+  (void)argc;(void)argv;
   
-
   Application::initialize();
   
-
   this->source_code = open_file("test.txt");
 
   //
@@ -127,13 +126,14 @@ int Application::main(int argc, char** argv) {
 
 int main(int argc, char** argv) {
   try{
-  return Application().main(argc, argv);
-
-  }catch(std::exception e){
+    return Application().main(argc, argv);
+  }
+  catch( std::exception e ) {
     alertmsg(e.what());
-  }catch(...){
+  }
+  catch( ... ) {
     alert;
   }
-  
+
   return -1;
 }

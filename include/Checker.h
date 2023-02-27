@@ -80,13 +80,6 @@ public:
   TypeInfo check_function_call(AST::CallFunc* ast);
 
 
-  /**
-   * @brief スコープ
-   * 
-   * @param ast 
-   */
-  void enter_scope(AST::Scope* ast);
-  
 
   /**
    * @brief  式の両辺の型が正しいかどうか検査する
@@ -101,19 +94,6 @@ public:
 
 
   /**
-   * @brief 比較式の型をチェックする
-   * 
-   * @param kind 
-   * @param lhs 
-   * @param rhs 
-   * @return true 
-   * @return false 
-   */
-  bool check_compare(
-    AST::Compare::CmpKind kind, TypeInfo const& lhs, TypeInfo const& rhs);
-
-
-  /**
    * @brief ユーザー定義関数を探す
    * 
    * @param name 
@@ -121,23 +101,6 @@ public:
    */
   AST::Function* find_function(std::string_view name);
 
-
-  /**
-   * @brief 変数を探す
-   * 
-   * @param name 
-   * @return std::optional<
-   * std::tuple<std::list<ScopeEmu>::iterator, size_t, size_t>
-   * > 
-   */
-  std::optional<
-    std::tuple<
-      std::list<ScopeEmu>::iterator,  // iter to ScopeEmu
-      size_t, // in Evaluator, index to object n stack
-      size_t  // index in ScopeEmu
-    >
-  >
-    find_variable(std::string_view name);
 
 
 private:

@@ -8,8 +8,7 @@
 using EXKind = AST::Expr::ExprKind;
 
 Parser::Parser(std::list<Token> const& token_list)
-  : token_list(token_list),
-    cur(token_list.begin()),
+  : cur(token_list.begin()),
     ate(token_list.begin())
 {
 }
@@ -22,7 +21,7 @@ AST::Scope* Parser::parse() {
   auto root_scope = new AST::Scope(*this->cur);
 
   while( this->check() ) {
-    auto& item = root_scope->append(this->top());
+    root_scope->append(this->top());
   }
 
   return root_scope;

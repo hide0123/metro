@@ -58,8 +58,11 @@ void Compiler::compile(AST::Base* _ast) {
 
         if(i>=4){
           this->compile(ast->args[i]);
-          j?CC("str r0, [sp, #"<<j<<"]")
-          :CC("str r0, [sp]");
+
+          if(j)
+            CC("str r0, [sp, #"<<j<<"]");
+          else
+            CC("str r0, [sp]");
           continue;
         }
 
@@ -96,7 +99,7 @@ void Compiler::compile(AST::Base* _ast) {
       };
 
       #define funcmacroxx(k) ({ \
-        assert(static_cast<int>(k)<std::size(UWAA)); \
+        assert(static_cast<int>(k)<(int)std::size(UWAA)); \
         UWAA[static_cast<int>(k)];})
 
       astdef(Expr);
@@ -121,15 +124,13 @@ void Compiler::compile(AST::Base* _ast) {
     }
 
     case AST_Compare: {
-      astdef(Compare);
+
+
 
       break;
     }
 
     case AST_If: {
-      astdef(If);
-
-      this->compile(ast->condition);
 
 
 
