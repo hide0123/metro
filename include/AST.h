@@ -254,6 +254,43 @@ struct If : Base {
   }
 };
 
+struct For : Base {
+  AST::Base* iter;
+  AST::Base* iterable;
+
+  For(Token const& tok)
+    : Base(AST_For, tok)
+      ,iter(nullptr),iterable(nullptr){}
+};
+
+struct While : Base {
+  Base* cond;
+  Scope* code;
+
+  While(Token const&tok)
+    :Base(AST_While,tok),
+   cond(nullptr),code(nullptr){}
+};
+
+struct DoWhile : Base {
+  Scope* code;
+  Base* cond;
+
+  DoWhile(Token const& tok)
+    :Base(AST_DoWhile,tok)
+    ,code(nullptr),cond(nullptr){}
+};
+
+struct Loop : Base {
+  Base* code;
+
+  Loop(Base* cc)
+  :Base(AST_Loop,cc->token),
+  code(cc)
+  {
+  }
+};
+
 struct Scope : Base {
   std::vector<Base*> list;
   size_t used_stack_size;
