@@ -62,7 +62,6 @@
   inline char const* rightspace(char const (&str) [_n]) {
     static char buf[0x100];
 
-    // static_assert(_n < len);
     if constexpr (_n >= len) {
       return str;
     }
@@ -88,9 +87,9 @@
     std::stringstream ss;
 
     ss <<
-      COL_BOLD "\t#alertmsg " COL_BLACK << (... << args);
+      COL_BOLD "\t#alertmsg " COL_BOLD COL_WHITE << (... << args);
 
-    return rightspace<40>(ss.str())
+    return rightspace<50>(ss.str())
         + " " COL_GREEN + loc + COL_DEFAULT;
   }
 #else
@@ -108,9 +107,10 @@
 #define TODO todo_impl
 
 #define alertmsg(a...) \
-  ({debug(std::cout<<Color::Gray.to_bgstr()<< \
+  ({debug(std::cout<<Color(30,30,30).to_bgstr()<< \
   Color::Magenta.to_str()<< __makealertmsgstr(Utils::format( \
-  "%s:%d" COL_DEFAULT "\n",__THISFILE__,(int)__LINE__),[&]()\
+  "from %s:%d" COL_DEFAULT "\n",__THISFILE__,\
+  (int)__LINE__),[&]()\
   {std::stringstream _;_<<a;return _.str();}()););0;})
 
 namespace Utils {
