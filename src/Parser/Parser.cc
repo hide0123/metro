@@ -191,8 +191,21 @@ AST::Base* Parser::bit_op() {
   return x;
 }
 
+AST::Base* Parser::assign() {
+  auto x = this->bit_op();
+
+  if(this->eat("=")){
+    auto y = new AST::Assign(*this->ate);
+    y->dest=x;
+    y->expr=this->assign();
+    x=y;
+  }
+
+  return x;
+}
+
 AST::Base* Parser::expr() {
-  return this->bit_op();
+  return this->assign();
 }
 
 /**

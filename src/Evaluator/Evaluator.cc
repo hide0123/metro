@@ -13,6 +13,7 @@
 #include "Checker.h"
 #include "Evaluator.h"
 
+#define astdef(T) auto ast=(AST::T*)_ast
 
 static ObjNone objnone;
 static ObjNone* none = &objnone;
@@ -55,12 +56,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
     // 変数
     case AST_Variable: {
-      auto ast = (AST::Variable*)_ast;
-
-      return
-        this->object_stack[
-          this->object_stack.size() - 1 - ast->index
-        ];
+      return this->eval_left(_ast);
     }
 
     //
@@ -130,6 +126,16 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       }
 
       return ret;
+    }
+
+    //
+    // 代入
+    case AST_Assign: {
+      astdef(Assign);
+
+      return
+        this->eval_left(ast->dest)
+          = this->evaluate(ast->expr);
     }
 
     //
@@ -242,6 +248,23 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
   return none;
 }
+
+Object*& Evaluator::eval_left(AST::Base* _ast) {
+
+  switch(_ast->kind){
+    case AST_Variable: {
+      astdef(Variable);
+
+      return
+        this->object_stack[
+          this->object_stack.size() - 1 - ast->index
+        ];
+    }
+  }
+
+  panic("fck, ain't left value. %p", _ast);
+}
+
 
 Object* Evaluator::compute_expr_operator(
   AST::Expr::ExprKind kind,

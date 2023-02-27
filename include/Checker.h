@@ -69,6 +69,9 @@ public:
    * @return 評価された _ast の型 (TypeInfo)
    */
   TypeInfo check(AST::Base* ast);
+
+
+  TypeInfo check_as_left(AST::Base* ast);
   
 
   /**

@@ -19,6 +19,7 @@ enum ASTKind {
 
   AST_Compare,
 
+  AST_Assign,
   AST_Expr,
 
   AST_If,
@@ -28,6 +29,7 @@ enum ASTKind {
   AST_Loop,
   AST_For,
   AST_While,
+  AST_DoWhile,
 
   AST_Scope,
 
@@ -200,6 +202,16 @@ struct Expr : Base {
 
     return (Expr*)ast;
   }
+};
+
+struct Assign : Base {
+  Base* dest;
+  Base* expr;
+
+  Assign(Token const& assign_op)
+  :Base(AST_Assign,assign_op)
+  ,dest(nullptr),expr(nullptr)
+  {}
 };
 
 //

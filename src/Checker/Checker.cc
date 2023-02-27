@@ -16,6 +16,9 @@ Checker
 #include "Error.h"
 #include "Checker.h"
 
+#define astdef(T) auto ast=(AST::T*)_ast
+
+
 std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
 
 Checker::Checker(AST::Scope* root)
@@ -70,21 +73,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
     // 変数
     case AST_Variable: {
-      auto ast = (AST::Variable*)_ast;
-
-      for(auto&&S:this->scope_list){
-        for(auto it=S.variables.rbegin();
-        it!=S.variables.rend();it++){
-          if(it->name==ast->token.str){
-            ast->index=it->offs;
-            return it->type;
-          }
-        }
-      }
-
-      Error(ast->token, "undefined variable name")
-        .emit()
-        .exit();
+      return this->check_as_left(_ast);
     }
 
     //
@@ -116,6 +105,22 @@ TypeInfo Checker::check(AST::Base* _ast) {
       }
 
       return left;
+    }
+
+    //
+    // 代入式
+    case AST_Assign: {
+      astdef(Assign);
+
+      auto dest = this->check_as_left(ast->dest);
+
+      if( !dest.equals(this->check(ast->expr)) ) {
+        Error(ast->token, "type mismatch")
+          .emit()
+          .exit();
+      }
+
+      return dest;
     }
 
     //
@@ -279,7 +284,6 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
       // 引数追加
       size_t wawawa=0;
-//      for(auto it=ast->args.rbegin();it!=ast->args.rend();it++){
       for(auto&&x:ast->args){
         auto& V=S.variables.emplace_back(
           x.name.str,
@@ -344,6 +348,32 @@ TypeInfo Checker::check(AST::Base* _ast) {
   }
 
   return TYPE_None;
+}
+
+TypeInfo Checker::check_as_left(AST::Base* _ast) {
+  switch( _ast->kind ) {
+    case AST_Variable: {
+      astdef(Variable);
+
+      for(auto&&S:this->scope_list){
+        for(auto it=S.variables.rbegin();
+        it!=S.variables.rend();it++){
+          if(it->name==ast->token.str){
+            ast->index=it->offs;
+            return it->type;
+          }
+        }
+      }
+
+      Error(ast->token, "undefined variable name")
+        .emit()
+        .exit();
+    }
+  }
+
+  Error(_ast, "expected lvalue expression")
+    .emit()
+    .exit();
 }
 
 

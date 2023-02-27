@@ -23,6 +23,8 @@ public:
   AST::Base* shift();
   AST::Base* compare();
   AST::Base* bit_op();
+
+  AST::Base* assign();
   
   AST::Base* expr();
 

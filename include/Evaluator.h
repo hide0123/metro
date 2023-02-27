@@ -37,6 +37,15 @@ public:
   Object* evaluate(AST::Base* ast);
 
 
+  /**
+   * @brief AST を左辺値の式として評価する
+   * 
+   * @param ast 
+   * @return Object*& 
+   */
+  Object*& eval_left(AST::Base* ast);
+
+
   //
   // 演算子
   static Object* compute_expr_operator(
