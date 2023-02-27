@@ -111,7 +111,7 @@
   debug(std::cout<<Color::Gray.to_bgstr()<< \
   Color::Magenta.to_str()<< __makealertmsgstr(Utils::format( \
   "%s:%d" COL_DEFAULT "\n",__THISFILE__,(int)__LINE__),[&]()\
-  {std::stringstream _;_<<a;return _.str();}())<<std::endl);
+  {std::stringstream _;_<<a;return _.str();}()));
 
 namespace Utils {
 

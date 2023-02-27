@@ -275,6 +275,8 @@ struct Function : Base {
   AST::Type* result_type; // 戻り値の型
   AST::Scope* code;       // 処理
 
+  size_t var_count = 0;
+
   /**
    * @brief 引数を追加する
    * 

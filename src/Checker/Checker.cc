@@ -148,15 +148,25 @@ TypeInfo Checker::check(AST::Base* _ast) {
       
       auto& scope_emu = this->get_cur_scope();
 
-      if( !ast->type ) {
-        todo_impl;
-      }
+      // if( !ast->type ) {
+      //   todo_impl;
+      // }
 
       // this->variable_stack_offs++;
 
-      auto type = this->check(ast->type);
+      //auto type = this->check(ast->type);
+      TypeInfo type;
 
-      this->check(ast->init);
+      auto tt = this->check(ast->init);
+
+      if(ast->type){
+        type=this->check(ast->type);
+        if(!type.equals(tt))
+        Error(ast->init,"mismatched type")
+        .emit().exit();
+      }
+      else
+      type=tt;
 
       if( auto p = scope_emu.find_var(ast->name); p ) {
         // shadowing
@@ -169,6 +179,10 @@ TypeInfo Checker::check(AST::Base* _ast) {
         );
 
         V.offs = this->variable_stack_offs++;
+
+        if(auto P=this->get_cur_func();P){
+          P->var_count++;
+        }
 
         // scope_emu.ast->used_stack_size++;
       }
@@ -249,6 +263,9 @@ TypeInfo Checker::check(AST::Base* _ast) {
       // スコープ追加
       auto& S = this->scope_list.emplace_front(fn_scope);
 
+      ast->var_count=ast->args.size();
+
+      // 引数追加
       for(auto it=ast->args.rbegin();it!=ast->args.rend();it++)
         S.variables.emplace_back(
           it->name.str,

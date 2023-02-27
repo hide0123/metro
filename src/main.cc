@@ -11,6 +11,7 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "Checker.h"
+#include "Compiler.h"
 #include "Evaluator.h"
 
 #include "Application.h"
@@ -109,11 +110,15 @@ int Application::main(int argc, char** argv) {
 
   alertmsg("check(ast) = " << type.to_string());
 
+  Compiler com;
+
+  alert;
+  com.compile(ast);
 
 
-  Evaluator eval;
+  // Evaluator eval;
 
-  eval.evaluate(ast);
+  // eval.evaluate(ast);
 
 
 
