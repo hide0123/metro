@@ -265,6 +265,7 @@ struct For : Base {
       code(nullptr){}
 };
 
+struct Scope;
 struct While : Base {
   Base* cond;
   Scope* code;

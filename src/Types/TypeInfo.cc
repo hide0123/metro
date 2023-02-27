@@ -13,6 +13,7 @@ static std::vector<std::string> const all_type_names {
   "bool",
   "char",
   "string",
+  "range",
   "vector",
   "args"
 };

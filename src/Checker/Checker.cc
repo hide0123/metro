@@ -247,6 +247,37 @@ TypeInfo Checker::check(AST::Base* _ast) {
     }
 
     //
+    // for
+    case AST_For: {
+      astdef(For);
+
+      auto iterable = this->check(ast->iterable);
+
+      if(!iterable.equals(TYPE_Vector)){
+        Error(ast->iterable,
+        "expected iterable expression")
+        .emit()
+        .exit();
+      }
+
+      auto iter = this->check_as_left(ast->iter);
+      auto param =iterable.type_params[0];
+
+      if(!iter.equals(param)){
+        Error(ast->iter,
+          "cannot assignment a value of type '"
+          +param.to_string()+"'")
+          .emit()
+          .exit();
+      }
+
+      this->check(ast->code);
+
+      break;
+    }
+
+
+    //
     // スコープ
     case AST_Scope: {
 

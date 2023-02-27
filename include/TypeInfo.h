@@ -13,6 +13,7 @@ enum TypeKind {
   TYPE_Bool,
   TYPE_Char,
   TYPE_String,
+  TYPE_Range,
   TYPE_Vector,
   TYPE_Args,
 };
