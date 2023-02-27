@@ -42,21 +42,47 @@ void Compiler::compile(AST::Base* _ast) {
     case AST_CallFunc: {
       astdef(CallFunc);
 
-      int i=ast->args.size();
 
-      std::all_of(
-        ast->args.rbegin(), ast->args.rend(),
-      [&] (AST::Base*& arg) -> bool {
-        this->compile(arg);
+      int addsp=0;
+
+    if(ast->args.size()>4){
+      addsp = ast->args.size()-4;
+
+      CC("push bp");
+      CC("mov bp, sp");
+      CC("add sp, #" << addsp);
+    }
+
+      for(
+        int i=((signed)ast->args.size())-1,j=0;;i--,j++){
 
         if(i>=4){
-
-        } else {
-
+          this->compile(ast->args[i]);
+          j?CC("str r0, [sp, #"<<j<<"]")
+          :CC("str r0, [sp]");
+          continue;
         }
 
-        i--;
-      });
+        j=i;
+        while(i>0){
+          this->compile(ast->args[i]);
+          CC("push r0");
+          i--;
+        }
+        i=1;
+        this->compile(ast->args[0]);
+        while(i<=j){
+        CC("pop r" << i);
+        i++;
+        }
+        break;
+      }
+
+      CC("call " << ast->name);
+
+      if(addsp) {
+        CC("pop bp");
+      }
 
       break;
     }
@@ -65,8 +91,13 @@ void Compiler::compile(AST::Base* _ast) {
       static char const* UWAA[]{
         "add",
         "sub",
-        "add",
+        "mul",
+        "div",
       };
+
+      #define funcmacroxx(k) ({ \
+        assert(static_cast<int>(k)<std::size(UWAA)); \
+        UWAA[static_cast<int>(k)];})
 
       astdef(Expr);
 
@@ -75,10 +106,16 @@ void Compiler::compile(AST::Base* _ast) {
       this->compile(it->ast);
       CC("push r0");
 
+      while(it!=ast->elements.rend()-1){
+        this->compile(it->ast);
+        CC("pop r1");
+        CC(funcmacroxx(it->kind) << " r0, r1");
+        CC("push r0");
+      }
       
       this->compile(ast->first);
       CC("pop r1");
-
+        CC(funcmacroxx(it->kind) << " r0, r1");
 
       break;
     }
@@ -134,7 +171,7 @@ void Compiler::compile(AST::Base* _ast) {
      if(this->f_flag_epipuro){
       CC("push bp");
       CC("mov bp, sp");
-      CC("add sp, " << ast->var_count);
+      CC("add sp, #" << ast->var_count);
 
        for(size_t i=0;auto&&arg:ast->args){
         if(i<=3){
