@@ -76,6 +76,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
         for(auto it=S.variables.rbegin();
         it!=S.variables.rend();it++){
           if(it->name==ast->token.str){
+            ast->index=it->offs;
             return it->type;
           }
         }
@@ -114,8 +115,6 @@ TypeInfo Checker::check(AST::Base* _ast) {
         }
       }
 
-      alertmsg("expr;;; "<<left.to_string());
-
       return left;
     }
 
@@ -148,43 +147,41 @@ TypeInfo Checker::check(AST::Base* _ast) {
       
       auto& scope_emu = this->get_cur_scope();
 
-      // if( !ast->type ) {
-      //   todo_impl;
-      // }
-
-      // this->variable_stack_offs++;
-
-      //auto type = this->check(ast->type);
       TypeInfo type;
 
-      auto tt = this->check(ast->init);
+      if( ast->type ) {
+        type = this->check(ast->type);
 
-      if(ast->type){
-        type=this->check(ast->type);
-        if(!type.equals(tt))
-        Error(ast->init,"mismatched type")
-        .emit().exit();
-      }
-      else
-      type=tt;
-
-      if( auto p = scope_emu.find_var(ast->name); p ) {
-        // shadowing
-        p->type = type;
+        // 指定された型と初期化式の型が一致しない
+        if( !type.equals(this->check(ast->init)) ) {
+          Error(ast->init,"mismatched type")
+            .emit()
+            .exit();
+        }
       }
       else {
-        auto& V = scope_emu.variables.emplace_back(
+        type = this->check(ast->init);
+      }
+
+      auto pvar = scope_emu.find_var(ast->name);
+
+      // すでに定義済みの同じ名前が存在するとき
+      //  => シャドウイングする
+      if( pvar ) {
+        pvar->type = type;
+      }
+      // なければ新規追加
+      else {
+        auto& var = scope_emu.variables.emplace_back(
           ast->name,
           type
         );
 
-        V.offs = this->variable_stack_offs++;
+        var.offs = this->variable_stack_offs++;
 
-        if(auto P=this->get_cur_func();P){
-          P->var_count++;
+        if( auto func = this->get_cur_func(); func ) {
+          func->var_count++;
         }
-
-        // scope_emu.ast->used_stack_size++;
       }
 
       break;
@@ -202,8 +199,9 @@ TypeInfo Checker::check(AST::Base* _ast) {
           .exit();
       }
       // 式がない
-      else if( !ast->expr )
+      else if( !ast->expr ) {
         break;
+      }
 
       return this->check(ast->expr);
     }
@@ -264,21 +262,18 @@ TypeInfo Checker::check(AST::Base* _ast) {
       auto& S = this->scope_list.emplace_front(fn_scope);
 
       ast->var_count = ast->args.size();
-      
 
       // 引数追加
-      for(auto it=ast->args.rbegin();it!=ast->args.rend();it++)
-        S.variables.emplace_back(
-          it->name.str,
-          this->check(it->type)
+      size_t wawawa=0;
+//      for(auto it=ast->args.rbegin();it!=ast->args.rend();it++){
+      for(auto&&x:ast->args){
+        auto& V=S.variables.emplace_back(
+          x.name.str,
+          this->check(x.type)
         );
 
-      // for( auto&& arg : ast->args ) {
-      //   S.variables.emplace_back(
-      //     arg.name.str,
-      //     this->check(arg.type)
-      //   );
-      // }
+        V.offs=wawawa++;
+      }
 
       auto res_type = this->check(ast->result_type);
 
@@ -291,7 +286,6 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
       this->function_history.pop_front();
 
-      // return res_type;
       break;
     }
 

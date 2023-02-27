@@ -97,11 +97,11 @@ int Application::main(int argc, char** argv) {
 
   alertmsg(ast->to_string());
 
-  // Token toktok{TOK_End};
-  // toktok.str="main";
+  Token toktok{TOK_End};
+  toktok.str="main";
 
-  // auto azz=new AST::CallFunc(toktok);
-  // ast->append(azz);
+  auto azz=new AST::CallFunc(toktok);
+  ast->append(azz);
 
   // 意味解析
   Checker checker{ ast };
@@ -110,15 +110,15 @@ int Application::main(int argc, char** argv) {
 
   alertmsg("check(ast) = " << type.to_string());
 
-  Compiler com;
+  // Compiler com;
 
-  alert;
-  com.compile(ast);
+  // alert;
+  // com.compile(ast);
 
 
-  // Evaluator eval;
+  Evaluator eval;
 
-  // eval.evaluate(ast);
+  eval.evaluate(ast);
 
 
 

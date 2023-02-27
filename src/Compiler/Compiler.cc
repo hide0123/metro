@@ -172,27 +172,25 @@ void Compiler::compile(AST::Base* _ast) {
       CC("push bp");
       CC("mov bp, sp");
       CC("add sp, #" << ast->var_count);
+        
+        for(int i=ast->args.size();i>=0;i--){
+          if(i>3) i=3;
 
-       for(size_t i=0;auto&&arg:ast->args){
-        if(i<=3){
-        CC("str r"<<i<<", [bp"<<(
-        i==0?"":", #"s+std::to_string(i)
-        )<<"]");
+          if(i>0)
+            CC("str r"<<i<<", [bp, #"<<i<<"]");
+          else
+            CC("str r"<<i<<", [bp]");
         }
-        else{
-          
-        }
-
-
-       i++; }
      }
 
       this->compile(ast->code);
 
-      if(this->f_flag_epipuro)
+      if(ast->code->list.empty()
+      ||(*ast->code->list.rbegin())->kind!=AST_Return){
         CC("pop bp");
+        CC("ret");
+      }
 
-      CC("ret");
       break;
     }
   }

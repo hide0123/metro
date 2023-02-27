@@ -15,7 +15,6 @@
 
 
 static ObjNone objnone;
-
 static ObjNone* none = &objnone;
 
 Evaluator::Evaluator()
@@ -50,15 +49,14 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     case AST_Function:
       break;
 
+    // 即値
     case AST_Value: {
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
+    // 変数
     case AST_Variable: {
       auto ast = (AST::Variable*)_ast;
-
-      alertmsg("cur_stack_index: " << this->cur_stack_index);
-      alertmsg(ast->index);
 
       return
         this->object_stack[
@@ -69,48 +67,32 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     //
     // 関数呼び出し
     case AST_CallFunc: {
-      alert;
-
       auto ast = (AST::CallFunc*)_ast;
-
-      alertmsg("callfunc: " << ast->name);
 
       std::vector<Object*> args;
 
       // 引数
       for( auto&& arg : ast->args ) {
-        alertmsg(arg->to_string());
-
         args.emplace_back(this->evaluate(arg));
       }
 
       // 組み込み関数
       if( ast->is_builtin ) {
-        alertmsg("this is built-in!!");
         return ast->builtin_func->impl(args);
       }
 
-     // ユーザー定義関数
+      // ユーザー定義関数
       auto func = ast->callee;
 
       // コールスタック作成
       this->enter_function(func);
 
-      debug(
-        alert;
-
-        printf(
-          "obj stack size = %zu\n",
-          this->object_stack.size()
-        );
-      )
-
       // スタック位置を保存
-      auto save_index = this->cur_stack_index;
+      // auto save_index = this->cur_stack_index;
       auto size_save = this->object_stack.size();
 
       //
-      this->cur_stack_index = this->object_stack.size();
+      // this->cur_stack_index = this->object_stack.size();
 
       // 引数をスタックに追加
       for( auto&& obj : args ) {
@@ -118,39 +100,26 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       }
 
       // 関数実行
-      alert;
-      auto xyz = this->evaluate(func->code);
-
-      alertmsg(xyz->to_string());
+      this->evaluate(func->code);
 
       // 戻り値を取得
       auto result =
         this->get_current_func_stack().result;
 
-      if(!result){
+      if( !result ) {
         result=none;
       }
 
       assert(result != nullptr);
 
-      alertmsg(
-        "value returned from '"<<ast->name<<"' = "
-        << result->to_string()
-      );
-
-      // スタックから引数を削除
+      // スタック戻す
       this->pop_object_with_count(args.size());
 
       // スタック位置を戻す
-      this->cur_stack_index = save_index;
+      // this->cur_stack_index = save_index;
 
       // コールスタック削除
       this->leave_function(func);
-
-      debug(
-        alert;
-        printf("obj stack size = %zu\n", this->object_stack.size());
-      )
 
       // 戻り値を返す
       return result;
@@ -228,6 +197,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       break;
     }
 
+    // 変数定義
     case AST_Let: {
       auto ast = (AST::VariableDeclaration*)_ast;
 
@@ -242,31 +212,27 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       break;
     }
 
+    //
+    // Return
     case AST_Return: {
       auto ast = (AST::Return*)_ast;
 
-      auto& func_stack = this->get_current_func_stack();
+      auto& fs = this->get_current_func_stack();
 
-      if( ast->expr ) {
-
-        func_stack.result = this->evaluate(ast->expr);
-
-        debug(
-          alert;
-          printf("func_stack.result: %p\n", func_stack.result);
-          std::cout << func_stack.result->to_string() << std::endl;
-        )
-      }
+      if( ast->expr )
+        fs.result = this->evaluate(ast->expr);
       else
-        func_stack.result = none;
+        fs.result = none;
 
-      func_stack.is_returned = true;
+      // フラグ有効化
+      fs.is_returned = true;
 
-      assert(func_stack.result != nullptr);
-
+      assert(fs.result != nullptr);
       break;
     }
 
+    //
+    // If
     case AST_If: {
       auto ast = (AST::If*)_ast;
 
@@ -279,7 +245,11 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     }
 
     default:
-      debug(printf("%d\n",_ast->kind));
+      alertmsg(
+        "evaluation is not implemented yet (kind="
+        << _ast->kind << ")"
+      );
+
       todo_impl;
   }
 
