@@ -108,10 +108,10 @@
 #define TODO todo_impl
 
 #define alertmsg(a...) \
-  debug(std::cout<<Color::Gray.to_bgstr()<< \
+  ({debug(std::cout<<Color::Gray.to_bgstr()<< \
   Color::Magenta.to_str()<< __makealertmsgstr(Utils::format( \
   "%s:%d" COL_DEFAULT "\n",__THISFILE__,(int)__LINE__),[&]()\
-  {std::stringstream _;_<<a;return _.str();}()));
+  {std::stringstream _;_<<a;return _.str();}()););0;})
 
 namespace Utils {
 
@@ -175,3 +175,8 @@ struct Color {
 
 
 };
+
+template <class T>
+using pure_type =
+  std::remove_reference<
+    std::remove_cv_t<T>>;

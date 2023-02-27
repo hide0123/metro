@@ -8,7 +8,10 @@ public:
 
   void compile(AST::Base* ast);
 
-  
+  AST::Function* cur_func{};
+  bool f_flag_epipuro{};
+
+
 
 
 

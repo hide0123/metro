@@ -136,7 +136,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       alertmsg(
         "value returned from '"<<ast->name<<"' = "
         << result->to_string()
-      )
+      );
 
       // スタックから引数を削除
       this->pop_object_with_count(args.size());

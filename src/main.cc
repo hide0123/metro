@@ -126,5 +126,14 @@ int Application::main(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
+  try{
   return Application().main(argc, argv);
+
+  }catch(std::exception e){
+    alertmsg(e.what());
+  }catch(...){
+    alert;
+  }
+  
+  return -1;
 }

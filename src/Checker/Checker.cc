@@ -263,7 +263,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
       // スコープ追加
       auto& S = this->scope_list.emplace_front(fn_scope);
 
-      ast->var_count=ast->args.size();
+      ast->var_count = ast->args.size();
+      
 
       // 引数追加
       for(auto it=ast->args.rbegin();it!=ast->args.rend();it++)
