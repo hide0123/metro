@@ -213,7 +213,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
         
         Error(resp,
       "specified '"+resp->to_string()+"' as result type, "
-      "but this return '"+type.to_string()+"'")
+      "but statement return '"+type.to_string()+"'")
           .emit(Error::EL_Note);
       }
 

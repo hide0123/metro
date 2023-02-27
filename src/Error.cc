@@ -104,7 +104,7 @@ Error& Error::emit(ErrorLevel level) {
     break;
   }
 
-      // エラーが起きたファイルと行番号
+  // エラーが起きたファイルと行番号
   std::cout << std::endl
     << COL_GREEN "    --> "
     << Color(0,255,255).to_str()
