@@ -214,6 +214,14 @@ AST::Base* Parser::expr() {
  * @return AST::Base* 
  */
 AST::Base* Parser::stmt() {
+
+  /*
+   最後がセミコロンで終わるやつは最後で
+     this->expect_semi();
+     　ってやってください
+     例えば変数定義とか
+  */
+
   //
   // スコープ
   if( this->cur->str == "{" )
@@ -236,6 +244,50 @@ AST::Base* Parser::stmt() {
   }
 
   //
+  // for
+  if(this->eat("for")){
+    auto ast=new AST::For(*this->ate);
+
+    ast->iter=this->expr();
+    
+    this->expect("in");
+    ast->iterable=this->expr();
+
+    ast->code=this->expect_scope();
+
+    return ast;
+  }
+
+  //
+  // while
+  if(this->eat("while")){
+    auto ast=new AST::While(*this->ate);
+    ast->cond=this->expr();
+    ast->code=this->expect_scope();
+    return ast;
+  }
+
+  //
+  // loop
+  if(this->eat("loop")){
+    return new AST::Loop(
+      this->expect_scope()
+    );
+  }
+
+  //
+  // do-while
+  if(this->eat("do")){
+    auto ast=new AST::DoWhile(*this->ate);
+
+    ast->code=this->expect_scope();
+    ast->cond=this->expr();
+
+    this->expect_semi();
+    return ast;
+  }
+
+  //
   // let 変数定義
   if( this->eat("let") ) {
     auto ast = new AST::VariableDeclaration(*this->ate);
@@ -251,7 +303,6 @@ AST::Base* Parser::stmt() {
     }
 
     this->expect_semi();
-
     return ast;
   }
 

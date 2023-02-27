@@ -255,12 +255,14 @@ struct If : Base {
 };
 
 struct For : Base {
-  AST::Base* iter;
-  AST::Base* iterable;
+  Base* iter;
+  Base* iterable;
+  Base* code;
 
   For(Token const& tok)
     : Base(AST_For, tok)
-      ,iter(nullptr),iterable(nullptr){}
+      ,iter(nullptr),iterable(nullptr),
+      code(nullptr){}
 };
 
 struct While : Base {
