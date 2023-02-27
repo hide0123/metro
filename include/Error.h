@@ -28,13 +28,19 @@ public:
     ErrLoc(AST::Base const* ast);
   };
 
+  enum ErrorLevel {
+    EL_Error,
+    EL_Warning,
+    EL_Note
+  };
+
   Error(ErrLoc loc, std::string const& msg)
     : loc(loc),
       msg(msg)
   {
   }
 
-  Error& emit();
+  Error& emit(ErrorLevel level = EL_Error);
 
   [[noreturn]]
   void exit(int code = 1);

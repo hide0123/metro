@@ -25,7 +25,7 @@ Error::ErrLoc::ErrLoc(AST::Base const* ast)
 {
 }
 
-Error& Error::emit() {
+Error& Error::emit(ErrorLevel level) {
  typedef int64_t i64;
 
  auto& app = Application::get_current_instance();
@@ -77,30 +77,50 @@ Error& Error::emit() {
   auto const err_line =
     source.substr(line_begin, line_end - line_begin);
   
-
   std::cout
-    <<std::endl
-    << COL_BOLD COL_RED "error: "
-      <<Color(255,100,0).to_str()<<this->msg
+    <<std::endl;
+
+  // レベルによって最初の表示を変える
+  switch(level){
+  // エラー
+   case EL_Error:
+    std::cout
+      << COL_BOLD COL_RED "error: "
+        <<COL_WHITE<<this->msg;
+    break;
+
+  // 警告
+   case EL_Warning:
+    std::cout
+      << COL_BOLD COL_MAGENTA "warning: "
+        <<COL_WHITE<<this->msg;
+    break;
+
+  // ヒント、ヘルプなど
+   case EL_Note:
+    std::cout
+      << COL_BOLD COL_CYAN "note: "
+        <<COL_WHITE<<this->msg;
+    break;
+  }
 
       // エラーが起きたファイルと行番号
-    << COL_GREEN " at "
+  std::cout << std::endl
+    << COL_GREEN "    --> "
     << Color(0,255,255).to_str()
     << app.file_path<<":"<<line_num << std::endl
 
       // エラーが起きた行
-    <<COL_BOLD COL_WHITE
-    <<"       |\n"
-    <<Utils::format("%6d |",line_num) << err_line<< std::endl
-    <<COL_DEFAULT "       |" 
+    <<COL_DEFAULT COL_WHITE
+    <<"     |\n"
+    <<Utils::format("%4d |",line_num) << err_line<< std::endl
+    <<COL_DEFAULT "     |" 
 
       // 矢印
     <<std::string(err_ptr_char_pos,' ')<<'^'
 
+    << std::endl
     << std::endl;
-
-
-
 
   __was_emitted=true;
 

@@ -204,11 +204,17 @@ TypeInfo Checker::check(AST::Base* _ast) {
       }
 
       auto type = this->check(ast->expr);
+      auto resp=this->get_cur_func()->result_type;
 
-      if(!type.equals(
-        this->check(this->get_cur_func()->result_type))){
-        Error(ast->expr,"type mismatch")
+    if(!type.equals(
+      this->check(resp))){
+        Error(ast->expr, "type mismatch")
           .emit();
+        
+        Error(resp,
+      "specified '"+resp->to_string()+"' as result type, "
+      "but this return '"+type.to_string()+"'")
+          .emit(Error::EL_Note);
       }
 
       return type;
