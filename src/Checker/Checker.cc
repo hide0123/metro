@@ -203,7 +203,15 @@ TypeInfo Checker::check(AST::Base* _ast) {
         break;
       }
 
-      return this->check(ast->expr);
+      auto type = this->check(ast->expr);
+
+      if(!type.equals(
+        this->check(this->get_cur_func()->result_type))){
+        Error(ast->expr,"type mismatch")
+          .emit();
+      }
+
+      return type;
     }
 
     //

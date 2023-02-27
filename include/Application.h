@@ -17,9 +17,7 @@ public:
 
   static Application& get_current_instance();
 
-private:
-
-
+  std::string file_path;
   std::string source_code;
 
 };

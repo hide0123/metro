@@ -39,6 +39,7 @@ public:
   [[noreturn]]
   void exit(int code = 1);
 
+  static bool was_emitted();
 
 private:
 

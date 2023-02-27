@@ -15,6 +15,7 @@
 #include "Evaluator.h"
 
 #include "Application.h"
+#include "Error.h"
 
 namespace Utils::String {
 
@@ -77,11 +78,17 @@ std::string open_file(std::string const& path) {
 }
 
 int Application::main(int argc, char** argv) {
+  #define chkerr \
+    if(Error::was_emitted()) \
+      return -1;
+
+
   (void)argc;(void)argv;
-  
+
   Application::initialize();
   
-  this->source_code = open_file("test.txt");
+  this->file_path = "test.txt";
+  this->source_code = open_file(this->file_path);
 
   //
   // 字句解析
@@ -96,6 +103,8 @@ int Application::main(int argc, char** argv) {
 
   alertmsg(ast->to_string());
 
+  chkerr
+
   Token toktok{TOK_End};
   toktok.str="main";
 
@@ -108,6 +117,8 @@ int Application::main(int argc, char** argv) {
   auto type = checker.check(ast);
 
   alertmsg("check(ast) = " << type.to_string());
+
+  chkerr
 
   // Compiler com;
 

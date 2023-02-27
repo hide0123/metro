@@ -425,9 +425,8 @@ bool Parser::eat(char const* s) {
  */
 Parser::token_iter Parser::expect(char const* s) {
   if( !this->eat(s) ) {
-    Error(*this->cur,
-      "expected '" + std::string(s) + "' but found '"
-        + std::string(this->cur->str) + "'")
+    Error(*(--this->cur),
+      "expected '" + std::string(s) + "' after this token")
       .emit()
       .exit();
   }

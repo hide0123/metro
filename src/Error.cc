@@ -3,6 +3,9 @@
 #include "AST.h"
 #include "Error.h"
 #include "Application.h"
+#include "common.h"
+
+static bool __was_emitted;
 
 Error::ErrLoc::ErrLoc(size_t pos)
   : type(LOC_Position),
@@ -23,16 +26,91 @@ Error::ErrLoc::ErrLoc(AST::Base const* ast)
 }
 
 Error& Error::emit() {
+ typedef int64_t i64;
 
-  // auto const& source =
-  //   Application::get_current_instance().get_source_code();
+ auto& app = Application::get_current_instance();
+
+  auto const& source =
+    app.get_source_code();
+
+  i64 errpos = 0;
+
+  // ソースコード上の位置を取得
+  switch(this->loc.type ) {
+    case ErrLoc::LOC_Position:
+      errpos = this->loc.pos;
+      break;
+    
+    case ErrLoc::LOC_Token:
+    errpos=this->loc.token->pos;
+    break;
+
+    case ErrLoc::LOC_AST:
+    errpos=this->loc.ast->token.pos;
+    break;
+  }
+
+  /// 行を切り取る
+  i64 line_num = 1;
+  i64 line_begin = 0;
+  i64 line_end = source.length();
+
+  // 開始位置
+  for(i64 xx=0;xx<errpos;xx++){
+    if(source[xx]=='\n'){
+      line_num++;
+      line_begin= xx+1;
+    }
+  }
+
+  // 終了位置
+  for(i64 xx=errpos;xx<source.length();xx++){
+    if(source[xx]=='\n'){
+      line_end=xx;
+      break;
+    }
+  }
+
+  i64 err_ptr_char_pos=
+    errpos-line_begin;
+
+  auto const err_line =
+    source.substr(line_begin, line_end - line_begin);
+  
+
+  std::cout
+    <<std::endl
+    << COL_BOLD COL_RED "error: "
+      <<Color(255,100,0).to_str()<<this->msg
+
+      // エラーが起きたファイルと行番号
+    << COL_GREEN " at "
+    << Color(0,255,255).to_str()
+    << app.file_path<<":"<<line_num << std::endl
+
+      // エラーが起きた行
+    <<COL_BOLD COL_WHITE
+    <<"       |\n"
+    <<Utils::format("%6d |",line_num) << err_line<< std::endl
+    <<COL_DEFAULT "       |" 
+
+      // 矢印
+    <<std::string(err_ptr_char_pos,' ')<<'^'
+
+    << std::endl;
 
 
-  std::cerr << this->msg << std::endl;
+
+
+  __was_emitted=true;
 
   return *this;
 }
 
 void Error::exit(int code) {
   std::exit(code);
+}
+
+bool Error::was_emitted() {
+  return __was_emitted;
 }
