@@ -10,6 +10,8 @@
 
 #define CC(e...) alertmsg("  " << e)
 
+#define astdef(T) auto ast=(AST::T*)_ast
+
 Compiler::Compiler() {
 
 }
@@ -18,9 +20,17 @@ void Compiler::compile(AST::Base* _ast) {
 
   switch( _ast->kind ) {
     case AST_Value: {
-      auto ast = (AST::Value*)_ast;
+      astdef(Value);
 
       CC(ast->token.str);
+      break;
+    }
+
+    case AST_Variable: {
+      astdef(Variable);
+      
+      CC("UOO "<< ast);
+
       break;
     }
 
@@ -30,7 +40,7 @@ void Compiler::compile(AST::Base* _ast) {
     }
 
     case AST_Scope: {
-      auto ast = (AST::Scope*)_ast;
+      astdef(Scope);
 
       for( auto&& x : ast->list ) {
         this->compile(x);
@@ -40,7 +50,7 @@ void Compiler::compile(AST::Base* _ast) {
     }
 
     case AST_Function: {
-      auto ast = (AST::Function*)_ast;
+      astdef(Function);
 
       const auto Epipuro=ast->var_count!=0;
 
@@ -52,7 +62,7 @@ void Compiler::compile(AST::Base* _ast) {
       CC("add sp, " << ast->var_count);
      }
 
-      this->compile()
+      this->compile(ast->code);
 
     if(Epipuro){
       CC("pop bp");
