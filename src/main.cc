@@ -131,7 +131,6 @@ int Application::main(int argc, char** argv) {
   eval.evaluate(ast);
 
 
-
   return 0;
 }
 

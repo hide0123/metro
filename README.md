@@ -7,15 +7,14 @@
 ```
 fn fibo(n: int) -> int {
   if n < 2 {
-    1
+    return 1;
   }
-  else {
-    fibo(n - 2) + fibo(n - 1)
-  }
+
+  return fibo(n - 2) + fibo(n - 1);
 }
 
 fn main() {
-  println(fibo(10))
+  println(fibo(10));
 }
 ```
 
