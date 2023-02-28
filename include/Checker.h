@@ -28,6 +28,8 @@ class Checker {
 
     size_t offs;
 
+    bool is_global = 0;
+
     explicit VariableEmu(std::string_view name, TypeInfo type)
       : name(name),
         type(type),

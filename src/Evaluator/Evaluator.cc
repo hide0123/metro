@@ -54,10 +54,11 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
-    // 変数
-    case AST_Variable: {
+    //
+    // 左辺値
+    case AST_Variable:
+    case AST_GlobalVar:
       return this->eval_left(_ast);
-    }
 
     //
     // 関数呼び出し
@@ -82,9 +83,10 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       // コールスタック作成
       this->enter_function(func);
 
-      // 引数をスタックに追加
-      for( auto&& obj : args ) {
-        this->push_object(obj);
+      // 引数
+      auto& vst = this->vst_list.emplace_front();
+      for( auto xx = func->args.begin(); auto&& obj : args ) {
+        vst.vmap[xx->name.str] = obj;
       }
 
       // 関数実行
@@ -100,11 +102,10 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       assert(result != nullptr);
 
-      // スタック戻す
-      this->pop_object_with_count(args.size());
+      this->vst_list.pop_front();
 
       // コールスタック削除
-      this->leave_function(func);
+      this->leave_function();
 
       // 戻り値を返す
       return result;
@@ -161,11 +162,11 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return new ObjBool(true);
     }
 
-    // scope
+    // スコープ
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
-      auto stack_size = this->object_stack.size();
+      this->vst_list.emplace_front();
 
       for( auto&& item : ast->list ) {
         this->evaluate(item);
@@ -177,13 +178,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
         }
       }
 
-      while( stack_size != this->object_stack.size() )
-        this->pop_object();
-
-      // for( size_t i = 0; i < ast->used_stack_size; i++ )
-      //   this->pop_object();
-
-      // this->pop_object_with_count(ast->used_stack_size);
+      this->vst_list.pop_front();
 
       gc.clean();
 
@@ -200,7 +195,9 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       this->gc.register_object(obj);
 
-      this->object_stack.emplace_back(obj);
+      auto& vst = *this->vst_list.begin();
+
+      vst.vmap[ast->name] = obj;
 
       break;
     }
@@ -255,14 +252,12 @@ Object*& Evaluator::eval_left(AST::Base* _ast) {
     case AST_Variable: {
       astdef(Variable);
 
-      return
-        this->object_stack[
-          this->object_stack.size() - 1 - ast->index
-        ];
+      return this->get_var(ast->token.str);
     }
   }
 
   panic("fck, ain't left value. %p", _ast);
+  throw 10;
 }
 
 
@@ -404,16 +399,10 @@ Object* Evaluator::create_object(AST::Value* ast) {
 }
 
 Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
-  auto& stack = this->call_stack.emplace_front(func);
-
-  return stack;
+  return this->call_stack.emplace_front(func);
 }
 
-void Evaluator::leave_function(AST::Function* func) {
-  auto& stack = this->get_current_func_stack();
-
-  debug(assert(stack.ast == func));
-
+void Evaluator::leave_function() {
   this->call_stack.pop_front();
 }
 

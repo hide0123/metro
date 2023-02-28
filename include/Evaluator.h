@@ -92,7 +92,7 @@ private:
    * 
    * @param func 
    */
-  void leave_function(AST::Function* func);
+  void leave_function();
 
 
   /**
@@ -139,6 +139,22 @@ private:
   //
   // 即値・リテラル
   std::map<AST::Value*, Object*> immediate_objects;
+
+
+  struct var_storage {
+    std::map<std::string_view, Object*> vmap;
+  };
+
+  std::list<var_storage> vst_list;
+
+  Object*& get_var(std::string_view const& sv) {
+    for( auto&& st : this->vst_list )
+      if( st.vmap.contains(sv) )
+        return st.vmap[sv];
+
+    std::exit(-111);
+  }
+
 
   //
   // ガベージコレクタ

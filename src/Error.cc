@@ -64,7 +64,7 @@ Error& Error::emit(ErrorLevel level) {
   }
 
   // 終了位置
-  for(i64 xx=errpos;xx<source.length();xx++){
+  for(i64 xx=errpos;xx<(signed)source.length();xx++){
     if(source[xx]=='\n'){
       line_end=xx;
       break;

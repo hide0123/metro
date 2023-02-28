@@ -170,12 +170,12 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
       auto pvar = scope_emu.find_var(ast->name);
 
-      // すでに定義済みの同じ名前が存在するとき
+      // すでに定義済みの同じ名前があって、違う型
       //  => シャドウイングする
-      if( pvar ) {
+      if( pvar && !pvar->type.equals(type) ) {
         pvar->type = type;
       }
-      // なければ新規追加
+      // そうでなければ新規追加
       else {
         auto& var = scope_emu.variables.emplace_back(
           ast->name,
@@ -283,13 +283,15 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
       auto ast = (AST::Scope*)_ast;
 
-      this->scope_list.emplace_front(ast);
+      auto& e = this->scope_list.emplace_front(ast);
 
       auto voffs = this->variable_stack_offs;
 
       for( auto&& item : ast->list ) {
         auto ww = this->check(item);
       }
+
+      ast->var_count = e.variables.size();
 
       this->variable_stack_offs = voffs;
 
@@ -391,6 +393,13 @@ TypeInfo Checker::check_as_left(AST::Base* _ast) {
         it!=S.variables.rend();it++){
           if(it->name==ast->token.str){
             ast->index=it->offs;
+
+            if(S.ast==this->root){
+              it->is_global = true;
+              ast->kind = AST_GlobalVar;
+              alert;
+            }
+
             return it->type;
           }
         }

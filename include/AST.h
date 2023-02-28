@@ -14,7 +14,10 @@ enum ASTKind {
   AST_None,
 
   AST_Value,
+
   AST_Variable,
+  AST_GlobalVar,
+
   AST_CallFunc,
 
   AST_Compare,
@@ -34,6 +37,7 @@ enum ASTKind {
   AST_Scope,
 
   AST_Let,
+  AST_Shadow,
 
   AST_Function
 };
@@ -296,7 +300,7 @@ struct Loop : Base {
 
 struct Scope : Base {
   std::vector<Base*> list;
-  size_t used_stack_size;
+  size_t var_count;
 
   Base*& append(Base* item) {
     return this->list.emplace_back(item);
@@ -304,7 +308,7 @@ struct Scope : Base {
 
   explicit Scope(Token const& token)
     : Base(AST_Scope, token),
-      used_stack_size(0)
+      var_count(0)
   {
   }
 };
