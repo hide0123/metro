@@ -7,7 +7,6 @@
 struct Object;
 class GarbageCollector {
 public:
-
   GarbageCollector();
   ~GarbageCollector();
 
@@ -17,9 +16,6 @@ public:
 
   void execute();
 
-
 private:
-
   std::vector<Object*> objects;
-
 };

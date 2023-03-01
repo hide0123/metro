@@ -21,7 +21,8 @@ struct Object {
 
   virtual Object* clone() const = 0;
 
-  virtual bool is_numeric() const {
+  virtual bool is_numeric() const
+  {
     return false;
   }
 
@@ -40,7 +41,7 @@ struct ObjNone : Object {
   ObjNone* clone() const;
 
   explicit ObjNone()
-    : Object(TYPE_None)
+      : Object(TYPE_None)
   {
   }
 };
@@ -51,17 +52,19 @@ struct ObjLong : Object {
   std::string to_string() const;
   ObjLong* clone() const;
 
-  bool equals(ObjLong* x) const {
-    return x->value==this->value;
+  bool equals(ObjLong* x) const
+  {
+    return x->value == this->value;
   }
 
-  bool is_numeric() const {
+  bool is_numeric() const
+  {
     return true;
   }
 
   explicit ObjLong(int64_t value = 0)
-    : Object(TYPE_Int),
-      value(value)
+      : Object(TYPE_Int),
+        value(value)
   {
   }
 };
@@ -72,17 +75,19 @@ struct ObjUSize : Object {
   std::string to_string() const;
   ObjUSize* clone() const;
 
-  bool equals(ObjUSize* x) const {
-    return x->value==this->value;
+  bool equals(ObjUSize* x) const
+  {
+    return x->value == this->value;
   }
 
-  bool is_numeric() const {
+  bool is_numeric() const
+  {
     return true;
   }
 
   ObjUSize(size_t value = 0)
-    : Object(TYPE_USize),
-      value(value)
+      : Object(TYPE_USize),
+        value(value)
   {
   }
 };
@@ -93,17 +98,19 @@ struct ObjFloat : Object {
   std::string to_string() const;
   ObjFloat* clone() const;
 
-  bool equals(ObjFloat* x) const {
-    return x->value==this->value;
+  bool equals(ObjFloat* x) const
+  {
+    return x->value == this->value;
   }
 
-  bool is_numeric() const {
+  bool is_numeric() const
+  {
     return true;
   }
 
   explicit ObjFloat(float value = 0)
-    : Object(TYPE_Float),
-      value(value)
+      : Object(TYPE_Float),
+        value(value)
   {
   }
 };
@@ -111,38 +118,42 @@ struct ObjFloat : Object {
 struct ObjBool : Object {
   bool value;
 
-  std::string to_string() const {
+  std::string to_string() const
+  {
     return value ? "true" : "false";
   }
 
-  ObjBool* clone() const {
+  ObjBool* clone() const
+  {
     return new ObjBool(this->value);
   }
 
-  bool equals(ObjBool* x) const {
-    return x->value==this->value;
+  bool equals(ObjBool* x) const
+  {
+    return x->value == this->value;
   }
 
   explicit ObjBool(bool value = 0)
-    : Object(TYPE_Bool),
-      value(value)
+      : Object(TYPE_Bool),
+        value(value)
   {
   }
 };
 
 struct ObjChar : Object {
   wchar_t value;
-  
+
   std::string to_string() const;
   ObjChar* clone() const;
 
-  bool equals(ObjChar* x) const {
-    return x->value==this->value;
+  bool equals(ObjChar* x) const
+  {
+    return x->value == this->value;
   }
 
   explicit ObjChar(wchar_t ch = 0)
-    : Object(TYPE_Char),
-      value(ch)
+      : Object(TYPE_Char),
+        value(ch)
   {
   }
 };
@@ -153,13 +164,14 @@ struct ObjString : Object {
   std::string to_string() const;
   ObjString* clone() const;
 
-  bool equals(ObjString* x) const {
-    return x->value==this->value;
+  bool equals(ObjString* x) const
+  {
+    return x->value == this->value;
   }
 
   explicit ObjString(std::wstring value = L"")
-    : Object(TYPE_String),
-      value(value)
+      : Object(TYPE_String),
+        value(value)
   {
   }
 };
@@ -169,7 +181,11 @@ struct ObjDict : Object {
     Object* key;
     Object* value;
 
-    Item(Object* k, Object* v) :key(k), value(v) { }
+    Item(Object* k, Object* v)
+        : key(k),
+          value(v)
+    {
+    }
   };
 
   std::vector<Item> items;
@@ -177,12 +193,14 @@ struct ObjDict : Object {
   std::string to_string() const;
   ObjDict* clone() const;
 
-  bool equals(ObjDict* x) const {
-    if(this->items.size()!=x->items.size())
+  bool equals(ObjDict* x) const
+  {
+    if (this->items.size() != x->items.size())
       return false;
 
-    for(auto xx=x->items.begin();auto&&aa:this->items){
-      if(!aa.key->equals(xx->key) || !aa.value->equals(xx->value))
+    for (auto xx = x->items.begin(); auto&& aa : this->items) {
+      if (!aa.key->equals(xx->key) ||
+          !aa.value->equals(xx->value))
         return false;
       xx++;
     }
@@ -191,7 +209,7 @@ struct ObjDict : Object {
   }
 
   ObjDict()
-    : Object(TYPE_Dict)
+      : Object(TYPE_Dict)
   {
   }
 };
@@ -202,12 +220,14 @@ struct ObjVector : Object {
   std::string to_string() const;
   ObjVector* clone() const;
 
-  bool equals(ObjVector* x) const {
-    if(this->elements.size()!=x->elements.size())
+  bool equals(ObjVector* x) const
+  {
+    if (this->elements.size() != x->elements.size())
       return false;
 
-    for(auto y=x->elements.begin();auto&&e:this->elements){
-      if(!e->equals(*y))
+    for (auto y = x->elements.begin();
+         auto&& e : this->elements) {
+      if (!e->equals(*y))
         return false;
     }
 
@@ -215,8 +235,7 @@ struct ObjVector : Object {
   }
 
   ObjVector()
-    : Object(TYPE_Vector)
+      : Object(TYPE_Vector)
   {
   }
 };
-

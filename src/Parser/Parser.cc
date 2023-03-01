@@ -10,37 +10,37 @@
 using EXKind = AST::Expr::ExprKind;
 
 Parser::Parser(std::list<Token>& token_list)
-  : cur(token_list.begin()),
-    ate(token_list.begin())
+    : cur(token_list.begin()),
+      ate(token_list.begin())
 {
 }
 
-Parser::~Parser() {
-
+Parser::~Parser()
+{
 }
 
-AST::Scope* Parser::parse() {
+AST::Scope* Parser::parse()
+{
   auto root_scope = new AST::Scope(*this->cur);
 
-  while( this->check() ) {
+  while (this->check()) {
     root_scope->append(this->top());
   }
 
   return root_scope;
 }
 
-
 //
 // primary
-AST::Base* Parser::primary() {
-
-  if( this->eat("[") ) {
+AST::Base* Parser::primary()
+{
+  if (this->eat("[")) {
     auto ast = new AST::Array(*this->ate);
 
-    if( !this->eat("]") ) {
+    if (!this->eat("]")) {
       do {
         ast->append(this->expr());
-      } while( this->eat(",") );
+      } while (this->eat(","));
 
       this->expect("]");
     }
@@ -48,7 +48,7 @@ AST::Base* Parser::primary() {
     return ast;
   }
 
-  if( this->eat("dict") ) {
+  if (this->eat("dict")) {
     auto ast = new AST::Dict(*this->ate);
 
     this->expect("<");
@@ -61,7 +61,7 @@ AST::Base* Parser::primary() {
 
     this->expect("{");
 
-    if( !this->eat("}") ) {
+    if (!this->eat("}")) {
       do {
         auto key = this->expr();
 
@@ -70,7 +70,7 @@ AST::Base* Parser::primary() {
         auto value = this->expr();
 
         ast->elements.emplace_back(*colon, key, value);
-      } while( this->eat(",") );
+      } while (this->eat(","));
 
       this->expect("}");
     }
@@ -80,14 +80,13 @@ AST::Base* Parser::primary() {
 
   //
   // トークンの種類ごとの処理
-  switch( this->cur->kind ) {
+  switch (this->cur->kind) {
     // 即値・リテラル
     case TOK_Int:
     case TOK_USize:
     case TOK_Float:
     case TOK_Char:
-    case TOK_String:
-    {
+    case TOK_String: {
       auto ast = new AST::Value(*this->cur);
 
       this->next();
@@ -105,16 +104,16 @@ AST::Base* Parser::primary() {
       this->next();
 
       // かっこ があれば 関数呼び出し
-      if( this->eat("(") ) {
+      if (this->eat("(")) {
         // AST 作成
         auto callFunc = new AST::CallFunc(*ident);
 
         // 引数をパースする
-        if( !this->eat(")") ) {
+        if (!this->eat(")")) {
           do {
             // 式を追加
             callFunc->args.emplace_back(this->expr());
-          } while( this->eat(",") ); // カンマがある限り続く
+          } while (this->eat(","));  // カンマがある限り続く
 
           // 閉じかっこ
           this->expect(")");
@@ -128,29 +127,29 @@ AST::Base* Parser::primary() {
     }
 
     default:
-      Error(*this->cur, "invalid syntax")
-        .emit()
-        .exit();
+      Error(*this->cur, "invalid syntax").emit().exit();
   }
-  
+
   return this->stmt();
 }
 
-AST::Base* Parser::unary() {
+AST::Base* Parser::unary()
+{
   auto x = this->primary();
 
   return x;
 }
 
-AST::Base* Parser::indexref() {
+AST::Base* Parser::indexref()
+{
   auto x = this->unary();
 
-  if( this->cur->str == "[" ) {
+  if (this->cur->str == "[") {
     auto y = new AST::IndexRef(*this->cur);
 
     y->expr = x;
 
-    while( this->eat("[") ) {
+    while (this->eat("[")) {
       y->indexes.emplace_back(this->expr());
       this->expect("]");
     }
@@ -161,32 +160,33 @@ AST::Base* Parser::indexref() {
   return x;
 }
 
-AST::Base* Parser::member_access() {
+AST::Base* Parser::member_access()
+{
   auto x = this->indexref();
 
-  if( this->cur->str == "." ) {
+  if (this->cur->str == ".") {
     auto y = new AST::IndexRef(*this->cur);
 
     y->kind = AST_MemberAccess;
     y->expr = x;
 
-    while( this->eat(".") ) {
+    while (this->eat(".")) {
       auto tmp = this->indexref();
 
-      if(tmp->kind==AST_CallFunc){
-          alert;
-        auto cf =(AST::CallFunc*)tmp;
+      if (tmp->kind == AST_CallFunc) {
+        alert;
+        auto cf = (AST::CallFunc*)tmp;
 
-        if(y->indexes.empty())
-          cf->args.insert(cf->args.begin(),y->expr);
+        if (y->indexes.empty())
+          cf->args.insert(cf->args.begin(), y->expr);
         else
-          cf->args.insert(cf->args.begin(),y);
+          cf->args.insert(cf->args.begin(), y);
 
-        if(this->cur->str=="."){
+        if (this->cur->str == ".") {
           alert;
-          y=new AST::IndexRef(*this->cur);
+          y = new AST::IndexRef(*this->cur);
           y->kind = AST_MemberAccess;
-          y->expr=cf;
+          y->expr = cf;
         }
         else {
           alert;
@@ -194,7 +194,7 @@ AST::Base* Parser::member_access() {
         }
       }
       else {
-          alert;
+        alert;
         y->indexes.emplace_back(this->indexref());
       }
     }
@@ -205,19 +205,20 @@ AST::Base* Parser::member_access() {
   return x;
 }
 
-AST::Base* Parser::mul() {
+AST::Base* Parser::mul()
+{
   auto x = this->member_access();
 
-  while( this->check() ) {
-    if( this->eat("*") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_Mul, *this->ate, this->member_access());
-    else if( this->eat("/") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_Div, *this->ate, this->member_access());
-    else if( this->eat("%") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_Mod, *this->ate, this->member_access());
+  while (this->check()) {
+    if (this->eat("*"))
+      AST::Expr::create(x)->append(EXKind::EX_Mul, *this->ate,
+                                   this->member_access());
+    else if (this->eat("/"))
+      AST::Expr::create(x)->append(EXKind::EX_Div, *this->ate,
+                                   this->member_access());
+    else if (this->eat("%"))
+      AST::Expr::create(x)->append(EXKind::EX_Mod, *this->ate,
+                                   this->member_access());
     else
       break;
   }
@@ -225,16 +226,17 @@ AST::Base* Parser::mul() {
   return x;
 }
 
-AST::Base* Parser::add() {
+AST::Base* Parser::add()
+{
   auto x = this->mul();
 
-  while( this->check() ) {
-    if( this->eat("+") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_Add, *this->ate, this->mul());
-    else if( this->eat("-") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_Sub, *this->ate, this->mul());
+  while (this->check()) {
+    if (this->eat("+"))
+      AST::Expr::create(x)->append(EXKind::EX_Add, *this->ate,
+                                   this->mul());
+    else if (this->eat("-"))
+      AST::Expr::create(x)->append(EXKind::EX_Sub, *this->ate,
+                                   this->mul());
     else
       break;
   }
@@ -242,16 +244,17 @@ AST::Base* Parser::add() {
   return x;
 }
 
-AST::Base* Parser::shift() {
+AST::Base* Parser::shift()
+{
   auto x = this->add();
 
-  while( this->check() ) {
-    if( this->eat("<<") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_LShift, *this->ate, this->add());
-    else if( this->eat(">>") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_RShift, *this->ate, this->add());
+  while (this->check()) {
+    if (this->eat("<<"))
+      AST::Expr::create(x)->append(EXKind::EX_LShift, *this->ate,
+                                   this->add());
+    else if (this->eat(">>"))
+      AST::Expr::create(x)->append(EXKind::EX_RShift, *this->ate,
+                                   this->add());
     else
       break;
   }
@@ -259,28 +262,33 @@ AST::Base* Parser::shift() {
   return x;
 }
 
-AST::Base* Parser::compare() {
+AST::Base* Parser::compare()
+{
   auto x = this->shift();
 
-  while( this->check() ) {
-    if( this->eat("==") )
+  while (this->check()) {
+    if (this->eat("=="))
+      AST::Compare::create(x)->append(AST::Compare::CMP_Equal,
+                                      *this->ate, this->shift());
+    else if (this->eat("!="))
+      AST::Compare::create(x)->append(AST::Compare::CMP_Equal,
+                                      *this->ate, this->shift());
+    else if (this->eat(">="))
       AST::Compare::create(x)->append(
-        AST::Compare::CMP_Equal, *this->ate, this->shift());
-    else if( this->eat("!=") )
+          AST::Compare::CMP_LeftBigOrEqual, *this->ate,
+          this->shift());
+    else if (this->eat("<="))
       AST::Compare::create(x)->append(
-        AST::Compare::CMP_Equal, *this->ate, this->shift());
-    else if( this->eat(">=") )
+          AST::Compare::CMP_RightBigOrEqual, *this->ate,
+          this->shift());
+    else if (this->eat(">"))
       AST::Compare::create(x)->append(
-        AST::Compare::CMP_LeftBigOrEqual, *this->ate, this->shift());
-    else if( this->eat("<=") )
+          AST::Compare::CMP_LeftBigger, *this->ate,
+          this->shift());
+    else if (this->eat("<"))
       AST::Compare::create(x)->append(
-        AST::Compare::CMP_RightBigOrEqual, *this->ate, this->shift());
-    else if( this->eat(">") )
-      AST::Compare::create(x)->append(
-        AST::Compare::CMP_LeftBigger, *this->ate, this->shift());
-    else if( this->eat("<") )
-      AST::Compare::create(x)->append(
-        AST::Compare::CMP_RightBigger, *this->ate, this->shift());
+          AST::Compare::CMP_RightBigger, *this->ate,
+          this->shift());
     else
       break;
   }
@@ -288,19 +296,20 @@ AST::Base* Parser::compare() {
   return x;
 }
 
-AST::Base* Parser::bit_op() {
+AST::Base* Parser::bit_op()
+{
   auto x = this->compare();
 
-  while( this->check() ) {
-    if( this->eat("&") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_BitAND, *this->ate, this->compare());
-    else if( this->eat("^") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_BitXOR, *this->ate, this->compare());
-    else if( this->eat("|") )
-      AST::Expr::create(x)->append(
-        EXKind::EX_BitOR, *this->ate, this->compare());
+  while (this->check()) {
+    if (this->eat("&"))
+      AST::Expr::create(x)->append(EXKind::EX_BitAND, *this->ate,
+                                   this->compare());
+    else if (this->eat("^"))
+      AST::Expr::create(x)->append(EXKind::EX_BitXOR, *this->ate,
+                                   this->compare());
+    else if (this->eat("|"))
+      AST::Expr::create(x)->append(EXKind::EX_BitOR, *this->ate,
+                                   this->compare());
     else
       break;
   }
@@ -308,10 +317,11 @@ AST::Base* Parser::bit_op() {
   return x;
 }
 
-AST::Base* Parser::range() {
+AST::Base* Parser::range()
+{
   auto x = this->bit_op();
 
-  if( this->eat("..") ) {
+  if (this->eat("..")) {
     auto y = new AST::Range(*this->ate);
 
     y->begin = x;
@@ -323,30 +333,32 @@ AST::Base* Parser::range() {
   return x;
 }
 
-AST::Base* Parser::assign() {
+AST::Base* Parser::assign()
+{
   auto x = this->range();
 
-  if(this->eat("=")){
+  if (this->eat("=")) {
     auto y = new AST::Assign(*this->ate);
-    y->dest=x;
-    y->expr=this->assign();
-    x=y;
+    y->dest = x;
+    y->expr = this->assign();
+    x = y;
   }
 
   return x;
 }
 
-AST::Base* Parser::expr() {
+AST::Base* Parser::expr()
+{
   return this->assign();
 }
 
 /**
  * @brief ステートメント
- * 
- * @return AST::Base* 
+ *
+ * @return AST::Base*
  */
-AST::Base* Parser::stmt() {
-
+AST::Base* Parser::stmt()
+{
   /*
    最後がセミコロンで終わるやつは最後で
      this->expect_semi();
@@ -356,19 +368,19 @@ AST::Base* Parser::stmt() {
 
   //
   // スコープ
-  if( this->cur->str == "{" )
+  if (this->cur->str == "{")
     return this->parse_scope();
 
   //
   // if 文
-  if( this->eat("if") ) {
+  if (this->eat("if")) {
     auto ast = new AST::If(*this->ate);
 
     ast->condition = this->expr();
 
     ast->if_true = this->expect_scope();
 
-    if( this->eat("else") ) {
+    if (this->eat("else")) {
       ast->if_false = this->stmt();
     }
 
@@ -377,43 +389,41 @@ AST::Base* Parser::stmt() {
 
   //
   // for
-  if(this->eat("for")){
-    auto ast=new AST::For(*this->ate);
+  if (this->eat("for")) {
+    auto ast = new AST::For(*this->ate);
 
-    ast->iter=this->expr();
-    
+    ast->iter = this->expr();
+
     this->expect("in");
-    ast->iterable=this->expr();
+    ast->iterable = this->expr();
 
-    ast->code=this->expect_scope();
+    ast->code = this->expect_scope();
 
     return ast;
   }
 
   //
   // while
-  if(this->eat("while")){
-    auto ast=new AST::While(*this->ate);
-    ast->cond=this->expr();
-    ast->code=this->expect_scope();
+  if (this->eat("while")) {
+    auto ast = new AST::While(*this->ate);
+    ast->cond = this->expr();
+    ast->code = this->expect_scope();
     return ast;
   }
 
   //
   // loop
-  if(this->eat("loop")){
-    return new AST::Loop(
-      this->expect_scope()
-    );
+  if (this->eat("loop")) {
+    return new AST::Loop(this->expect_scope());
   }
 
   //
   // do-while
-  if(this->eat("do")){
-    auto ast=new AST::DoWhile(*this->ate);
+  if (this->eat("do")) {
+    auto ast = new AST::DoWhile(*this->ate);
 
-    ast->code=this->expect_scope();
-    ast->cond=this->expr();
+    ast->code = this->expect_scope();
+    ast->cond = this->expr();
 
     this->expect_semi();
     return ast;
@@ -421,16 +431,16 @@ AST::Base* Parser::stmt() {
 
   //
   // let 変数定義
-  if( this->eat("let") ) {
+  if (this->eat("let")) {
     auto ast = new AST::VariableDeclaration(*this->ate);
 
     ast->name = this->expect_identifier()->str;
 
-    if( this->eat(":") ) {
+    if (this->eat(":")) {
       ast->type = this->parse_typename();
     }
 
-    if( this->eat("=") ) {
+    if (this->eat("=")) {
       ast->init = this->expr();
     }
 
@@ -440,10 +450,10 @@ AST::Base* Parser::stmt() {
 
   //
   // return 文
-  if( this->eat("return") ) {
+  if (this->eat("return")) {
     auto ast = new AST::Return(*this->ate);
 
-    if( this->eat_semi() )
+    if (this->eat_semi())
       return ast;
 
     ast->expr = this->expr();
@@ -452,7 +462,6 @@ AST::Base* Parser::stmt() {
     return ast;
   }
 
-
   auto ast = this->expr();
 
   this->expect_semi();
@@ -460,28 +469,27 @@ AST::Base* Parser::stmt() {
   return ast;
 }
 
-
-AST::Base* Parser::top() {
-  if( this->cur->str == "fn" ) {
+AST::Base* Parser::top()
+{
+  if (this->cur->str == "fn") {
     return this->parse_function();
   }
 
   return this->stmt();
 }
 
-
 /**
  * @brief スコープをパースする
- * 
+ *
  * @note 最後にセミコロンがない場合、最後の要素を return 文にする
- * 
- * @return AST::Scope* 
+ *
+ * @return AST::Scope*
  */
-AST::Scope* Parser::parse_scope() {
-  auto ast =
-    new AST::Scope(*this->expect("{"));
-  
-  while( this->check() && !this->eat("}") ) {
+AST::Scope* Parser::parse_scope()
+{
+  auto ast = new AST::Scope(*this->expect("{"));
+
+  while (this->check() && !this->eat("}")) {
     ast->append(this->stmt());
   }
 
@@ -490,88 +498,89 @@ AST::Scope* Parser::parse_scope() {
 
 /**
  * @brief スコープを求める
- * 
+ *
  * @return
  *   スコープを読み取れた場合は AST::Scope*
  *   なければエラー
  */
-AST::Scope* Parser::expect_scope() {
-  if( auto ast = this->parse_scope(); ast ) {
+AST::Scope* Parser::expect_scope()
+{
+  if (auto ast = this->parse_scope(); ast) {
     return ast;
   }
 
-  Error(
-    *({ auto tok = this->cur; --tok; }),
-    "expected scope after this token"
-  )
-    .emit()
-    .exit();
+  Error(*({
+    auto tok = this->cur;
+    --tok;
+  }),
+        "expected scope after this token")
+      .emit()
+      .exit();
 }
 
 /**
  * @brief 関数をパースする
- * 
+ *
  * @note 必ず "fn" トークンがある位置で呼び出すこと
- * 
- * @return AST::Function* 
+ *
+ * @return AST::Function*
  */
-AST::Function* Parser::parse_function() {
+AST::Function* Parser::parse_function()
+{
   auto func =
-    new AST::Function(
-      *this->expect("fn"), *this->expect_identifier()
-    ); // AST 作成
+      new AST::Function(*this->expect("fn"),
+                        *this->expect_identifier());  // AST 作成
 
-  this->expect("("); // 引数リストの開きカッコ
+  this->expect("(");  // 引数リストの開きカッコ
 
   // 閉じかっこがなければ、引数を読み取っていく
-  if( !this->eat(")") ) {
+  if (!this->eat(")")) {
     do {
       auto arg_name_token =
-        this->expect_identifier(); // 引数名のトークン
-      
-      this->expect(":"); // コロン
+          this->expect_identifier();  // 引数名のトークン
+
+      this->expect(":");  // コロン
 
       // 型
-      func->append_argument(
-        *arg_name_token, this->expect_typename());
-    } while( this->eat(",") ); // カンマがあれば続ける
-    
-    this->expect(")"); // 閉じかっこ
+      func->append_argument(*arg_name_token,
+                            this->expect_typename());
+    } while (this->eat(","));  // カンマがあれば続ける
+
+    this->expect(")");  // 閉じかっこ
   }
 
-  this->expect("->"); // 型指定トークン
+  this->expect("->");  // 型指定トークン
 
-  func->result_type = this->expect_typename(); // 戻り値の型
+  func->result_type = this->expect_typename();  // 戻り値の型
 
-  func->code = this->expect_scope(); // 処理 (スコープ)
+  func->code = this->expect_scope();  // 処理 (スコープ)
 
   return func;
 }
 
-
 /**
  * @brief 型名をパースする
- * 
- * @return AST::Type* 
+ *
+ * @return AST::Type*
  */
-AST::Type* Parser::parse_typename() {
-  auto ast =
-    new AST::Type(*this->expect_identifier());
+AST::Type* Parser::parse_typename()
+{
+  auto ast = new AST::Type(*this->expect_identifier());
 
-  if(this->eat("<")){
+  if (this->eat("<")) {
     do {
       ast->parameters.emplace_back(this->expect_typename());
-    }while(this->eat(","));
+    } while (this->eat(","));
 
-    if(this->cur->str==">>"){
-      this->cur->str=">";
+    if (this->cur->str == ">>") {
+      this->cur->str = ">";
     }
     else
       this->expect(">");
   }
 
-  if(this->eat("const")){
-    ast->is_const=true;
+  if (this->eat("const")) {
+    ast->is_const = true;
   }
 
   return ast;
@@ -579,45 +588,51 @@ AST::Type* Parser::parse_typename() {
 
 /**
  * @brief 型名を求める
- * 
+ *
  * @return AST::Type* ない場合はエラー
  */
-AST::Type* Parser::expect_typename() {
-  if( auto ast = this->parse_typename(); ast )
+AST::Type* Parser::expect_typename()
+{
+  if (auto ast = this->parse_typename(); ast)
     return ast;
 
-  Error(*({ auto tok = this->cur; --tok; }),
-    "expected typename after this token"
-  )
-    .emit()
-    .exit();
+  Error(*({
+    auto tok = this->cur;
+    --tok;
+  }),
+        "expected typename after this token")
+      .emit()
+      .exit();
 }
 
 /**
  * @brief トークンが終端に来ていないか確認する
- * 
+ *
  * @return 終端でなければ true
  */
-bool Parser::check() {
+bool Parser::check()
+{
   return this->cur->kind != TOK_End;
 }
 
 /**
  * @brief トークンをひとつ先に進める
- * 
+ *
  */
-void Parser::next() {
+void Parser::next()
+{
   this->cur++;
 }
 
 /**
  * @brief トークン消費
- * 
+ *
  * @param s: 文字列
  * @return s を食べたら true, そうでなければ false
  */
-bool Parser::eat(char const* s) {
-  if( this->cur->str == s ) {
+bool Parser::eat(char const* s)
+{
+  if (this->cur->str == s) {
     this->ate = this->cur++;
     return true;
   }
@@ -627,39 +642,41 @@ bool Parser::eat(char const* s) {
 
 /**
  * @brief 指定したトークンを求める
- * 
+ *
  * @param s: 文字列
  * @return
  *  食べたらそのトークンへのイテレータ (Parser::token_iter)
  *  を返し、無ければエラーで終了
  */
-Parser::token_iter Parser::expect(char const* s) {
-  if( !this->eat(s) ) {
+Parser::token_iter Parser::expect(char const* s)
+{
+  if (!this->eat(s)) {
     Error(*(--this->cur),
-      "expected '" + std::string(s) + "' after this token")
-      .emit()
-      .exit();
+          "expected '" + std::string(s) + "' after this token")
+        .emit()
+        .exit();
   }
 
   return this->ate;
 }
 
 // セミコロン消費
-bool Parser::eat_semi() {
+bool Parser::eat_semi()
+{
   return this->eat(";");
 }
 
 // セミコロン求める
-Parser::token_iter Parser::expect_semi() {
+Parser::token_iter Parser::expect_semi()
+{
   return this->expect(";");
 }
 
 // 識別子を求める
-Parser::token_iter Parser::expect_identifier() {
-  if( this->cur->kind != TOK_Ident ) {
-    Error(*this->cur, "expected identifier")
-      .emit()
-      .exit();
+Parser::token_iter Parser::expect_identifier()
+{
+  if (this->cur->kind != TOK_Ident) {
+    Error(*this->cur, "expected identifier").emit().exit();
   }
 
   this->ate = this->cur++;
@@ -668,11 +685,12 @@ Parser::token_iter Parser::expect_identifier() {
 
 /**
  * @brief ast を返り値とする return 文を作成する
- * 
+ *
  * @param ast: 返り値にさせる式
- * @return AST::Return* 
+ * @return AST::Return*
  */
-AST::Return* Parser::new_return_stmt(AST::Base* ast) {
+AST::Return* Parser::new_return_stmt(AST::Base* ast)
+{
   auto ret = new AST::Return(ast->token);
 
   ret->expr = ast;

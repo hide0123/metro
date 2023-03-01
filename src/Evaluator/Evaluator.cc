@@ -15,7 +15,7 @@
 
 #include "debug/alert.h"
 
-#define astdef(T) auto ast=(AST::T*)_ast
+#define astdef(T) auto ast = (AST::T*)_ast
 
 static ObjNone objnone;
 static ObjNone* none = &objnone;
@@ -25,28 +25,28 @@ Evaluator::Evaluator()
   ::objnone.ref_count = 1;
 }
 
-Evaluator::~Evaluator() {
-  
+Evaluator::~Evaluator()
+{
 }
 
-Object* Evaluator::evaluate(AST::Base* _ast) {
+Object* Evaluator::evaluate(AST::Base* _ast)
+{
   debug(
-    /*
-    std::this_thread::sleep_for(
-      std::chrono::milliseconds(100)
-    );
+      /*
+      std::this_thread::sleep_for(
+        std::chrono::milliseconds(100)
+      );
 
-    if(!_ast){
-      alertmsg("_ast == nullptr")
-      return none;
-    }
-    */
-  )
+      if(!_ast){
+        alertmsg("_ast == nullptr")
+        return none;
+      }
+      */
+      )
 
-  if( !_ast )
-    return none;
+      if (!_ast) return none;
 
-  switch( _ast->kind ) {
+  switch (_ast->kind) {
     case AST_None:
     case AST_Function:
       break;
@@ -63,7 +63,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       ret->type = Sema::value_type_cache[ast];
 
-      for(auto&&e:ast->elements){
+      for (auto&& e : ast->elements) {
         ret->elements.emplace_back(this->evaluate(e));
       }
 
@@ -78,15 +78,13 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
     case AST_Dict: {
       astdef(Dict);
-      
+
       auto ret = new ObjDict;
       ret->type = Sema::value_type_cache[_ast];
-      
-      for( auto&& elem : ast->elements ) {
-        ret->items.emplace_back(
-          this->evaluate(elem.key),
-          this->evaluate(elem.value)
-        );
+
+      for (auto&& elem : ast->elements) {
+        ret->items.emplace_back(this->evaluate(elem.key),
+                                this->evaluate(elem.value));
       }
 
       return ret;
@@ -97,21 +95,22 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       auto obj = this->evaluate(ast->expr);
 
-      for(auto&&index_ast:ast->indexes) {
+      for (auto&& index_ast : ast->indexes) {
         auto obj_index = this->evaluate(index_ast);
 
-        switch(obj->type.kind){
-          case TYPE_Vector:{
+        switch (obj->type.kind) {
+          case TYPE_Vector: {
             auto obj_vec = (ObjVector*)obj;
 
-            size_t index;  {
-              switch(obj_index->type.kind){
+            size_t index;
+            {
+              switch (obj_index->type.kind) {
                 case TYPE_Int:
-                  index=((ObjLong*)obj_index)->value;
+                  index = ((ObjLong*)obj_index)->value;
                   break;
-                
+
                 case TYPE_USize:
-                  index=((ObjUSize*)obj_index)->value;
+                  index = ((ObjUSize*)obj_index)->value;
                   break;
 
                 default:
@@ -119,10 +118,10 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
               }
             }
 
-            if(index>=obj_vec->elements.size()){
-              Error(index_ast,"index out of range")
-                .emit()
-                .exit();
+            if (index >= obj_vec->elements.size()) {
+              Error(index_ast, "index out of range")
+                  .emit()
+                  .exit();
             }
 
             obj = obj_vec->elements[index];
@@ -130,22 +129,21 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
           }
 
           case TYPE_Dict: {
-            auto obj_dict= (ObjDict*)obj;
+            auto obj_dict = (ObjDict*)obj;
 
-            for(auto&&item:obj_dict->items){
-              if(item.key->equals(obj_index)){
+            for (auto&& item : obj_dict->items) {
+              if (item.key->equals(obj_index)) {
                 obj = item.value;
                 goto _dict_value_found;
               }
             }
 
-            obj =
-              obj_dict->items.emplace_back(
-                obj_index,
-                this->default_constructer(
-                  obj_dict->type.type_params[1]
-                )
-              ).value;
+            obj = obj_dict->items
+                      .emplace_back(
+                          obj_index,
+                          this->default_constructer(
+                              obj_dict->type.type_params[1]))
+                      .value;
 
           _dict_value_found:
             break;
@@ -164,12 +162,12 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       std::vector<Object*> args;
 
       // 引数
-      for( auto&& arg : ast->args ) {
+      for (auto&& arg : ast->args) {
         args.emplace_back(this->evaluate(arg));
       }
 
       // 組み込み関数
-      if( ast->is_builtin ) {
+      if (ast->is_builtin) {
         return ast->builtin_func->impl(args);
       }
 
@@ -181,7 +179,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       // 引数
       auto& vst = this->vst_list.emplace_front();
-      for( auto xx = func->args.begin(); auto&& obj : args ) {
+      for (auto xx = func->args.begin(); auto&& obj : args) {
         vst.vmap[xx->name.str] = obj;
       }
 
@@ -189,11 +187,10 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       this->evaluate(func->code);
 
       // 戻り値を取得
-      auto result =
-        this->get_current_func_stack().result;
+      auto result = this->get_current_func_stack().result;
 
-      if( !result ) {
-        result=none;
+      if (!result) {
+        result = none;
       }
 
       assert(result != nullptr);
@@ -214,12 +211,9 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       auto ret = this->evaluate(x->first);
 
-      for( auto&& elem : x->elements ) {
+      for (auto&& elem : x->elements) {
         ret = Evaluator::compute_expr_operator(
-          elem.kind,
-          ret,
-          this->evaluate(elem.ast)
-        );
+            elem.kind, ret, this->evaluate(elem.ast));
       }
 
       return ret;
@@ -230,9 +224,8 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     case AST_Assign: {
       astdef(Assign);
 
-      return
-        this->eval_left(ast->dest)
-          = this->evaluate(ast->expr);
+      return this->eval_left(ast->dest) =
+                 this->evaluate(ast->expr);
     }
 
     //
@@ -243,12 +236,10 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       auto ret = this->evaluate(x->first);
       Object* xxx{};
 
-      for( auto&& elem : x->elements ) {
-        if( !Evaluator::compute_compare(
-          elem.kind,
-          ret,
-          xxx = this->evaluate(elem.ast)
-        ) ) {
+      for (auto&& elem : x->elements) {
+        if (!Evaluator::compute_compare(
+                elem.kind, ret,
+                xxx = this->evaluate(elem.ast))) {
           return new ObjBool(false);
         }
 
@@ -264,12 +255,11 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       this->vst_list.emplace_front();
 
-      for( auto&& item : ast->list ) {
+      for (auto&& item : ast->list) {
         this->evaluate(item);
 
-        if( !this->call_stack.empty() &&
-          this->get_current_func_stack().is_returned ) {
-          
+        if (!this->call_stack.empty() &&
+            this->get_current_func_stack().is_returned) {
           break;
         }
       }
@@ -305,7 +295,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
 
       auto& fs = this->get_current_func_stack();
 
-      if( ast->expr )
+      if (ast->expr)
         fs.result = this->evaluate(ast->expr);
       else
         fs.result = none;
@@ -322,19 +312,17 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     case AST_If: {
       auto ast = (AST::If*)_ast;
 
-      if( ((ObjBool*)this->evaluate(ast->condition))->value )
+      if (((ObjBool*)this->evaluate(ast->condition))->value)
         this->evaluate(ast->if_true);
-      else if( ast->if_false )
+      else if (ast->if_false)
         this->evaluate(ast->if_false);
 
       break;
     }
 
     default:
-      alertmsg(
-        "evaluation is not implemented yet (kind="
-        << _ast->kind << ")"
-      );
+      alertmsg("evaluation is not implemented yet (kind="
+               << _ast->kind << ")");
 
       todo_impl;
   }
@@ -342,9 +330,9 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
   return none;
 }
 
-Object*& Evaluator::eval_left(AST::Base* _ast) {
-
-  switch(_ast->kind){
+Object*& Evaluator::eval_left(AST::Base* _ast)
+{
+  switch (_ast->kind) {
     case AST_Variable: {
       astdef(Variable);
 
@@ -356,8 +344,9 @@ Object*& Evaluator::eval_left(AST::Base* _ast) {
   throw 10;
 }
 
-Object* Evaluator::default_constructer(TypeInfo const& type) {
-  switch( type.kind ) {
+Object* Evaluator::default_constructer(TypeInfo const& type)
+{
+  switch (type.kind) {
     case TYPE_Int:
       return new ObjLong;
 
@@ -383,17 +372,15 @@ Object* Evaluator::default_constructer(TypeInfo const& type) {
 }
 
 Object* Evaluator::compute_expr_operator(
-  AST::Expr::ExprKind kind,
-  Object* left,
-  Object* right
-) {
+    AST::Expr::ExprKind kind, Object* left, Object* right)
+{
   using EX = AST::Expr::ExprKind;
 
   auto ret = left->clone();
 
-  switch( kind ) {
+  switch (kind) {
     case EX::EX_Add: {
-      switch( left->type.kind ) {
+      switch (left->type.kind) {
         case TYPE_Int:
           ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
           break;
@@ -402,7 +389,7 @@ Object* Evaluator::compute_expr_operator(
     }
 
     case EX::EX_Sub: {
-      switch( left->type.kind ) {
+      switch (left->type.kind) {
         case TYPE_Int:
           ((ObjLong*)ret)->value -= ((ObjLong*)right)->value;
           break;
@@ -411,7 +398,7 @@ Object* Evaluator::compute_expr_operator(
     }
 
     case EX::EX_Mul: {
-      switch( left->type.kind ) {
+      switch (left->type.kind) {
         case TYPE_Int:
           ((ObjLong*)ret)->value *= ((ObjLong*)right)->value;
           break;
@@ -426,21 +413,23 @@ Object* Evaluator::compute_expr_operator(
   return ret;
 }
 
-bool Evaluator::compute_compare(
-  AST::Compare::CmpKind kind, Object* left, Object* right) {
-
+bool Evaluator::compute_compare(AST::Compare::CmpKind kind,
+                                Object* left, Object* right)
+{
   using CK = AST::Compare::CmpKind;
 
   float a = left->type.kind == TYPE_Int
-    ? ((ObjLong*)left)->value : ((ObjFloat*)left)->value;
-    
+                ? ((ObjLong*)left)->value
+                : ((ObjFloat*)left)->value;
+
   float b = right->type.kind == TYPE_Int
-    ? ((ObjLong*)right)->value : ((ObjFloat*)right)->value;
-    
-  switch( kind ) {
+                ? ((ObjLong*)right)->value
+                : ((ObjFloat*)right)->value;
+
+  switch (kind) {
     case CK::CMP_LeftBigger:
       return a > b;
-    
+
     case CK::CMP_RightBigger:
       return a < b;
 
@@ -452,19 +441,21 @@ bool Evaluator::compute_compare(
 
     case CK::CMP_Equal:
       return a == b;
-    
+
     case CK::CMP_NotEqual:
       return a != b;
   }
 
   return false;
 }
-  
-Object*& Evaluator::push_object(Object* obj) {
+
+Object*& Evaluator::push_object(Object* obj)
+{
   return this->object_stack.emplace_back(obj);
 }
 
-Object* Evaluator::pop_object() {
+Object* Evaluator::pop_object()
+{
   auto obj = *this->object_stack.rbegin();
 
   this->object_stack.pop_back();
@@ -472,29 +463,31 @@ Object* Evaluator::pop_object() {
   return obj;
 }
 
-void Evaluator::pop_object_with_count(size_t count) {
-  for( size_t i = 0; i < count; i++ ) {
+void Evaluator::pop_object_with_count(size_t count)
+{
+  for (size_t i = 0; i < count; i++) {
     this->pop_object();
   }
 }
 
 /**
  * @brief 即値・リテラルの AST からオブジェクトを作成する
- * 
+ *
  * @note すでに作成済みのものであれば、既存のものを返す
- * 
- * @param ast 
+ *
+ * @param ast
  * @return 作成されたオブジェクト (Object*)
  */
-Object* Evaluator::create_object(AST::Value* ast) {
+Object* Evaluator::create_object(AST::Value* ast)
+{
   auto type = Sema::value_type_cache[ast];
 
   auto& obj = this->immediate_objects[ast];
 
-  if( obj )
+  if (obj)
     return obj;
 
-  switch( type.kind ) {
+  switch (type.kind) {
     case TYPE_Int:
       obj = new ObjLong(std::stoi(ast->token.str.data()));
       break;
@@ -504,16 +497,13 @@ Object* Evaluator::create_object(AST::Value* ast) {
       break;
 
     case TYPE_String:
-      obj = new ObjString(Utils::String::to_wstr(
-        std::string(ast->token.str)
-      ));
+      obj = new ObjString(
+          Utils::String::to_wstr(std::string(ast->token.str)));
 
       break;
 
     default:
-      debug(
-        std::cout << type.to_string() << std::endl
-      );
+      debug(std::cout << type.to_string() << std::endl);
 
       todo_impl;
   }
@@ -523,14 +513,18 @@ Object* Evaluator::create_object(AST::Value* ast) {
   return obj;
 }
 
-Evaluator::FunctionStack& Evaluator::enter_function(AST::Function* func) {
+Evaluator::FunctionStack& Evaluator::enter_function(
+    AST::Function* func)
+{
   return this->call_stack.emplace_front(func);
 }
 
-void Evaluator::leave_function() {
+void Evaluator::leave_function()
+{
   this->call_stack.pop_front();
 }
 
-Evaluator::FunctionStack& Evaluator::get_current_func_stack() {
+Evaluator::FunctionStack& Evaluator::get_current_func_stack()
+{
   return *this->call_stack.begin();
 }

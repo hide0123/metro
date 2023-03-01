@@ -7,13 +7,13 @@
 // ---------------------------------------------
 
 /**
- * 
+ *
  * kind mem map
- * 
+ *
  * uint32_t:
  *  AABBCCDD
- *  
- *  
+ *
+ *
  *  AA = token
  *  BB = punctuater kind
  *  CC = bracket kind
@@ -74,10 +74,10 @@ enum PunctuatorKind : uint8_t {
 };
 
 enum BracketKind : uint8_t {
-  BR_Round,   // ()
+  BR_Round,  // ()
   BR_Square,  // []
-  BR_Curly,   // {}
-  BR_Angle    // <>
+  BR_Curly,  // {}
+  BR_Angle  // <>
 };
 
 struct Token {
@@ -91,7 +91,7 @@ struct Token {
       bool is_bracket_opened : 8;
     };
   };
-  
+
   std::string_view str;
 
   size_t pos;
@@ -99,8 +99,8 @@ struct Token {
   static Token const semi;
 
   explicit Token(TokenKind kind)
-    : _kind(0),
-      pos(0)
+      : _kind(0),
+        pos(0)
   {
     this->kind = kind;
   }

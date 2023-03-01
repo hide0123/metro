@@ -59,21 +59,23 @@ struct Base {
   ASTKind kind;
   Token const& token;
 
-  virtual ~Base() { }
+  virtual ~Base()
+  {
+  }
 
   virtual std::string to_string() const;
 
 protected:
   explicit Base(ASTKind kind, Token const& token)
-    : kind(kind),
-      token(token)
+      : kind(kind),
+        token(token)
   {
   }
 };
 
 struct None : Base {
   None(Token const& token)
-    : Base(AST_None, token)
+      : Base(AST_None, token)
   {
   }
 };
@@ -82,7 +84,7 @@ struct Value : Base {
   Object* object;
 
   Value(Token const& tok)
-    : Base(AST_Value, tok)
+      : Base(AST_Value, tok)
   {
   }
 
@@ -92,12 +94,13 @@ struct Value : Base {
 struct Array : Base {
   std::vector<Base*> elements;
 
-  Base*& append(Base* ast) {
+  Base*& append(Base* ast)
+  {
     return this->elements.emplace_back(ast);
   }
 
   Array(Token const& token)
-    : Base(AST_Array, token)
+      : Base(AST_Array, token)
   {
   }
 };
@@ -110,9 +113,9 @@ struct Dict : Base {
     Base* value;
 
     Item(Token const& colon, Base* k, Base* v)
-      : colon(colon),
-        key(k),
-        value(v)
+        : colon(colon),
+          key(k),
+          value(v)
     {
     }
   };
@@ -123,9 +126,9 @@ struct Dict : Base {
   Type* value_type;
 
   Dict(Token const& token)
-    : Base(AST_Dict, token),
-      key_type(nullptr),
-      value_type(nullptr)
+      : Base(AST_Dict, token),
+        key_type(nullptr),
+        value_type(nullptr)
   {
   }
 };
@@ -134,8 +137,8 @@ struct Variable : Base {
   size_t index;
 
   Variable(Token const& tok)
-    : Base(AST_Variable, tok),
-      index(0)
+      : Base(AST_Variable, tok),
+        index(0)
   {
   }
 };
@@ -145,8 +148,8 @@ struct IndexRef : Base {
   std::vector<Base*> indexes;
 
   IndexRef(Token const& t)
-    : Base(AST_IndexRef, t),
-      expr(nullptr)
+      : Base(AST_IndexRef, t),
+        expr(nullptr)
   {
   }
 };
@@ -156,9 +159,9 @@ struct Range : Base {
   Base* end;
 
   Range(Token const& token)
-    : Base(AST_Range, token),
-      begin(nullptr),
-      end(nullptr)
+      : Base(AST_Range, token),
+        begin(nullptr),
+        end(nullptr)
   {
   }
 };
@@ -175,20 +178,20 @@ struct CallFunc : Base {
   std::string to_string() const;
 
   CallFunc(Token const& name)
-    : Base(AST_CallFunc, name),
-      name(name.str),
-      is_builtin(false),
-      builtin_func(nullptr),
-      callee(nullptr)
+      : Base(AST_CallFunc, name),
+        name(name.str),
+        is_builtin(false),
+        builtin_func(nullptr),
+        callee(nullptr)
   {
   }
 };
 
 struct Compare : Base {
   enum CmpKind {
-    CMP_LeftBigger,       // >
-    CMP_RightBigger,      // <
-    CMP_LeftBigOrEqual,   // >=
+    CMP_LeftBigger,  // >
+    CMP_RightBigger,  // <
+    CMP_LeftBigOrEqual,  // >=
     CMP_RightBigOrEqual,  // <=
     CMP_Equal,
     CMP_NotEqual,
@@ -200,9 +203,9 @@ struct Compare : Base {
     Base* ast;
 
     Element(CmpKind kind, Token const& op, Base* ast)
-      : kind(kind),
-        op(op),
-        ast(ast)
+        : kind(kind),
+          op(op),
+          ast(ast)
     {
     }
   };
@@ -211,17 +214,19 @@ struct Compare : Base {
   std::vector<Element> elements;
 
   Compare(Base* first)
-    : Base(AST_Compare, first->token),
-      first(first)
+      : Base(AST_Compare, first->token),
+        first(first)
   {
   }
 
-  Element& append(CmpKind kind, Token const& op, Base* ast) {
+  Element& append(CmpKind kind, Token const& op, Base* ast)
+  {
     return this->elements.emplace_back(kind, op, ast);
   }
 
-  static Compare* create(Base*& ast) {
-    if( ast->kind != AST_Compare )
+  static Compare* create(Base*& ast)
+  {
+    if (ast->kind != AST_Compare)
       ast = new Compare(ast);
 
     return (Compare*)ast;
@@ -235,16 +240,16 @@ struct Expr : Base {
     EX_Mul,
     EX_Div,
     EX_Mod,
-    
+
     EX_LShift,  // <<
     EX_RShift,  // >>
 
     EX_BitAND,  // &
     EX_BitXOR,  // ^
-    EX_BitOR,   // |
+    EX_BitOR,  // |
 
-    EX_And,   // &&
-    EX_Or,    // ||
+    EX_And,  // &&
+    EX_Or,  // ||
   };
 
   struct Element {
@@ -253,9 +258,9 @@ struct Expr : Base {
     Base* ast;
 
     explicit Element(ExprKind kind, Token const& op, Base* ast)
-      : kind(kind),
-        op(op),
-        ast(ast)
+        : kind(kind),
+          op(op),
+          ast(ast)
     {
     }
   };
@@ -264,19 +269,21 @@ struct Expr : Base {
   std::vector<Element> elements;
 
   Expr(Base* first)
-    : Base(AST_Expr, first->token),
-      first(first)
+      : Base(AST_Expr, first->token),
+        first(first)
   {
   }
 
   std::string to_string() const;
 
-  Element& append(ExprKind kind, Token const& op, Base* ast) {
+  Element& append(ExprKind kind, Token const& op, Base* ast)
+  {
     return this->elements.emplace_back(kind, op, ast);
   }
 
-  static Expr* create(Base*& ast) {
-    if( ast->kind != AST_Expr )
+  static Expr* create(Base*& ast)
+  {
+    if (ast->kind != AST_Expr)
       ast = new Expr(ast);
 
     return (Expr*)ast;
@@ -288,9 +295,11 @@ struct Assign : Base {
   Base* expr;
 
   Assign(Token const& assign_op)
-  :Base(AST_Assign,assign_op)
-  ,dest(nullptr),expr(nullptr)
-  {}
+      : Base(AST_Assign, assign_op),
+        dest(nullptr),
+        expr(nullptr)
+  {
+  }
 };
 
 //
@@ -302,9 +311,9 @@ struct VariableDeclaration : Base {
   Base* init;
 
   explicit VariableDeclaration(Token const& token)
-    : Base(AST_Let, token),
-      type(nullptr),
-      init(nullptr)
+      : Base(AST_Let, token),
+        type(nullptr),
+        init(nullptr)
   {
   }
 };
@@ -313,8 +322,8 @@ struct Return : Base {
   AST::Base* expr;
 
   explicit Return(Token const& token)
-    : Base(AST_Return, token),
-      expr(nullptr)
+      : Base(AST_Return, token),
+        expr(nullptr)
   {
   }
 };
@@ -325,10 +334,10 @@ struct If : Base {
   AST::Base* if_false;
 
   explicit If(Token const& token)
-    : Base(AST_If, token),
-      condition(nullptr),
-      if_true(nullptr),
-      if_false(nullptr)
+      : Base(AST_If, token),
+        condition(nullptr),
+        if_true(nullptr),
+        if_false(nullptr)
   {
   }
 };
@@ -339,9 +348,12 @@ struct For : Base {
   Base* code;
 
   For(Token const& tok)
-    : Base(AST_For, tok)
-      ,iter(nullptr),iterable(nullptr),
-      code(nullptr){}
+      : Base(AST_For, tok),
+        iter(nullptr),
+        iterable(nullptr),
+        code(nullptr)
+  {
+  }
 };
 
 struct Scope;
@@ -349,9 +361,12 @@ struct While : Base {
   Base* cond;
   Scope* code;
 
-  While(Token const&tok)
-    :Base(AST_While,tok),
-   cond(nullptr),code(nullptr){}
+  While(Token const& tok)
+      : Base(AST_While, tok),
+        cond(nullptr),
+        code(nullptr)
+  {
+  }
 };
 
 struct DoWhile : Base {
@@ -359,16 +374,19 @@ struct DoWhile : Base {
   Base* cond;
 
   DoWhile(Token const& tok)
-    :Base(AST_DoWhile,tok)
-    ,code(nullptr),cond(nullptr){}
+      : Base(AST_DoWhile, tok),
+        code(nullptr),
+        cond(nullptr)
+  {
+  }
 };
 
 struct Loop : Base {
   Base* code;
 
   Loop(Base* cc)
-  :Base(AST_Loop,cc->token),
-  code(cc)
+      : Base(AST_Loop, cc->token),
+        code(cc)
   {
   }
 };
@@ -377,13 +395,14 @@ struct Scope : Base {
   std::vector<Base*> list;
   size_t var_count;
 
-  Base*& append(Base* item) {
+  Base*& append(Base* item)
+  {
     return this->list.emplace_back(item);
   }
 
   explicit Scope(Token const& token)
-    : Base(AST_Scope, token),
-      var_count(0)
+      : Base(AST_Scope, token),
+        var_count(0)
   {
   }
 };
@@ -394,42 +413,43 @@ struct Function : Base {
     AST::Type* type;
 
     explicit Argument(Token const& name, AST::Type* type)
-      : name(name),
-        type(type)
+        : name(name),
+          type(type)
     {
     }
   };
 
-  Token const& name;            // 名前
-  std::vector<Argument> args;   // 引数
+  Token const& name;  // 名前
+  std::vector<Argument> args;  // 引数
 
-  AST::Type* result_type; // 戻り値の型
-  AST::Scope* code;       // 処理
+  AST::Type* result_type;  // 戻り値の型
+  AST::Scope* code;  // 処理
 
   size_t var_count = 0;
 
   /**
    * @brief 引数を追加する
-   * 
-   * @param name 
-   * @param type 
-   * @return Argument& 
+   *
+   * @param name
+   * @param type
+   * @return Argument&
    */
-  Argument& append_argument(Token const& name, AST::Type* type) {
+  Argument& append_argument(Token const& name, AST::Type* type)
+  {
     return this->args.emplace_back(name, type);
   }
 
   /**
    * @brief Construct a new Function object
-   * 
-   * @param token 
-   * @param name 
+   *
+   * @param token
+   * @param name
    */
   explicit Function(Token const& token, Token const& name)
-    : Base(AST_Function, token),  
-      name(name),
-      result_type(nullptr),
-      code(nullptr)
+      : Base(AST_Function, token),
+        name(name),
+        result_type(nullptr),
+        code(nullptr)
   {
   }
 };
@@ -439,12 +459,10 @@ struct Type : Base {
   bool is_const;
 
   explicit Type(Token const& token)
-    : Base(AST_Type, token),
-      is_const(false)
+      : Base(AST_Type, token),
+        is_const(false)
   {
   }
 };
 
-
-
-} // namespace AST
+}  // namespace AST

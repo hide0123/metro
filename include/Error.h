@@ -35,21 +35,18 @@ public:
   };
 
   Error(ErrLoc loc, std::string const& msg)
-    : loc(loc),
-      msg(msg)
+      : loc(loc),
+        msg(msg)
   {
   }
 
   Error& emit(ErrorLevel level = EL_Error);
 
-  [[noreturn]]
-  void exit(int code = 1);
+  [[noreturn]] void exit(int code = 1);
 
   static bool was_emitted();
 
 private:
-
   ErrLoc loc;
   std::string msg;
 };
-

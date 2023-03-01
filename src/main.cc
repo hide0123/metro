@@ -21,105 +21,108 @@
 
 namespace Utils::String {
 
-static
-std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>
-  conv;
+static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>
+    conv;
 
-std::wstring to_wstr(std::string const& str) {
+std::wstring to_wstr(std::string const& str)
+{
   return conv.from_bytes(str);
 }
 
-std::string to_str(std::wstring const& str) {
+std::string to_str(std::wstring const& str)
+{
   return conv.to_bytes(str);
 }
 
-} // namespace Utils::String
+}  // namespace Utils::String
 
 static Application* app_inst;
 
-Application::Application() {
+Application::Application()
+{
   ::app_inst = this;
 }
 
-Application::~Application() {
+Application::~Application()
+{
   ::app_inst = nullptr;
 }
 
-std::string const& Application::get_source_code() {
+std::string const& Application::get_source_code()
+{
   return this->source_code;
 }
 
-
 // 初期化
-void Application::initialize() {
-
-
+void Application::initialize()
+{
   Object::initialize();
-
-
 }
 
-Application& Application::get_current_instance() {
+Application& Application::get_current_instance()
+{
   return *::app_inst;
 }
 
 /**
  * @brief テキストファイルを開く
- * 
- * @param path 
- * @return std::string 
+ *
+ * @param path
+ * @return std::string
  */
-std::string open_file(std::string const& path) {
-  std::ifstream ifs{ path };
+std::string open_file(std::string const& path)
+{
+  std::ifstream ifs{path};
 
   std::string source;
-  
-  for( std::string line; std::getline(ifs, line); )
+
+  for (std::string line; std::getline(ifs, line);)
     source += line + '\n';
 
   return source;
 }
 
-int Application::main(int argc, char** argv) {
-  #define chkerr \
-    if(Error::was_emitted()) \
-      return -1;
+int Application::main(int argc, char** argv)
+{
+#define chkerr              \
+  if (Error::was_emitted()) \
+    return -1;
 
-
-  (void)argc;(void)argv;
+  (void)argc;
+  (void)argv;
 
   Application::initialize();
-  
+
   this->file_path = "test.txt";
   this->source_code = open_file(this->file_path);
 
   //
   // 字句解析
-  Lexer lexer{ this->source_code };
+  Lexer lexer{this->source_code};
 
-alert;
+  alert;
   auto token_list = lexer.lex();
 
   // 構文解析
-  Parser parser{ token_list };
+  Parser parser{token_list};
 
-alert;
+  alert;
   auto ast = parser.parse();
 
   alertmsg(ast->to_string());
 
   chkerr
 
-  Token toktok{TOK_End};
-  toktok.str="main";
+      Token toktok{TOK_End};
+  toktok.str = "main";
 
-  auto azz=new AST::CallFunc(toktok);
+  auto azz = new AST::CallFunc(toktok);
   ast->append(azz);
 
   // 意味解析
-  Sema sema{ ast };
+  Sema sema{ast};
 
-alert;
+  alert;
   auto type = sema.check(ast);
 
   alert;
@@ -127,30 +130,28 @@ alert;
 
   chkerr
 
+      // Compiler com;
 
-  // Compiler com;
+      // alert;
+      // com.compile(ast);
 
-  // alert;
-  // com.compile(ast);
+      Evaluator eval;
 
-
-  Evaluator eval;
-
-alert;
+  alert;
   eval.evaluate(ast);
-
 
   return 0;
 }
 
-int main(int argc, char** argv) {
-  try{
+int main(int argc, char** argv)
+{
+  try {
     return Application().main(argc, argv);
   }
-  catch( std::exception e ) {
+  catch (std::exception e) {
     alertmsg(e.what());
   }
-  catch( ... ) {
+  catch (...) {
     alert;
   }
 

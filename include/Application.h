@@ -3,8 +3,6 @@
 #include <string>
 
 class Application {
-
-
 public:
   Application();
   ~Application();
@@ -13,12 +11,10 @@ public:
 
   std::string const& get_source_code();
 
-  static void initialize(); // これいるのか？
+  static void initialize();  // これいるのか？
 
   static Application& get_current_instance();
 
   std::string file_path;
   std::string source_code;
-
 };
-

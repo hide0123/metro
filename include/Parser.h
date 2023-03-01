@@ -13,7 +13,6 @@ public:
   Parser(std::list<Token>& token_list);
   ~Parser();
 
-
   AST::Scope* parse();
 
   AST::Base* primary();
@@ -31,7 +30,7 @@ public:
   AST::Base* range();
 
   AST::Base* assign();
-  
+
   AST::Base* expr();
 
   AST::Base* stmt();
@@ -39,7 +38,6 @@ public:
   AST::Base* top();
 
 private:
-
   bool check();
   void next();
 
@@ -62,7 +60,8 @@ private:
   // 引数 ast を、return 文でラップする
   AST::Return* new_return_stmt(AST::Base* ast);
 
-  auto& to_return_stmt(AST::Base*& ast) {
+  auto& to_return_stmt(AST::Base*& ast)
+  {
     return ast = (AST::Base*)this->new_return_stmt(ast);
   }
 

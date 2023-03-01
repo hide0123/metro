@@ -18,7 +18,7 @@ enum TypeKind {
   TYPE_Vector,
   TYPE_Dict,
   TYPE_Args,
-  TYPE_Template, // only used in Sema
+  TYPE_Template,  // only used in Sema
 };
 
 struct TypeInfo {
@@ -28,18 +28,16 @@ struct TypeInfo {
   std::vector<TypeInfo> type_params;
 
   TypeInfo(TypeKind kind = TYPE_None)
-    : kind(kind),
-      is_const(false)
+      : kind(kind),
+        is_const(false)
   {
   }
 
-  TypeInfo(
-      TypeKind kind,
-      std::initializer_list<TypeInfo> list,
-      bool is_const = false)
-    : kind(kind),
-      is_const(is_const),
-      type_params(list)
+  TypeInfo(TypeKind kind, std::initializer_list<TypeInfo> list,
+           bool is_const = false)
+      : kind(kind),
+        is_const(is_const),
+        type_params(list)
   {
   }
 
