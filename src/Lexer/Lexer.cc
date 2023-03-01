@@ -88,6 +88,11 @@ std::list<Token> Lexer::lex() {
     if( isdigit(ch) ) {
       token.kind = TOK_Int;
       token.str = { str, this->pass_while(isdigit) };
+
+      if(this->peek()=='u'){
+        token.kind=TOK_USize;
+        this->position++;
+      }
     }
 
     // string

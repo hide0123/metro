@@ -78,7 +78,7 @@ private:
   Object* create_object(AST::Value* ast);
 
 
-  Object* default_constructer(TypeInfo type);
+  Object* default_constructer(TypeInfo const& type);
 
   /**
    * @brief 

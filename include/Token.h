@@ -22,6 +22,7 @@
 
 enum TokenKind : uint8_t {
   TOK_Int,
+  TOK_USize,
   TOK_Float,
   TOK_Char,
   TOK_String,

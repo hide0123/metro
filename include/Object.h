@@ -8,6 +8,7 @@
 
 class Application;
 struct ObjNone;
+
 struct Object {
   TypeInfo type;
   size_t ref_count;
@@ -24,7 +25,7 @@ struct Object {
     return false;
   }
 
-  virtual bool equals(Object* object) const = 0;
+  bool equals(Object* object) const;
 
   virtual ~Object();
 
@@ -58,7 +59,7 @@ struct ObjLong : Object {
     return true;
   }
 
-  explicit ObjLong(int64_t value)
+  explicit ObjLong(int64_t value = 0)
     : Object(TYPE_Int),
       value(value)
   {
@@ -69,7 +70,7 @@ struct ObjUSize : Object {
   size_t value;
 
   std::string to_string() const;
-  ObjLong* clone() const;
+  ObjUSize* clone() const;
 
   bool equals(ObjUSize* x) const {
     return x->value==this->value;
@@ -79,7 +80,7 @@ struct ObjUSize : Object {
     return true;
   }
 
-  ObjUSize(size_t value)
+  ObjUSize(size_t value = 0)
     : Object(TYPE_USize),
       value(value)
   {
@@ -100,7 +101,7 @@ struct ObjFloat : Object {
     return true;
   }
 
-  explicit ObjFloat(float value)
+  explicit ObjFloat(float value = 0)
     : Object(TYPE_Float),
       value(value)
   {
@@ -122,8 +123,25 @@ struct ObjBool : Object {
     return x->value==this->value;
   }
 
-  explicit ObjBool(bool value)
+  explicit ObjBool(bool value = 0)
     : Object(TYPE_Bool),
+      value(value)
+  {
+  }
+};
+
+struct ObjChar : Object {
+  wchar_t value;
+  
+  std::string to_string() const;
+  ObjChar* clone() const;
+
+  bool equals(ObjChar* x) const {
+    return x->value==this->value;
+  }
+
+  explicit ObjChar(wchar_t ch = 0)
+    : Object(TYPE_Char),
       value(value)
   {
   }
@@ -166,6 +184,7 @@ struct ObjDict : Object {
     for(auto xx=x->items.begin();auto&&aa:this->items){
       if(!aa.key->equals(xx->key) || !aa.value->equals(xx->value))
         return false;
+      xx++;
     }
 
     return true;
@@ -184,7 +203,15 @@ struct ObjVector : Object {
   ObjVector* clone() const;
 
   bool equals(ObjVector* x) const {
+    if(this->elements.size()!=x->elements.size())
+      return false;
 
+    for(auto y=x->elements.begin();auto&&e:this->elements){
+      if(!e->equals(*y))
+        return false;
+    }
+
+    return true;
   }
 
   ObjVector()

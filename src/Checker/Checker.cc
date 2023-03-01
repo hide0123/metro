@@ -21,7 +21,7 @@ Checker
 #define astdef(T) auto ast=(AST::T*)_ast
 
 
-std::map<AST::Value*, TypeInfo> Checker::value_type_cache;
+std::map<AST::Base*, TypeInfo> Checker::value_type_cache;
 
 Checker::Checker(AST::Scope* root)
   : root(root)
@@ -118,6 +118,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
             .exit();
         }
       }
+
+      Checker::value_type_cache[_ast] = ret;
 
       return ret;
     }

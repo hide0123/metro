@@ -66,6 +66,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       astdef(Dict);
       
       auto ret = new ObjDict;
+      ret->type = Checker::value_type_cache[_ast];
       
       for( auto&& elem : ast->elements ) {
         ret->items.emplace_back(
@@ -85,24 +86,24 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       for(auto&&index_ast:ast->indexes) {
         auto obj_index = this->evaluate(index_ast);
 
-        size_t index;  {
-          switch(obj_index->type.kind){
-            case TYPE_Int:
-              index=((ObjLong*)obj_index)->value;
-              break;
-            
-            case TYPE_USize:
-              index=((ObjUSize*)obj_index)->value;
-              break;
-
-            default:
-              panic("int or usize??aa");
-          }
-        }
-
         switch(obj->type.kind){
           case TYPE_Vector:{
             auto obj_vec = (ObjVector*)obj;
+
+            size_t index;  {
+              switch(obj_index->type.kind){
+                case TYPE_Int:
+                  index=((ObjLong*)obj_index)->value;
+                  break;
+                
+                case TYPE_USize:
+                  index=((ObjUSize*)obj_index)->value;
+                  break;
+
+                default:
+                  panic("int or usize??aa");
+              }
+            }
 
             if(index>=obj_vec->elements.size()){
               Error(index_ast,"index out of range")
@@ -115,11 +116,26 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
           }
 
           case TYPE_Dict: {
+            auto obj_dict= (ObjDict*)obj;
 
+            for(auto&&item:obj_dict->items){
+              if(item.key->equals(obj_index)){
+                obj = item.value;
+                goto _dict_value_found;
+              }
+            }
+
+            obj =
+              obj_dict->items.emplace_back(
+                obj_index,
+                this->default_constructer(
+                  obj_dict->type.type_params[1]
+                )
+              ).value;
+
+          _dict_value_found:
             break;
           }
-
-          
         }
       }
 
@@ -326,6 +342,31 @@ Object*& Evaluator::eval_left(AST::Base* _ast) {
   throw 10;
 }
 
+Object* Evaluator::default_constructer(TypeInfo const& type) {
+  switch( type.kind ) {
+    case TYPE_Int:
+      return new ObjLong;
+
+    case TYPE_USize:
+      return new ObjUSize;
+
+    case TYPE_Float:
+      return new ObjFloat;
+
+    case TYPE_String:
+      return new ObjString;
+
+    case TYPE_Dict: {
+      auto ret = new ObjDict;
+
+      ret->type = type;
+
+      return ret;
+    }
+  }
+
+  panic("u9r043290");
+}
 
 Object* Evaluator::compute_expr_operator(
   AST::Expr::ExprKind kind,

@@ -123,6 +123,6 @@ private:
 
   size_t variable_stack_offs = 0;
 
-  static std::map<AST::Value*, TypeInfo> value_type_cache;
+  static std::map<AST::Base*, TypeInfo> value_type_cache;
 
 };

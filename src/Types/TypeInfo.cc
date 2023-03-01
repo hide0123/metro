@@ -81,7 +81,7 @@ bool TypeInfo::equals(TypeInfo const& type) const {
 bool TypeInfo::is_numeric() const {
   switch( this->kind ) {
     case TYPE_Int:
-    case TYPE_Usize:
+    case TYPE_USize:
     case TYPE_Float:
       return true;
   }

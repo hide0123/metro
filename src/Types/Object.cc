@@ -32,11 +32,43 @@ void Object::initialize() {
 
 }
 
+bool Object::equals(Object* object) const {
+  #define eeeee(A,B) \
+    case TYPE_ ## A:\
+    return ((Obj ## B*)this)->equals((Obj ## B*)object);
+
+  #define ajjja(A) eeeee(A,A)
+
+  if(!this->type.equals(object->type))
+    return 0;
+
+// なんなのこれ
+// めんどくさすぎ
+  switch(this->type.kind){
+    eeeee(Int,Long)
+    ajjja(Float)
+    ajjja(Bool)
+    ajjja(Char)
+    ajjja(String)
+    ajjja(Dict)
+    ajjja(Vector)
+
+    case TYPE_None:
+      return 1;
+  }
+
+  todo_impl;
+}
+
 std::string ObjNone::to_string() const {
   return "none";
 }
 
 std::string ObjLong::to_string() const {
+  return std::to_string(this->value);
+}
+
+std::string ObjUSize::to_string() const {
   return std::to_string(this->value);
 }
 
@@ -46,10 +78,12 @@ std::string ObjFloat::to_string() const {
 }
 
 std::string ObjString::to_string() const {
-  if(nested)
-    return '"'+
-    Utils::String::to_str(this->value);
-      +'"';
+  if(nested) {
+    return
+      '"'
+        +Utils::String::to_str(this->value)
+        +'"';
+  }
 
   return Utils::String::to_str(this->value);
 }
@@ -61,7 +95,9 @@ std::string ObjDict::to_string() const {
   nested=1;
 
   for(auto&&x:this->items){
-    s+=x.key->to_string()+": "+x.value->to_string();
+    s+=x.key->to_string()
+    +": "+x.value->to_string();
+
     if(&x!=&*this->items.rbegin())
       s+=", ";
   }
@@ -94,6 +130,10 @@ ObjNone* ObjNone::clone() const {
 
 ObjLong* ObjLong::clone() const {
   return new ObjLong(this->value);
+}
+
+ObjUSize* ObjUSize::clone() const {
+  return new ObjUSize(this->value);
 }
 
 ObjFloat* ObjFloat::clone() const {
