@@ -284,20 +284,38 @@ TypeInfo Sema::check(AST::Base* _ast) {
         init_expr_type=this->check(ast->init);
       }
 
+      // 型が指定されてる
       if( ast->type ) {
         type = this->check(ast->type);
 
-        // 指定された型と初期化式の型が一致しない
-        if( !type.equals(init_expr_type) ) {
+        if( type.kind==TYPE_Vector){
+          if(init_expr_type.kind==TYPE_Vector
+          &&init_expr_type.type_params.empty()){
+            
+          }
+        }
+
+        // 初期化式がある場合
+        //  => 指定された型と初期化式の型が一致しないならエラー
+        if(ast->init&& !type.equals(init_expr_type) ) {
           Error(ast->init,"mismatched type")
             .emit()
             .exit();
         }
       }
+      // 型が指定されてない
       else {
-        type = this->check(ast->init);
+        // => 初期化式がないときエラー
+        if( !ast->init ) {
+          Error(ast,"cannot deduction variable type")
+            .emit()
+            .exit();
+        }
+
+        type = std::move(init_expr_type);
       }
 
+      // 同スコープ内で同じ名前の変数を探す
       auto pvar = scope_emu.find_var(ast->name);
 
       // すでに定義済みの同じ名前があって、違う型

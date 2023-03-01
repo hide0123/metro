@@ -18,6 +18,7 @@ enum TypeKind {
   TYPE_Vector,
   TYPE_Dict,
   TYPE_Args,
+  TYPE_Template, // only used in Sema
 };
 
 struct TypeInfo {

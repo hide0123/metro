@@ -5,6 +5,8 @@
 
 #include "Error.h"
 
+#include "debug/alert.h"
+
 using EXKind = AST::Expr::ExprKind;
 
 Parser::Parser(std::list<Token>& token_list)
@@ -169,7 +171,32 @@ AST::Base* Parser::member_access() {
     y->expr = x;
 
     while( this->eat(".") ) {
-      y->indexes.emplace_back(this->expr());
+      auto tmp = this->indexref();
+
+      if(tmp->kind==AST_CallFunc){
+          alert;
+        auto cf =(AST::CallFunc*)tmp;
+
+        if(y->indexes.empty())
+          cf->args.insert(cf->args.begin(),y->expr);
+        else
+          cf->args.insert(cf->args.begin(),y);
+
+        if(this->cur->str=="."){
+          alert;
+          y=new AST::IndexRef(*this->cur);
+          y->kind = AST_MemberAccess;
+          y->expr=cf;
+        }
+        else {
+          alert;
+          return cf;
+        }
+      }
+      else {
+          alert;
+        y->indexes.emplace_back(this->indexref());
+      }
     }
 
     x = y;

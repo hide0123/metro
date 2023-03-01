@@ -39,6 +39,16 @@ static std::vector<BuiltinFunc> const _builtin_functions {
 
       return ret;
     }
+  },
+
+  // push
+  BuiltinFunc {
+    .name = "push",
+    .result_type = TYPE_None,
+    .arg_types = { TYPE_Vector },
+    .impl = [] (std::vector<Object*> const& args) -> Object* {
+      
+    }
   }
 };
 
