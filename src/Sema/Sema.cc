@@ -548,6 +548,8 @@ TypeInfo Sema::check(AST::Base* _ast) {
                 Error(ast,"missing parameters")
                   .emit()
                   .exit();
+
+            // todo: case user-def struct
           }
 
           goto skiperror009;

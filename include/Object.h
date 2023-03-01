@@ -142,7 +142,7 @@ struct ObjChar : Object {
 
   explicit ObjChar(wchar_t ch = 0)
     : Object(TYPE_Char),
-      value(value)
+      value(ch)
   {
   }
 };

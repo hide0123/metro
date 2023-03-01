@@ -52,6 +52,7 @@ static std::vector<BuiltinFunc> const _builtin_functions {
       { TypeInfo(TYPE_Vector, {TYPE_Template}), TYPE_Template },
     .impl = [] (std::vector<Object*> const& args) -> Object* {
       ((ObjVector*)args[0])->elements.emplace_back(args[1]);
+      return new ObjNone;
     }
   }
 };
