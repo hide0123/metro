@@ -1,15 +1,13 @@
 #pragma once
 
-#define  ENABLE_CDSTRUCT    0
-
-#if METRO_DEBUG
-
 #include <iostream>
 #include <sstream>
+#include <cstring>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include "../color.h"
+
+#define  ENABLE_CDSTRUCT    0
 
 #define _RGB  MAKE_COLOR
 #define _BRGB MAKE_BK_COLOR
@@ -21,13 +19,15 @@
 #define TAG_TODOIMPL    _RGB(50,255,255)  "#not implemented here"
 #define TAG_PANIC       COL_RED "panic! "
 
-#define debug(...) __VA_ARGS__
-
 #define _streamalert(tag,e...) \
   ({ std::stringstream ss; \
     ss << e; \
   _alert_impl(tag, ss.str().c_str(), \
   __FILE__, __LINE__); })
+
+#if METRO_DEBUG
+
+#define debug(...) __VA_ARGS__
 
 #define alert \
   _alert_impl(TAG_ALERT, nullptr, __FILE__, __LINE__)
@@ -45,6 +45,16 @@
 #else
 #define alert_ctor  0
 #define alert_dtor  0
+#endif
+
+#else
+
+#define debug(...)      0;
+#define alert           0
+#define alertmsg(...)   0
+#define alert_ctor      0
+#define alert_dtor      0
+
 #endif
 
 #define todo_impl \
@@ -78,7 +88,7 @@ _alert_impl(  char const* tag, char const* msg,
 
   size_t endpos = 200;
 
-  for(size_t i=0;i<len;){
+  for(int i=0;i<len;){
     if(buf2[i]=='\033'){
       do{
         endpos++;
@@ -96,10 +106,3 @@ _alert_impl(  char const* tag, char const* msg,
   fprintf(stderr,
     "%s" COL_DEFAULT "\n", buf2);
 }
-
-#else
-
-
-
-#endif
-

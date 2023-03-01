@@ -91,7 +91,7 @@ std::list<Token> Lexer::lex() {
 
       if(this->peek()=='u'){
         token.kind=TOK_USize;
-        
+
         this->position++;
         token.str={str,this->position-token.pos};
       }
@@ -150,7 +150,7 @@ std::list<Token> Lexer::lex() {
             return true;
           }) ) {
       
-      panic("unknown token at %zu", this->position);
+      panic("unknown token at " << this->position);
     }
 
     this->pass_space();
