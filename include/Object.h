@@ -24,6 +24,8 @@ struct Object {
     return false;
   }
 
+  virtual bool equals(Object* object) const = 0;
+
   virtual ~Object();
 
 protected:
@@ -48,6 +50,10 @@ struct ObjLong : Object {
   std::string to_string() const;
   ObjLong* clone() const;
 
+  bool equals(ObjLong* x) const {
+    return x->value==this->value;
+  }
+
   bool is_numeric() const {
     return true;
   }
@@ -65,6 +71,10 @@ struct ObjUSize : Object {
   std::string to_string() const;
   ObjLong* clone() const;
 
+  bool equals(ObjUSize* x) const {
+    return x->value==this->value;
+  }
+
   bool is_numeric() const {
     return true;
   }
@@ -81,6 +91,10 @@ struct ObjFloat : Object {
 
   std::string to_string() const;
   ObjFloat* clone() const;
+
+  bool equals(ObjFloat* x) const {
+    return x->value==this->value;
+  }
 
   bool is_numeric() const {
     return true;
@@ -104,6 +118,10 @@ struct ObjBool : Object {
     return new ObjBool(this->value);
   }
 
+  bool equals(ObjBool* x) const {
+    return x->value==this->value;
+  }
+
   explicit ObjBool(bool value)
     : Object(TYPE_Bool),
       value(value)
@@ -116,6 +134,10 @@ struct ObjString : Object {
 
   std::string to_string() const;
   ObjString* clone() const;
+
+  bool equals(ObjString* x) const {
+    return x->value==this->value;
+  }
 
   explicit ObjString(std::wstring value = L"")
     : Object(TYPE_String),
@@ -137,6 +159,18 @@ struct ObjDict : Object {
   std::string to_string() const;
   ObjDict* clone() const;
 
+  bool equals(ObjDict* x) const {
+    if(this->items.size()!=x->items.size())
+      return false;
+
+    for(auto xx=x->items.begin();auto&&aa:this->items){
+      if(!aa.key->equals(xx->key) || !aa.value->equals(xx->value))
+        return false;
+    }
+
+    return true;
+  }
+
   ObjDict()
     : Object(TYPE_Dict)
   {
@@ -148,6 +182,10 @@ struct ObjVector : Object {
 
   std::string to_string() const;
   ObjVector* clone() const;
+
+  bool equals(ObjVector* x) const {
+
+  }
 
   ObjVector()
     : Object(TYPE_Vector)

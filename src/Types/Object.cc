@@ -55,7 +55,7 @@ std::string ObjString::to_string() const {
 }
 
 std::string ObjDict::to_string() const {
-  std::string s = "{ ";
+  std::string s = "{";
 
   auto nss = nested;
   nested=1;
@@ -69,6 +69,23 @@ std::string ObjDict::to_string() const {
   nested=nss;
 
   return s + "}";
+}
+
+std::string ObjVector::to_string() const {
+  std::string s = "[";
+
+  auto nss = nested;
+  nested=1;
+
+  for(auto&&x:this->elements){
+    s+=x->to_string();
+    if(x!=*this->elements.rbegin())
+      s+=", ";
+  }
+
+  nested=nss;
+
+  return s + "]";
 }
 
 ObjNone* ObjNone::clone() const {
@@ -100,3 +117,11 @@ ObjDict* ObjDict::clone() const {
   return ret;
 }
 
+ObjVector* ObjVector::clone() const {
+  auto ret = new ObjVector;
+
+  for(auto&&xx:this->elements)
+    ret->elements.emplace_back(xx->clone());
+
+  return ret;
+}

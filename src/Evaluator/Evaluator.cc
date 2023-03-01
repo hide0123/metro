@@ -104,8 +104,22 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
           case TYPE_Vector:{
             auto obj_vec = (ObjVector*)obj;
 
-            if(index>=)
+            if(index>=obj_vec->elements.size()){
+              Error(index_ast,"index out of range")
+                .emit()
+                .exit();
+            }
+
+            obj = obj_vec->elements[index];
+            break;
           }
+
+          case TYPE_Dict: {
+
+            break;
+          }
+
+          
         }
       }
 
