@@ -81,6 +81,7 @@ AST::Base* Parser::primary() {
   switch( this->cur->kind ) {
     // 即値・リテラル
     case TOK_Int:
+    case TOK_USize:
     case TOK_Float:
     case TOK_Char:
     case TOK_String:

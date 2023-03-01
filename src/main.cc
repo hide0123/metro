@@ -10,7 +10,7 @@
 
 #include "Lexer.h"
 #include "Parser.h"
-#include "Checker.h"
+#include "Sema.h"
 #include "Compiler.h"
 #include "Evaluator.h"
 
@@ -117,10 +117,10 @@ alert;
   ast->append(azz);
 
   // 意味解析
-  Checker checker{ ast };
+  Sema sema{ ast };
 
 alert;
-  auto type = checker.check(ast);
+  auto type = sema.check(ast);
 
   alert;
   alertmsg("check(ast) = " << type.to_string());

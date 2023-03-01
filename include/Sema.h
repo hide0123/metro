@@ -9,16 +9,19 @@
 #include "TypeInfo.h"
 
 // ---------------------------------------------
-//  Checker
+//  Sema
 // ---------------------------------------------
 class Evaluator;
-class Checker {
+class Sema {
   friend class Evaluator;
 
   struct FunctionContext {
     AST::Function* func;
 
     TypeInfo result_type;
+
+    std::map<AST::Return*, TypeInfo>
+      return_stmt_types;
   };
 
   struct VariableEmu {
@@ -59,8 +62,8 @@ class Checker {
 
 public:
 
-  Checker(AST::Scope* root);
-  ~Checker();
+  Sema(AST::Scope* root);
+  ~Sema();
 
 
   /**
@@ -110,6 +113,24 @@ public:
 
 private:
 
+  using CaptureFunction = std::function<void(AST::Base*)>;
+  using ReturnCaptureFunction = std::function<void(TypeInfo const&, AST::Base*)>;
+
+  struct CaptureContext {
+    CaptureFunction     func;
+
+    CaptureContext(CaptureFunction f)
+      : func(f)
+    {
+    }
+  };
+
+  void begin_capture(CaptureFunction func);
+  void end_capture();
+
+  void begin_return_capture(ReturnCaptureFunction func);
+  void end_return_capture();
+
   ScopeEmu& get_cur_scope();
 
   // 今いる関数を返す
@@ -122,6 +143,10 @@ private:
   std::list<AST::Function*> function_history;
 
   size_t variable_stack_offs = 0;
+
+  // captures
+  std::vector<CaptureContext> captures;
+  std::vector<ReturnCaptureFunction> return_captures;
 
   static std::map<AST::Base*, TypeInfo> value_type_cache;
 

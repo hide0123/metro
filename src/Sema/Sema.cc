@@ -1,6 +1,6 @@
 /* ------------------------------------------------------------
 
-Checker
+Sema
 
 意味解析を行う
 型推論、型チェック、など
@@ -14,21 +14,21 @@ Checker
 #include "BuiltinFunc.h"
 
 #include "Error.h"
-#include "Checker.h"
+#include "Sema.h"
 
 #include "debug/alert.h"
 
 #define astdef(T) auto ast=(AST::T*)_ast
 
 
-std::map<AST::Base*, TypeInfo> Checker::value_type_cache;
+std::map<AST::Base*, TypeInfo> Sema::value_type_cache;
 
-Checker::Checker(AST::Scope* root)
+Sema::Sema(AST::Scope* root)
   : root(root)
 {
 }
 
-Checker::~Checker() {
+Sema::~Sema() {
 
 }
 
@@ -39,9 +39,15 @@ Checker::~Checker() {
  * @param _ast 
  * @return 評価された _ast の型 (TypeInfo)
  */
-TypeInfo Checker::check(AST::Base* _ast) {
+TypeInfo Sema::check(AST::Base* _ast) {
   if( !_ast )
     return TYPE_None;
+
+  for(auto&&cap:this->captures){
+    cap.func(_ast);
+  }
+
+  TypeInfo _ret = TYPE_None;
 
   switch( _ast->kind ) {
     case AST_Value: {
@@ -52,6 +58,10 @@ TypeInfo Checker::check(AST::Base* _ast) {
       switch( ast->token.kind ) {
         case TOK_Int:
           ret = TYPE_Int;
+          break;
+
+        case TOK_USize:
+          ret = TYPE_USize;
           break;
 
         case TOK_Float:
@@ -70,18 +80,21 @@ TypeInfo Checker::check(AST::Base* _ast) {
           todo_impl;
       }
 
-      return this->value_type_cache[ast] = ret;
+      _ret = this->value_type_cache[ast] = ret;
+      break;
     }
 
     // 変数
     case AST_Variable: {
-      return this->check_as_left(_ast);
+      _ret = this->check_as_left(_ast);
+      break;
     }
 
     //
     // 関数呼び出し
     case AST_CallFunc: {
-      return this->check_function_call((AST::CallFunc*)_ast);
+      _ret = this->check_function_call((AST::CallFunc*)_ast);
+      break;
     }
 
     case AST_Dict: {
@@ -119,9 +132,10 @@ TypeInfo Checker::check(AST::Base* _ast) {
         }
       }
 
-      Checker::value_type_cache[_ast] = ret;
+      Sema::value_type_cache[_ast] = ret;
 
-      return ret;
+      _ret = ret;
+      break;
     }
 
     case AST_IndexRef: {
@@ -164,7 +178,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
         }
       }
 
-      return x;
+      _ret = x;
+     break;
     }
 
     //
@@ -189,7 +204,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
         }
       }
 
-      return left;
+      _ret = left;
+     break;
     }
 
     //
@@ -205,7 +221,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
           .exit();
       }
 
-      return dest;
+      _ret = dest;
+     break;
     }
 
     //
@@ -227,7 +244,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
         left = right;
       }
 
-      return TYPE_Bool;
+      _ret = TYPE_Bool;
+     break;
     }
 
     //
@@ -282,8 +300,10 @@ TypeInfo Checker::check(AST::Base* _ast) {
     case AST_Return: {
       auto ast = (AST::Return*)_ast;
 
+      auto cur_func = this->get_cur_func();
+
       // 関数の中ではない
-      if( !this->get_cur_func() ) {
+      if( !cur_func ) {
         Error(ast, "cannot use return-statement here")
           .emit()
           .exit();
@@ -294,7 +314,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
       }
 
       auto type = this->check(ast->expr);
-      auto resp=this->get_cur_func()->result_type;
+      auto resp=cur_func->result_type;
 
     if(!type.equals(
       this->check(resp))){
@@ -307,7 +327,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
           .emit(Error::EL_Note);
       }
 
-      return type;
+      _ret = type;
+      break;
     }
 
     //
@@ -328,7 +349,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
           .emit()
           .exit();
 
-      return xx;
+      _ret = xx;
+     break;
     }
 
     //
@@ -359,6 +381,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
       this->check(ast->code);
 
       break;
+     break;
     }
 
 
@@ -382,6 +405,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
 
       this->scope_list.pop_front();
       break;
+     break;
     }
 
     //
@@ -401,21 +425,41 @@ TypeInfo Checker::check(AST::Base* _ast) {
       ast->var_count = ast->args.size();
 
       // 引数追加
-      size_t wawawa=0;
-      for(auto&&x:ast->args){
+      for(size_t ww=0;auto&&x:ast->args){
         auto& V=S.variables.emplace_back(
           x.name.str,
           this->check(x.type)
         );
 
-        V.offs=wawawa++;
+        V.offs=ww++;
       }
 
       auto res_type = this->check(ast->result_type);
 
+      std::vector<TypeInfo> return_types;
+
+      this->begin_return_capture(
+        [&](TypeInfo const& type, AST::Base*ast){
+        switch(ast->kind){
+          case AST_Return:{
+            return_types.emplace_back(type);
+            break;
+          }
+        }
+      });
+
       for( auto&& x : ast->code->list ) {
         this->check(x);
       }
+
+      if(!res_type.equals(TYPE_None)&& return_types.empty()){
+        Error(ast,"result type is not none, "
+          "but function return nothing")
+          .emit()
+          .exit();
+      }
+
+      this->end_return_capture();
       
       // スコープ削除
       this->scope_list.pop_front();
@@ -457,7 +501,8 @@ TypeInfo Checker::check(AST::Base* _ast) {
     skiperror009:;
       ret.is_mutable = ast->is_mutable;
 
-      return ret;
+      _ret = ret;
+     break;
     }
 
     default:
@@ -465,10 +510,14 @@ TypeInfo Checker::check(AST::Base* _ast) {
       todo_impl;
   }
 
-  return TYPE_None;
+  for(auto&&retcap:this->return_captures){
+    retcap(_ret,_ast);
+  }
+
+  return _ret;
 }
 
-TypeInfo Checker::check_as_left(AST::Base* _ast) {
+TypeInfo Sema::check_as_left(AST::Base* _ast) {
   switch( _ast->kind ) {
     case AST_Variable: {
       astdef(Variable);
@@ -502,7 +551,7 @@ TypeInfo Checker::check_as_left(AST::Base* _ast) {
 }
 
 
-TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
+TypeInfo Sema::check_function_call(AST::CallFunc* ast) {
   // 組み込み関数リスト取得
   auto const& buitinfunc_list =
     BuiltinFunc::get_builtin_list();
@@ -596,7 +645,7 @@ TypeInfo Checker::check_function_call(AST::CallFunc* ast) {
  * @param rhs 
  * @return std::optional<TypeInfo> 
  */
-std::optional<TypeInfo> Checker::is_valid_expr(
+std::optional<TypeInfo> Sema::is_valid_expr(
   AST::Expr::ExprKind kind,
   TypeInfo const& lhs, TypeInfo const& rhs) {
 
@@ -655,7 +704,7 @@ std::optional<TypeInfo> Checker::is_valid_expr(
   return std::nullopt;
 }
 
-AST::Function* Checker::find_function(std::string_view name) {
+AST::Function* Sema::find_function(std::string_view name) {
   for( auto&& item : this->root->list ) {
     if( item->kind == AST_Function &&
         ((AST::Function*)item)->name.str == name ) {
@@ -667,10 +716,27 @@ AST::Function* Checker::find_function(std::string_view name) {
 }
 
 
-Checker::ScopeEmu& Checker::get_cur_scope() {
+Sema::ScopeEmu& Sema::get_cur_scope() {
   return *this->scope_list.begin();
 }
 
-AST::Function* Checker::get_cur_func() {
+AST::Function* Sema::get_cur_func() {
   return *this->function_history.begin();
 }
+
+void Sema::begin_capture(Sema::CaptureFunction cap_func) {
+  this->captures.emplace_back(cap_func);
+}
+
+void Sema::end_capture() {
+  this->captures.pop_back();
+}
+
+void Sema::begin_return_capture(Sema::ReturnCaptureFunction cap_func) {
+  this->return_captures.emplace_back(cap_func);
+}
+
+void Sema::end_return_capture() {
+  this->return_captures.pop_back();
+}
+

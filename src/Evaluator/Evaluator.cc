@@ -10,7 +10,7 @@
 #include "BuiltinFunc.h"
 
 #include "Error.h"
-#include "Checker.h"
+#include "Sema.h"
 #include "Evaluator.h"
 
 #include "debug/alert.h"
@@ -66,7 +66,7 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       astdef(Dict);
       
       auto ret = new ObjDict;
-      ret->type = Checker::value_type_cache[_ast];
+      ret->type = Sema::value_type_cache[_ast];
       
       for( auto&& elem : ast->elements ) {
         ret->items.emplace_back(
@@ -473,7 +473,7 @@ void Evaluator::pop_object_with_count(size_t count) {
  * @return 作成されたオブジェクト (Object*)
  */
 Object* Evaluator::create_object(AST::Value* ast) {
-  auto type = Checker::value_type_cache[ast];
+  auto type = Sema::value_type_cache[ast];
 
   auto& obj = this->immediate_objects[ast];
 
@@ -483,6 +483,10 @@ Object* Evaluator::create_object(AST::Value* ast) {
   switch( type.kind ) {
     case TYPE_Int:
       obj = new ObjLong(std::stoi(ast->token.str.data()));
+      break;
+
+    case TYPE_USize:
+      obj = new ObjUSize(std::stoi(ast->token.str.data()));
       break;
 
     case TYPE_String:

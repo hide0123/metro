@@ -91,7 +91,9 @@ std::list<Token> Lexer::lex() {
 
       if(this->peek()=='u'){
         token.kind=TOK_USize;
+        
         this->position++;
+        token.str={str,this->position-token.pos};
       }
     }
 

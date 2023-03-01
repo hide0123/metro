@@ -11,11 +11,11 @@ TOPDIR	?= $(CURDIR)
 BUILD	= build
 INCLUDE	= include
 SOURCES	= src \
-	src/Checker \
 	src/Evaluator \
 	src/GC \
 	src/Lexer \
 	src/Parser \
+	src/Sema \
 	src/Types
 
 OPTFLAGS		= -O0 -g
