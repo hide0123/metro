@@ -17,12 +17,18 @@ public:
   AST::Scope* parse();
 
   AST::Base* primary();
+  AST::Base* unary();
+  AST::Base* indexref();
+  AST::Base* member_access();
+
   AST::Base* mul();
   AST::Base* add();
 
   AST::Base* shift();
   AST::Base* compare();
   AST::Base* bit_op();
+
+  AST::Base* range();
 
   AST::Base* assign();
   

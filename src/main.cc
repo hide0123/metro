@@ -17,9 +17,12 @@
 #include "Application.h"
 #include "Error.h"
 
+#include "debug/alert.h"
+
 namespace Utils::String {
 
-static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>
+static
+std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>
   conv;
 
 std::wstring to_wstr(std::string const& str) {
@@ -94,11 +97,13 @@ int Application::main(int argc, char** argv) {
   // 字句解析
   Lexer lexer{ this->source_code };
 
+alert;
   auto const& token_list = lexer.lex();
 
   // 構文解析
   Parser parser{ token_list };
 
+alert;
   auto ast = parser.parse();
 
   alertmsg(ast->to_string());
@@ -114,11 +119,14 @@ int Application::main(int argc, char** argv) {
   // 意味解析
   Checker checker{ ast };
 
+alert;
   auto type = checker.check(ast);
 
+  alert;
   alertmsg("check(ast) = " << type.to_string());
 
   chkerr
+
 
   // Compiler com;
 
@@ -128,6 +136,7 @@ int Application::main(int argc, char** argv) {
 
   Evaluator eval;
 
+alert;
   eval.evaluate(ast);
 
 

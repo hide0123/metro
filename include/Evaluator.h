@@ -78,6 +78,8 @@ private:
   Object* create_object(AST::Value* ast);
 
 
+  Object* default_constructer(TypeInfo type);
+
   /**
    * @brief 
    * 

@@ -14,13 +14,20 @@ enum ASTKind {
   AST_None,
 
   AST_Value,
+  AST_Array,
+  AST_Dict,
 
   AST_Variable,
   AST_GlobalVar,
 
+  AST_IndexRef,
+  AST_MemberAccess,
+
   AST_CallFunc,
 
   AST_Compare,
+
+  AST_Range,
 
   AST_Assign,
   AST_Expr,
@@ -42,6 +49,7 @@ enum ASTKind {
   AST_Function
 };
 
+struct Object;
 struct BuiltinFunc;
 
 namespace AST {
@@ -70,6 +78,8 @@ struct None : Base {
 };
 
 struct Value : Base {
+  Object* object;
+
   Value(Token const& tok)
     : Base(AST_Value, tok)
   {
@@ -78,12 +88,76 @@ struct Value : Base {
   std::string to_string() const;
 };
 
+struct Array : Base {
+  std::vector<Base*> elements;
+
+  Base*& append(Base* ast) {
+    return this->elements.emplace_back(ast);
+  }
+
+  Array(Token const& token)
+    : Base(AST_Array, token)
+  {
+  }
+};
+
+struct Type;
+struct Dict : Base {
+  struct Item {
+    Token const& colon;
+    Base* key;
+    Base* value;
+
+    Item(Token const& colon, Base* k, Base* v)
+      : colon(colon),
+        key(k),
+        value(v)
+    {
+    }
+  };
+
+  std::vector<Item> elements;
+
+  Type* key_type;
+  Type* value_type;
+
+  Dict(Token const& token)
+    : Base(AST_Dict, token),
+      key_type(nullptr),
+      value_type(nullptr)
+  {
+  }
+};
+
 struct Variable : Base {
   size_t index;
 
   Variable(Token const& tok)
     : Base(AST_Variable, tok),
       index(0)
+  {
+  }
+};
+
+struct IndexRef : Base {
+  Base* expr;
+  std::vector<Base*> indexes;
+
+  IndexRef(Token const& t)
+    : Base(AST_IndexRef, t),
+      expr(nullptr)
+  {
+  }
+};
+
+struct Range : Base {
+  Base* begin;
+  Base* end;
+
+  Range(Token const& token)
+    : Base(AST_Range, token),
+      begin(nullptr),
+      end(nullptr)
   {
   }
 };

@@ -5,6 +5,8 @@
 #include "Application.h"
 #include "common.h"
 
+#include "debug/alert.h"
+
 static bool __was_emitted;
 
 Error::ErrLoc::ErrLoc(size_t pos)
@@ -122,7 +124,8 @@ Error& Error::emit(ErrorLevel level) {
     << std::endl
     << std::endl;
 
-  __was_emitted=true;
+  if( level == EL_Error )
+    __was_emitted = true;
 
   return *this;
 }

@@ -106,3 +106,23 @@ struct ObjString : Object {
   {
   }
 };
+
+struct ObjDict : Object {
+  struct Item {
+    Object* key;
+    Object* value;
+
+    Item(Object* k, Object* v) :key(k), value(v) { }
+  };
+
+  std::vector<Item> items;
+
+  std::string to_string() const;
+  ObjDict* clone() const;
+
+  ObjDict()
+    : Object(TYPE_Dict)
+  {
+  }
+};
+

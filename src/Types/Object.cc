@@ -6,6 +6,8 @@
 #include "Token.h"
 #include "Object.h"
 
+#include "debug/alert.h"
+
 // --------------------------------------------------------
 //  Object
 // --------------------------------------------------------
@@ -16,6 +18,7 @@ Object::Object(TypeInfo type)
   : type(type),
     ref_count(0)
 {
+  alert_ctor;
 }
 
 Object::~Object() {
@@ -44,6 +47,18 @@ std::string ObjString::to_string() const {
   return Utils::String::to_str(this->value);
 }
 
+std::string ObjDict::to_string() const {
+  std::string s = "{ ";
+
+  for(auto&&x:this->items){
+    s+=x.key->to_string()+": "+x.value->to_string();
+    if(&x!=&*this->items.rbegin())
+      s+=", ";
+  }
+
+  return s;
+}
+
 ObjNone* ObjNone::clone() const {
   return new ObjNone; // ???
 }
@@ -59,3 +74,17 @@ ObjFloat* ObjFloat::clone() const {
 ObjString* ObjString::clone() const {
   return new ObjString(this->value);
 }
+
+ObjDict* ObjDict::clone() const {
+  auto ret = new ObjDict;
+  
+  for( auto&& item : this->items ) {
+    ret->items.emplace_back(
+      item.key->clone(),
+      item.value->clone()
+    );
+  }
+
+  return ret;
+}
+

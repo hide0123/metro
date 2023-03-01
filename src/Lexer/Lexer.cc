@@ -6,6 +6,8 @@
 #include "Lexer.h"
 #include "Error.h"
 
+#include "debug/alert.h"
+
 static char const* punctuators[] {
   "->",
   
@@ -14,6 +16,8 @@ static char const* punctuators[] {
 
   "<<",
   ">>",
+
+  "..",
 
   "==",
   "!=",

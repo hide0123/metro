@@ -9,12 +9,14 @@
 enum TypeKind {
   TYPE_None,
   TYPE_Int,
+  TYPE_Usize,
   TYPE_Float,
   TYPE_Bool,
   TYPE_Char,
   TYPE_String,
   TYPE_Range,
   TYPE_Vector,
+  TYPE_Dict,
   TYPE_Args,
 };
 

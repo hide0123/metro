@@ -6,7 +6,7 @@
                 "${workspaceFolder}/**"
             ],
             "defines": [
-                "METRO_DEBUG=1"
+                "METRO_DEBUG"
             ],
             "cStandard": "c17",
             "cppStandard": "c++20",

@@ -31,6 +31,51 @@ AST::Scope* Parser::parse() {
 //
 // primary
 AST::Base* Parser::primary() {
+
+  if( this->eat("[") ) {
+    auto ast = new AST::Array(*this->ate);
+
+    if( !this->eat("]") ) {
+      do {
+        ast->append(this->expr());
+      } while( this->eat(",") );
+
+      this->expect("]");
+    }
+
+    return ast;
+  }
+
+  if( this->eat("dict") ) {
+    auto ast = new AST::Dict(*this->ate);
+
+    this->expect("<");
+
+    ast->key_type = this->expect_typename();
+    this->expect(",");
+
+    ast->value_type = this->expect_typename();
+    this->expect(">");
+
+    this->expect("{");
+
+    if( !this->eat("}") ) {
+      do {
+        auto key = this->expr();
+
+        auto colon = this->expect(":");
+
+        auto value = this->expr();
+
+        ast->elements.emplace_back(*colon, key, value);
+      } while( this->eat(",") );
+
+      this->expect("}");
+    }
+
+    return ast;
+  }
+
   //
   // トークンの種類ごとの処理
   switch( this->cur->kind ) {
@@ -88,19 +133,63 @@ AST::Base* Parser::primary() {
   return this->stmt();
 }
 
-AST::Base* Parser::mul() {
+AST::Base* Parser::unary() {
   auto x = this->primary();
+
+  return x;
+}
+
+AST::Base* Parser::indexref() {
+  auto x = this->unary();
+
+  if( this->cur->str == "[" ) {
+    auto y = new AST::IndexRef(*this->cur);
+
+    y->expr = x;
+
+    while( this->eat("[") ) {
+      y->indexes.emplace_back(this->expr());
+      this->expect("]");
+    }
+
+    x = y;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::member_access() {
+  auto x = this->indexref();
+
+  if( this->cur->str == "." ) {
+    auto y = new AST::IndexRef(*this->cur);
+
+    y->kind = AST_MemberAccess;
+    y->expr = x;
+
+    while( this->eat(".") ) {
+      y->indexes.emplace_back(this->expr());
+    }
+
+    x = y;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::mul() {
+  auto x = this->member_access();
 
   while( this->check() ) {
     if( this->eat("*") )
       AST::Expr::create(x)->append(
-        EXKind::EX_Mul, *this->ate, this->primary());
+        EXKind::EX_Mul, *this->ate, this->member_access());
     else if( this->eat("/") )
       AST::Expr::create(x)->append(
-        EXKind::EX_Div, *this->ate, this->primary());
+        EXKind::EX_Div, *this->ate, this->member_access());
     else if( this->eat("%") )
       AST::Expr::create(x)->append(
-        EXKind::EX_Mod, *this->ate, this->primary());
+        EXKind::EX_Mod, *this->ate, this->member_access());
     else
       break;
   }
@@ -191,8 +280,23 @@ AST::Base* Parser::bit_op() {
   return x;
 }
 
-AST::Base* Parser::assign() {
+AST::Base* Parser::range() {
   auto x = this->bit_op();
+
+  if( this->eat("..") ) {
+    auto y = new AST::Range(*this->ate);
+
+    y->begin = x;
+    y->end = this->bit_op();
+
+    x = y;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::assign() {
+  auto x = this->range();
 
   if(this->eat("=")){
     auto y = new AST::Assign(*this->ate);

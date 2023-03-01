@@ -12,7 +12,6 @@ BUILD	= build
 INCLUDE	= include
 SOURCES	= src \
 	src/Checker \
-	src/Compiler \
 	src/Evaluator \
 	src/GC \
 	src/Lexer \
@@ -64,7 +63,7 @@ clean:
 
 re: clean all
 
-run: all
+run: cclear all
 	@clear
 	@echo run $(TARGET)
 	@echo ----------------------------------------------------------------
@@ -73,6 +72,9 @@ run: all
 install: all
 	@echo install...
 	@install $(notdir $(OUTPUT)) $(BINDIR)/$(TARGET)
+
+cclear:
+	@clear
 
 else
 

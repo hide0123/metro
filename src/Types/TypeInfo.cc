@@ -6,15 +6,19 @@
 #include "Token.h"
 #include "TypeInfo.h"
 
+#include "debug/alert.h"
+
 static std::vector<std::string> const all_type_names {
   "none",
   "int",
+  "usize",
   "float",
   "bool",
   "char",
   "string",
   "range",
   "vector",
+  "dict",
   "args"
 };
 
@@ -26,11 +30,25 @@ std::vector<std::string> const& TypeInfo::get_name_list() {
 // TypeInfo
 // 文字列に変換
 std::string TypeInfo::to_string() const {
+  alertmsg("this->kind = " << this->kind);
+
   assert(static_cast<int>(this->kind)
     < (int)::all_type_names.size());
 
   std::string s =
     ::all_type_names[static_cast<int>(this->kind)];
+
+  if( !this->type_params.empty() ) {
+    s += "<";
+
+    for(auto&&x:this->type_params){
+      s+=x.to_string();
+      if(&x!=&*this->type_params.rbegin())
+        s+=", ";
+    }
+
+    s += ">";
+  }
 
   if( this->is_mutable ) {
     s += " mut";
@@ -61,6 +79,12 @@ bool TypeInfo::equals(TypeInfo const& type) const {
 }
 
 bool TypeInfo::is_numeric() const {
-  return
-    this->kind == TYPE_Int || this->kind == TYPE_Float;
+  switch( this->kind ) {
+    case TYPE_Int:
+    case TYPE_Usize:
+    case TYPE_Float:
+      return true;
+  }
+
+  return false;
 }

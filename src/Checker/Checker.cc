@@ -16,6 +16,8 @@ Checker
 #include "Error.h"
 #include "Checker.h"
 
+#include "debug/alert.h"
+
 #define astdef(T) auto ast=(AST::T*)_ast
 
 
@@ -80,6 +82,87 @@ TypeInfo Checker::check(AST::Base* _ast) {
     // 関数呼び出し
     case AST_CallFunc: {
       return this->check_function_call((AST::CallFunc*)_ast);
+    }
+
+    case AST_Dict: {
+      astdef(Dict);
+
+      alert;
+
+      TypeInfo ret = TYPE_Dict;
+
+      auto const key_type =
+        ret.type_params.emplace_back(this->check(ast->key_type));
+
+      auto const value_type =
+        ret.type_params.emplace_back(this->check(ast->value_type));
+
+      for( auto&& item : ast->elements ) {
+        if( auto x = this->check(item.key); !key_type.equals(x) ) {
+          Error(item.key, "expected '"+key_type.to_string()
+            +"' but found '"+x.to_string()+"'")
+            .emit();
+
+          Error(ast->key_type, "specified here")
+            .emit(Error::EL_Warning)
+            .exit();
+        }
+
+        if( auto x = this->check(item.value); !value_type.equals(x) ) {
+          Error(item.value, "expected '"+value_type.to_string()
+            +"' but found '"+x.to_string()+"'")
+            .emit();
+
+          Error(ast->value_type, "specified here")
+            .emit(Error::EL_Warning)
+            .exit();
+        }
+      }
+
+      return ret;
+    }
+
+    case AST_IndexRef: {
+      astdef(IndexRef);
+
+      auto x = this->check(ast->expr);
+
+      for( auto&& index : ast->indexes ) {
+        auto index_type = this->check(index);
+
+        switch( x.kind ) {
+          case TYPE_Vector: {
+            if( index_type.kind != TYPE_Int
+              && index_type.kind != TYPE_Usize ) {
+              Error(index, "expected integer or usize")
+                .emit();
+            }
+
+            x = x.type_params[0];
+            break;
+          }
+          
+          case TYPE_Dict: {
+            if( !index_type.equals(x.type_params[0]) ) {
+              Error(index, "expected '"
+                +x.type_params[0].to_string()
+                +"' but found '"+index_type.to_string()+"'")
+                .emit()
+                .exit();
+            }
+
+            x = x.type_params[1];
+            break;
+          }
+
+          default:
+            Error(index, "left is not vector or dict")
+              .emit()
+              .exit();
+        }
+      }
+
+      return x;
     }
 
     //
