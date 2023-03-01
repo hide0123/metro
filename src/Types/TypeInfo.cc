@@ -66,13 +66,13 @@ bool TypeInfo::equals(TypeInfo const& type) const {
     || this->is_mutable != type.is_mutable )
       return false;
 
-  if( !this->type_params.empty()
-    && this->type_params.size() == type.type_params.size() ) {
-    for( auto self_iter = this->type_params.begin();
-        auto&& tparam : type.type_params ) {
-      if( !(self_iter++)->equals(tparam) )
-        return false;
-    }
+  if( this->type_params.size() != type.type_params.size() )
+    return false;
+  
+  for( auto self_iter = this->type_params.begin();
+      auto&& tparam : type.type_params ) {
+    if( !(self_iter++)->equals(tparam) )
+      return false;
   }
 
   return true;

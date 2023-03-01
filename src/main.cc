@@ -98,7 +98,7 @@ int Application::main(int argc, char** argv) {
   Lexer lexer{ this->source_code };
 
 alert;
-  auto const& token_list = lexer.lex();
+  auto token_list = lexer.lex();
 
   // 構文解析
   Parser parser{ token_list };

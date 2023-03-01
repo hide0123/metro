@@ -7,7 +7,7 @@
 
 using EXKind = AST::Expr::ExprKind;
 
-Parser::Parser(std::list<Token> const& token_list)
+Parser::Parser(std::list<Token>& token_list)
   : cur(token_list.begin()),
     ate(token_list.begin())
 {
@@ -531,7 +531,17 @@ AST::Type* Parser::parse_typename() {
   auto ast =
     new AST::Type(*this->expect_identifier());
 
-  // todo: 修飾子を読み取る
+  if(this->eat("<")){
+    do {
+      ast->parameters.emplace_back(this->expect_typename());
+    }while(this->eat(","));
+
+    if(this->cur->str==">>"){
+      this->cur->str=">";
+    }
+    else
+      this->expect(">");
+  }
 
   return ast;
 }

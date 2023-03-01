@@ -7,10 +7,10 @@
 //  Parser
 // ---------------------------------------------
 class Parser {
-  using token_iter = std::list<Token>::const_iterator;
+  using token_iter = std::list<Token>::iterator;
 
 public:
-  Parser(std::list<Token> const& token_list);
+  Parser(std::list<Token>& token_list);
   ~Parser();
 
 

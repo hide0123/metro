@@ -56,6 +56,20 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
+    case AST_Array: {
+      astdef(Array);
+
+      auto ret = new ObjVector;
+
+      ret->type = Sema::value_type_cache[ast];
+
+      for(auto&&e:ast->elements){
+        ret->elements.emplace_back(this->evaluate(e));
+      }
+
+      return ret;
+    }
+
     //
     // 左辺値
     case AST_Variable:

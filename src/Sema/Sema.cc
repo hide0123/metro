@@ -80,7 +80,29 @@ TypeInfo Sema::check(AST::Base* _ast) {
           todo_impl;
       }
 
-      _ret = this->value_type_cache[ast] = ret;
+      _ret = ret;
+      // _ret = this->value_type_cache[ast] = ret;
+      break;
+    }
+
+    case AST_Array: {
+      astdef(Array);
+
+      _ret = TYPE_Vector;
+
+      for(auto&&e:ast->elements){
+        auto x = this->check(e);
+
+        if(_ret.type_params.empty()){
+          _ret.type_params.emplace_back(x);
+        }
+        else if(!x.equals(_ret.type_params[0])){
+          Error(e,"type mismatch")
+            .emit()
+            .exit();
+        }
+      }
+
       break;
     }
 
@@ -132,7 +154,7 @@ TypeInfo Sema::check(AST::Base* _ast) {
         }
       }
 
-      Sema::value_type_cache[_ast] = ret;
+      // Sema::value_type_cache[_ast] = ret;
 
       _ret = ret;
       break;
@@ -256,12 +278,17 @@ TypeInfo Sema::check(AST::Base* _ast) {
       auto& scope_emu = this->get_cur_scope();
 
       TypeInfo type;
+      TypeInfo init_expr_type;
+
+      if(ast->init){
+        init_expr_type=this->check(ast->init);
+      }
 
       if( ast->type ) {
         type = this->check(ast->type);
 
         // 指定された型と初期化式の型が一致しない
-        if( !type.equals(this->check(ast->init)) ) {
+        if( !type.equals(init_expr_type) ) {
           Error(ast->init,"mismatched type")
             .emit()
             .exit();
@@ -476,11 +503,14 @@ TypeInfo Sema::check(AST::Base* _ast) {
         const names[]{
         { TYPE_None, "none" },
         { TYPE_Int, "int" },
+        { TYPE_USize, "usize" },
         { TYPE_Float, "float" },
         { TYPE_Bool, "bool" },
         { TYPE_Char, "char" },
         { TYPE_String, "string" },
+        { TYPE_Range, "range" },
         { TYPE_Vector, "vector" },
+        { TYPE_Dict, "dict" },
         { TYPE_Args, "args" },
       };
 
@@ -491,14 +521,30 @@ TypeInfo Sema::check(AST::Base* _ast) {
       for( auto&& x : names )
         if( ast->token.str == x.b ) {
           ret = x.a;
+
+          switch(x.a){
+            case TYPE_Range:
+            case TYPE_Vector:
+            case TYPE_Dict:
+              if(ast->parameters.empty())
+                Error(ast,"missing parameters")
+                  .emit()
+                  .exit();
+          }
+
           goto skiperror009;
         }
 
+      // todo: find userdef struct
       Error(ast, "unknown type name")
         .emit()
         .exit();
 
     skiperror009:;
+      for( auto&& sub : ast->parameters ) {
+        ret.type_params.emplace_back(this->check(sub));
+      }
+
       ret.is_mutable = ast->is_mutable;
 
       _ret = ret;
@@ -509,6 +555,8 @@ TypeInfo Sema::check(AST::Base* _ast) {
       debug(printf("%d\n",_ast->kind));
       todo_impl;
   }
+
+  value_type_cache[_ast] = _ret;
 
   for(auto&&retcap:this->return_captures){
     retcap(_ret,_ast);
