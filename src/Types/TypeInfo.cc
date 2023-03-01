@@ -19,7 +19,8 @@ static std::vector<std::string> const all_type_names {
   "range",
   "vector",
   "dict",
-  "args"
+  "args",
+  "any"
 };
 
 std::vector<std::string> const& TypeInfo::get_name_list() {
@@ -50,8 +51,8 @@ std::string TypeInfo::to_string() const {
     s += ">";
   }
 
-  if( this->is_mutable ) {
-    s += " mut";
+  if( this->is_const ) {
+    s += " const";
   }
 
   return s;
@@ -61,9 +62,12 @@ std::string TypeInfo::to_string() const {
 // TypeInfo
 // 同じかどうか比較する
 bool TypeInfo::equals(TypeInfo const& type) const {
+  if(this->kind==TYPE_Template||type.kind==TYPE_Template)
+    return true;
+
   if(
     this->kind != type.kind
-    || this->is_mutable != type.is_mutable )
+    || this->is_const != type.is_const )
       return false;
 
   if( this->type_params.size() != type.type_params.size() )

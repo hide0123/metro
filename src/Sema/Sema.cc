@@ -563,7 +563,7 @@ TypeInfo Sema::check(AST::Base* _ast) {
         ret.type_params.emplace_back(this->check(sub));
       }
 
-      ret.is_mutable = ast->is_mutable;
+      ret.is_const = ast->is_const;
 
       _ret = ret;
      break;
@@ -622,9 +622,11 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast) {
   auto const& buitinfunc_list =
     BuiltinFunc::get_builtin_list();
 
+  std::vector<TypeInfo> arg_types;
+
   // 引数
   for( auto&& arg : ast->args ) {
-    this->check(arg);
+    arg_types.emplace_back(this->check(arg));
   }
 
   // 同じ名前のビルトインを探す
@@ -632,6 +634,52 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast) {
     if( ast->name == builtinfunc.name ) {
       ast->is_builtin = true;
       ast->builtin_func = &builtinfunc;
+
+      // 引数チェック
+      auto formal=builtinfunc.arg_types.begin();
+      auto actual=arg_types.begin();
+
+      auto e1=builtinfunc.arg_types.end();
+      auto e2=arg_types.end();
+
+      auto arg=ast->args.begin();
+
+      while(1){
+        // 呼び出し側の引数が終わった
+        if(actual==e2){
+          if(formal==e1) // 定義のほうも終わってたら抜ける
+            break;
+
+          // 定義側が引数リスト
+          //  => 渡す引数なし
+          if(formal->equals(TYPE_Args)){
+            break;
+          }
+        }
+        // 定義側が終わった
+        else if(formal==e1){
+          // 呼び出し側が多いのでエラー
+          Error(*arg,"too many arguments")
+          .emit().exit();
+        }
+        // 定義側が引数リスト
+        else if(formal->equals(TYPE_Args)){
+          break;
+        }
+
+        // 型が不一致の場合エラー
+        if(!formal->equals(*actual)){
+          Error(*arg,
+            "expected '"+formal->to_string()
+            +"' but found '"+actual->to_string()+"'")
+            .emit().exit();
+        }
+
+        formal++;
+        actual++;
+        arg++;
+      }
+
       return builtinfunc.result_type;
     }
   }

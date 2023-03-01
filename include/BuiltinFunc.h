@@ -16,6 +16,8 @@ struct BuiltinFunc {
 
   std::string name;     // 関数名
 
+  bool is_template;
+
   TypeInfo result_type;             // 戻り値の型
   std::vector<TypeInfo> arg_types;  // 引数の型
 

@@ -23,13 +23,23 @@ enum TypeKind {
 
 struct TypeInfo {
   TypeKind kind;
-  bool is_mutable;
+  bool is_const;
 
   std::vector<TypeInfo> type_params;
 
   TypeInfo(TypeKind kind = TYPE_None)
     : kind(kind),
-      is_mutable(false)
+      is_const(false)
+  {
+  }
+
+  TypeInfo(
+      TypeKind kind,
+      std::initializer_list<TypeInfo> list,
+      bool is_const = false)
+    : kind(kind),
+      is_const(is_const),
+      type_params(list)
   {
   }
 

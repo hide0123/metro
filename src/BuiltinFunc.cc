@@ -21,6 +21,7 @@ static std::vector<BuiltinFunc> const _builtin_functions {
   // print
   BuiltinFunc {
     .name = "print",
+    .is_template = false,
     .result_type = TYPE_Int,
     .arg_types = { TYPE_Args },
     .impl = print_impl
@@ -29,6 +30,7 @@ static std::vector<BuiltinFunc> const _builtin_functions {
   // println
   BuiltinFunc {
     .name = "println",
+    .is_template = false,
     .result_type = TYPE_Int,
     .arg_types = { TYPE_Args },
     .impl = [] (std::vector<Object*> const& args) -> Object* {
@@ -44,10 +46,12 @@ static std::vector<BuiltinFunc> const _builtin_functions {
   // push
   BuiltinFunc {
     .name = "push",
+    .is_template = true,
     .result_type = TYPE_None,
-    .arg_types = { TYPE_Vector },
+    .arg_types =
+      { TypeInfo(TYPE_Vector, {TYPE_Template}), TYPE_Template },
     .impl = [] (std::vector<Object*> const& args) -> Object* {
-      
+      ((ObjVector*)args[0])->elements.emplace_back(args[1]);
     }
   }
 };

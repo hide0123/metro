@@ -570,6 +570,10 @@ AST::Type* Parser::parse_typename() {
       this->expect(">");
   }
 
+  if(this->eat("const")){
+    ast->is_const=true;
+  }
+
   return ast;
 }
 

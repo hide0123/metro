@@ -436,11 +436,11 @@ struct Function : Base {
 
 struct Type : Base {
   std::vector<Type*> parameters;
-  bool is_mutable;
+  bool is_const;
 
   explicit Type(Token const& token)
     : Base(AST_Type, token),
-      is_mutable(false)
+      is_const(false)
   {
   }
 };
