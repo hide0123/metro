@@ -78,10 +78,38 @@ Object* Evaluator::evaluate(AST::Base* _ast) {
     }
 
     case AST_IndexRef: {
+      astdef(IndexRef);
 
-      
+      auto obj = this->evaluate(ast->expr);
 
-      break;
+      for(auto&&index_ast:ast->indexes) {
+        auto obj_index = this->evaluate(index_ast);
+
+        size_t index;  {
+          switch(obj_index->type.kind){
+            case TYPE_Int:
+              index=((ObjLong*)obj_index)->value;
+              break;
+            
+            case TYPE_USize:
+              index=((ObjUSize*)obj_index)->value;
+              break;
+
+            default:
+              panic("int or usize??aa");
+          }
+        }
+
+        switch(obj->type.kind){
+          case TYPE_Vector:{
+            auto obj_vec = (ObjVector*)obj;
+
+            if(index>=)
+          }
+        }
+      }
+
+      return obj;
     }
 
     //

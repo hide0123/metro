@@ -9,7 +9,7 @@
 enum TypeKind {
   TYPE_None,
   TYPE_Int,
-  TYPE_Usize,
+  TYPE_USize,
   TYPE_Float,
   TYPE_Bool,
   TYPE_Char,

@@ -59,6 +59,23 @@ struct ObjLong : Object {
   }
 };
 
+struct ObjUSize : Object {
+  size_t value;
+
+  std::string to_string() const;
+  ObjLong* clone() const;
+
+  bool is_numeric() const {
+    return true;
+  }
+
+  ObjUSize(size_t value)
+    : Object(TYPE_USize),
+      value(value)
+  {
+  }
+};
+
 struct ObjFloat : Object {
   float value;
 
@@ -122,6 +139,18 @@ struct ObjDict : Object {
 
   ObjDict()
     : Object(TYPE_Dict)
+  {
+  }
+};
+
+struct ObjVector : Object {
+  std::vector<Object*> elements;
+
+  std::string to_string() const;
+  ObjVector* clone() const;
+
+  ObjVector()
+    : Object(TYPE_Vector)
   {
   }
 };

@@ -133,7 +133,7 @@ TypeInfo Checker::check(AST::Base* _ast) {
         switch( x.kind ) {
           case TYPE_Vector: {
             if( index_type.kind != TYPE_Int
-              && index_type.kind != TYPE_Usize ) {
+              && index_type.kind != TYPE_USize ) {
               Error(index, "expected integer or usize")
                 .emit();
             }

@@ -12,6 +12,8 @@
 //  Object
 // --------------------------------------------------------
 
+static bool nested=0;
+
 ObjNone* Object::obj_none;
 
 Object::Object(TypeInfo type)
@@ -44,11 +46,19 @@ std::string ObjFloat::to_string() const {
 }
 
 std::string ObjString::to_string() const {
+  if(nested)
+    return '"'+
+    Utils::String::to_str(this->value);
+      +'"';
+
   return Utils::String::to_str(this->value);
 }
 
 std::string ObjDict::to_string() const {
   std::string s = "{ ";
+
+  auto nss = nested;
+  nested=1;
 
   for(auto&&x:this->items){
     s+=x.key->to_string()+": "+x.value->to_string();
@@ -56,7 +66,9 @@ std::string ObjDict::to_string() const {
       s+=", ";
   }
 
-  return s;
+  nested=nss;
+
+  return s + "}";
 }
 
 ObjNone* ObjNone::clone() const {
