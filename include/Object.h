@@ -177,6 +177,26 @@ struct ObjString : Object {
   }
 };
 
+struct ObjRange : Object {
+  int64_t begin;
+  int64_t end;
+
+  std::string to_string() const;
+  ObjRange* clone() const;
+
+  bool equals(ObjRange* x) const
+  {
+    return this->begin == x->begin && this->end == x->end;
+  }
+
+  ObjRange(int64_t begin, int64_t end)
+      : Object(TYPE_Range),
+        begin(begin),
+        end(end)
+  {
+  }
+};
+
 struct ObjDict : Object {
   struct Item {
     Object* key;

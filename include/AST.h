@@ -42,6 +42,9 @@ enum ASTKind {
   AST_While,
   AST_DoWhile,
 
+  AST_Break,
+  AST_Continue,
+
   AST_Scope,
 
   AST_Let,

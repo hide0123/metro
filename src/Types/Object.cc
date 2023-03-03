@@ -100,6 +100,11 @@ std::string ObjString::to_string() const
   return Utils::String::to_str(this->value);
 }
 
+std::string ObjRange::to_string() const
+{
+  return Utils::format("%zd..%zd", this->begin, this->end);
+}
+
 std::string ObjDict::to_string() const
 {
   std::string s = "{";
@@ -160,6 +165,11 @@ ObjFloat* ObjFloat::clone() const
 ObjString* ObjString::clone() const
 {
   return new ObjString(this->value);
+}
+
+ObjRange* ObjRange::clone() const
+{
+  return new ObjRange(this->begin, this->end);
 }
 
 ObjDict* ObjDict::clone() const

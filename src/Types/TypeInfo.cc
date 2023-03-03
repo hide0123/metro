@@ -83,3 +83,15 @@ bool TypeInfo::is_numeric() const
 
   return false;
 }
+
+bool TypeInfo::is_iterable() const
+{
+  switch (this->kind) {
+    case TYPE_Range:
+    case TYPE_Vector:
+    case TYPE_Dict:
+      return true;
+  }
+
+  return false;
+}

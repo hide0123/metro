@@ -135,9 +135,31 @@ private:
 
   struct var_storage {
     std::map<std::string_view, Object*> vmap;
+
+    bool is_skipped = 0;
   };
 
+  struct LoopStack {
+    var_storage& vs;
+    bool is_breaked;
+
+    LoopStack(var_storage& vs)
+        : vs(vs),
+          is_breaked(false)
+    {
+    }
+  };
+
+  LoopStack* get_cur_loop()
+  {
+    if (this->loop_stack.empty())
+      return nullptr;
+
+    return &*this->loop_stack.begin();
+  }
+
   std::list<var_storage> vst_list;
+  std::list<LoopStack> loop_stack;
 
   static std::map<Object*, bool> allocated_objects;
 

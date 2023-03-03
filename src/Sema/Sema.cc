@@ -208,6 +208,23 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
+    case AST_Range: {
+      astdef(Range);
+
+      auto begin = this->check(ast->begin);
+      auto end = this->check(ast->end);
+
+      if (!begin.equals(end)) {
+        Error(ast, "type mismatch").emit().exit();
+      }
+
+      if (!begin.equals(TYPE_Int)) {
+        Error(ast, "expected integer").emit().exit();
+      }
+
+      return TYPE_Range;
+    }
+
     //
     // 式
     case AST_Expr: {
@@ -399,25 +416,41 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_For: {
       astdef(For);
 
+      auto& e =
+          this->scope_list.emplace_front((AST::Scope*)ast->code);
+
       auto iterable = this->check(ast->iterable);
 
-      if (!iterable.equals(TYPE_Vector)) {
+      if (!iterable.is_iterable()) {
         Error(ast->iterable, "expected iterable expression")
             .emit()
             .exit();
       }
 
-      auto iter = this->check_as_left(ast->iter);
-      auto param = iterable.type_params[0];
+      TypeInfo iter;
 
-      if (!iter.equals(param)) {
-        Error(ast->iter, "cannot assignment a value of type '" +
-                             param.to_string() + "'")
-            .emit()
-            .exit();
+      switch (iterable.kind) {
+        case TYPE_Range:
+          iter = TYPE_Int;
+          break;
+
+        case TYPE_Vector:
+        case TYPE_Dict:
+          iter = iterable.type_params[0];
+          break;
+      }
+
+      if (ast->iter->kind == AST_Variable) {
+        e.variables.emplace_back(ast->iter->token.str, iter);
+      }
+      else if (auto x = this->check_as_left(ast->iter);
+               !x.equals(iter)) {
+        Error(ast->iter, "type mismatch").emit().exit();
       }
 
       this->check(ast->code);
+
+      this->scope_list.pop_front();
 
       break;
     }

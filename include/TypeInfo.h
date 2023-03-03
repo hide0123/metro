@@ -48,4 +48,5 @@ struct TypeInfo {
   bool equals(TypeInfo const& type) const;
 
   bool is_numeric() const;
+  bool is_iterable() const;
 };
