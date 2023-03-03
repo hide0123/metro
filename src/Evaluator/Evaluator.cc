@@ -97,6 +97,31 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_False:
       return new ObjBool(false);
 
+    case AST_UnaryMinus: {
+      astdef(UnaryOp);
+
+      auto obj = this->evaluate(ast->expr)->clone();
+
+      switch (obj->type.kind) {
+        case TYPE_Int:
+          ((ObjLong*)obj)->value = -((ObjLong*)obj)->value;
+          break;
+
+        case TYPE_Float:
+          ((ObjFloat*)obj)->value = -((ObjFloat*)obj)->value;
+          break;
+
+        default:
+          panic("aaa!");
+      }
+
+      return obj;
+    }
+
+    case AST_UnaryPlus: {
+      return this->evaluate(((AST::UnaryOp*)_ast)->expr);
+    }
+
     case AST_Cast: {
       astdef(Cast);
 

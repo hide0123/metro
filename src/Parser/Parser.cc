@@ -158,9 +158,15 @@ AST::Base* Parser::primary()
 
 AST::Base* Parser::unary()
 {
-  auto x = this->primary();
+  if (this->eat("-"))
+    return new AST::UnaryOp(AST_UnaryMinus, *this->ate,
+                            this->expr());
 
-  return x;
+  if (this->eat("+"))
+    return new AST::UnaryOp(AST_UnaryPlus, *this->ate,
+                            this->expr());
+
+  return this->primary();
 }
 
 AST::Base* Parser::indexref()

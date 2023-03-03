@@ -95,6 +95,16 @@ struct ConstKeyword : Base {
   }
 };
 
+struct UnaryOp : Base {
+  Base* expr;
+
+  UnaryOp(ASTKind kind, Token const& token, Base* expr)
+      : Base(kind, token),
+        expr(expr)
+  {
+  }
+};
+
 struct Type;
 struct Cast : Base {
   Type* cast_to;

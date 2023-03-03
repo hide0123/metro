@@ -58,6 +58,18 @@ TypeInfo Sema::check(AST::Base* _ast)
       _ret = TYPE_Bool;
       break;
 
+    case AST_UnaryMinus:
+    case AST_UnaryPlus: {
+      astdef(UnaryOp);
+
+      _ret = this->check(ast->expr);
+
+      if (!_ret.is_numeric())
+        Error(ast->expr, "expected numeric").emit().exit();
+
+      break;
+    }
+
     case AST_Cast: {
       astdef(Cast);
 

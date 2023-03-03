@@ -90,6 +90,16 @@ static std::vector<BuiltinFunc> const _builtin_functions{
               Utils::String::to_wstr(args[0]->type.to_string()));
         }},
 
+    // exit
+    BuiltinFunc{
+        .name = "exit",
+        .is_template = false,
+        .result_type = TYPE_None,
+        .arg_types = {TYPE_Int},
+        .impl = [](std::vector<Object*> const& args) -> Object* {
+          std::exit((int)((ObjLong*)args[0])->value);
+        }},
+
 };
 
 std::vector<BuiltinFunc> const& BuiltinFunc::get_builtin_list()
