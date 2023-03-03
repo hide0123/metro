@@ -64,8 +64,7 @@ static std::vector<BuiltinFunc> const _builtin_functions{
         .arg_types = {TypeInfo(TYPE_Vector, {TYPE_Template}),
                       TYPE_Template},
         .impl = [](std::vector<Object*> const& args) -> Object* {
-          ((ObjVector*)args[0])->elements.emplace_back(args[1]);
-          return new ObjNone;
+          return ((ObjVector*)args[0])->append(args[1]);
         }},
 
     // to_string

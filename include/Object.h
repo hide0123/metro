@@ -246,7 +246,7 @@ struct ObjDict : Object {
 
   ObjDict(std::vector<Item>&& _items)
       : Object(TYPE_Dict),
-        items(_items)
+        items(std::move(_items))
   {
     for (auto&& item : this->items) {
       item.key->ref_count++;
@@ -283,8 +283,30 @@ struct ObjVector : Object {
     return true;
   }
 
+  Object*& append(Object* obj)
+  {
+    auto& ret = this->elements.emplace_back(obj);
+
+    ret->ref_count++;
+
+    return ret;
+  }
+
   ObjVector()
       : Object(TYPE_Vector)
   {
+  }
+
+  ObjVector(std::vector<Object*>&& elems)
+      : Object(TYPE_Vector),
+        elements(std::move(elems))
+  {
+  }
+
+  ~ObjVector()
+  {
+    for (auto&& elem : this->elements) {
+      elem->ref_count--;
+    }
   }
 };

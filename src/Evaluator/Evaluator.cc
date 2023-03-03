@@ -345,11 +345,17 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto& vst = *this->vst_list.begin();
 
-      auto obj = this->evaluate(ast->init);
+      auto& obj = vst.vmap[ast->name];
+
+      if (!ast->init) {
+        obj = this->default_constructer(
+            Sema::value_type_cache[ast->type]);
+      }
+      else {
+        obj = this->evaluate(ast->init);
+      }
 
       obj->ref_count++;
-
-      vst.vmap[ast->name] = obj;
 
       break;
     }
@@ -580,6 +586,14 @@ Object* Evaluator::default_constructer(TypeInfo const& type)
 
     case TYPE_Dict: {
       auto ret = new ObjDict;
+
+      ret->type = type;
+
+      return ret;
+    }
+
+    case TYPE_Vector: {
+      auto ret = new ObjVector;
 
       ret->type = type;
 
