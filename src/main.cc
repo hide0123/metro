@@ -75,6 +75,13 @@ std::string open_file(std::string const& path)
 {
   std::ifstream ifs{path};
 
+  if (ifs.fail()) {
+    std::cout << "fatal: cannot open '" << path << "'"
+              << std::endl;
+
+    std::exit(1);
+  }
+
   std::string source;
 
   for (std::string line; std::getline(ifs, line);)
@@ -94,11 +101,14 @@ int Application::main(int argc, char** argv)
 
   // todo: parse arguments
 
-  for (int i = 0; i < argc; i++) {
-    std::string const arg = argv[i];
+  for (int i = 1; i < argc; i++) {
+    std::string arg = argv[i];
 
     if (arg == "-help") {
-      std::cout <<
+      std::cout << "usage: metro <input file>\n";
+    }
+    else {
+      this->file_path = std::move(arg);
     }
   }
 
@@ -109,7 +119,6 @@ int Application::main(int argc, char** argv)
 
   Application::initialize();
 
-  this->file_path = "test.txt";
   this->source_code = open_file(this->file_path);
 
   //
