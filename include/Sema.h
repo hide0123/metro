@@ -73,8 +73,21 @@ public:
    */
   TypeInfo check(AST::Base* ast);
 
+  /**
+   * @brief 左辺値としてチェック
+   *
+   * @param ast
+   * @return TypeInfo&
+   */
   TypeInfo& check_as_left(AST::Base* ast);
 
+  /**
+   * @brief インデックス参照
+   *
+   * @param type
+   * @param ast
+   * @return TypeInfo&
+   */
   TypeInfo& sema_index_ref(TypeInfo& type, AST::IndexRef* ast);
 
   /**

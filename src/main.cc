@@ -114,12 +114,6 @@ int Application::main(int argc, char** argv)
 
   chkerr;
 
-  Token toktok{TOK_End};
-  toktok.str = "main";
-
-  auto azz = new AST::CallFunc(toktok);
-  ast->append(azz);
-
   // 意味解析
   Sema sema{ast};
 

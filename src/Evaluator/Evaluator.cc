@@ -456,7 +456,7 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
     }
   }
 
-  panic("fck, ain't left value. " << _ast);
+  panic("fck, ain't left value. " << _ast << " " << _ast->kind);
   throw 10;
 }
 

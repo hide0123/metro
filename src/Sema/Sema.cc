@@ -449,6 +449,15 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Function: {
       auto ast = (AST::Function*)_ast;
 
+      if (auto f = this->find_function(ast->name.str);
+          f != ast) {
+        Error(ast->name, "function '" +
+                             std::string(ast->name.str) +
+                             "' is already found")
+            .emit()
+            .exit();
+      }
+
       this->function_history.emplace_front(ast);
 
       // 関数のスコープ　実装があるところ
@@ -578,12 +587,6 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
              it != S.variables.rend(); it++) {
           if (it->name == ast->token.str) {
             ast->index = it->offs;
-
-            if (S.ast == this->root) {
-              it->is_global = true;
-              ast->kind = AST_GlobalVar;
-              alert;
-            }
 
             return it->type;
           }
