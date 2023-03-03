@@ -666,6 +666,10 @@ Object* Evaluator::create_object(AST::Value* ast)
       obj = new ObjLong(std::stoi(ast->token.str.data()));
       break;
 
+    case TYPE_Float:
+      obj = new ObjFloat(std::stof(ast->token.str.data()));
+      break;
+
     case TYPE_USize:
       obj = new ObjUSize(std::stoi(ast->token.str.data()));
       break;

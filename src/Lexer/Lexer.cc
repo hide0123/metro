@@ -72,6 +72,15 @@ std::list<Token> Lexer::lex()
         this->position++;
         token.str = {str, this->position - token.pos};
       }
+      else if (this->peek() == '.') {
+        token.kind = TOK_Float;
+
+        this->position++;
+
+        this->pass_while(isdigit);
+
+        token.str = {str, this->position - token.pos};
+      }
     }
 
     // string

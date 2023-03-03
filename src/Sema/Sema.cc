@@ -631,6 +631,46 @@ TypeInfo Sema::check_as_left(AST::Base* _ast)
   Error(_ast, "expected lvalue expression").emit().exit();
 }
 
+TypeInfo Sema::sema_index_ref(AST::IndexRef* ast)
+{
+  auto x = this->check(ast->expr);
+
+  for (auto&& index : ast->indexes) {
+    auto index_type = this->check(index);
+
+    switch (x.kind) {
+      case TYPE_Vector: {
+        if (index_type.kind != TYPE_Int &&
+            index_type.kind != TYPE_USize) {
+          Error(index, "expected integer or usize").emit();
+        }
+
+        x = x.type_params[0];
+        break;
+      }
+
+      case TYPE_Dict: {
+        if (!index_type.equals(x.type_params[0])) {
+          Error(index, "expected '" +
+                           x.type_params[0].to_string() +
+                           "' but found '" +
+                           index_type.to_string() + "'")
+              .emit()
+              .exit();
+        }
+
+        x = x.type_params[1];
+        break;
+      }
+
+      default:
+        Error(index, "left is not vector or dict").emit().exit();
+    }
+  }
+
+  return x;
+}
+
 TypeInfo Sema::check_function_call(AST::CallFunc* ast)
 {
   // 組み込み関数リスト取得

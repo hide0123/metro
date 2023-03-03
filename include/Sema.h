@@ -75,6 +75,8 @@ public:
 
   TypeInfo check_as_left(AST::Base* ast);
 
+  TypeInfo sema_index_ref(AST::IndexRef* ast);
+
   /**
    * @brief 関数呼び出しが正しいか検査する
    *
