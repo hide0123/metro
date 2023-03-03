@@ -64,7 +64,8 @@ static std::vector<BuiltinFunc> const _builtin_functions{
         .impl = [](std::vector<Object*> const& args) -> Object* {
           ((ObjVector*)args[0])->elements.emplace_back(args[1]);
           return new ObjNone;
-        }}};
+        }},
+};
 
 std::vector<BuiltinFunc> const& BuiltinFunc::get_builtin_list()
 {
