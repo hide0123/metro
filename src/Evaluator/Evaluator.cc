@@ -492,14 +492,14 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
 Object*& Evaluator::eval_index_ref(Object*& obj,
                                    AST::IndexRef* ast)
 {
-  Object** ret{};
+  Object** ret = &obj;
 
   for (auto&& index_ast : ast->indexes) {
     auto obj_index = this->evaluate(index_ast);
 
     switch (obj->type.kind) {
       case TYPE_Vector: {
-        auto obj_vec = (ObjVector*)obj;
+        auto& obj_vec = *(ObjVector**)ret;
 
         size_t index = 0;
 
@@ -525,11 +525,11 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
       }
 
       case TYPE_Dict: {
-        auto obj_dict = (ObjDict*)obj;
+        auto& obj_dict = *(ObjDict**)obj;
 
         for (auto&& item : obj_dict->items) {
           if (item.key->equals(obj_index)) {
-            obj = item.value;
+            ret = &item.value;
             goto _dict_value_found;
           }
         }

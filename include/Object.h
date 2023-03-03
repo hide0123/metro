@@ -233,6 +233,14 @@ struct ObjDict : Object {
       : Object(TYPE_Dict)
   {
   }
+
+  ObjDict(std::vector<Item>&& _items)
+      : Object(TYPE_Dict),
+        items(_items)
+  {
+    for (auto&& item : this->items) {
+    }
+  }
 };
 
 struct ObjVector : Object {

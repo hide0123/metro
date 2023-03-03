@@ -4,6 +4,5 @@
 # binary
 metro
 
-# text files
-test.txt
-memo.txt
+/*.txt
+/*.metro

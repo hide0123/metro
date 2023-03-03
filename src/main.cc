@@ -126,10 +126,9 @@ int Application::main(int argc, char** argv)
   Lexer lexer{this->source_code};
 
   alert;
-  auto token_list = lexer.lex();
 
   // 構文解析
-  Parser parser{token_list};
+  Parser parser{lexer.lex()};
 
   alert;
   auto ast = parser.parse();
