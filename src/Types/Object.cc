@@ -17,11 +17,13 @@
 
 static bool nested = 0;
 
-static std::map<Object*, int> all_obj;
+#if METRO_DEBUG
+
+extern std::map<Object*, int> _all_obj;
 
 void _show_all_obj()
 {
-  for (auto&& [p, i] : all_obj) {
+  for (auto&& [p, i] : _all_obj) {
     printf("%p ", p);
 
     if (i) {
@@ -37,26 +39,9 @@ void _show_all_obj()
   }
 }
 
+#endif
+
 ObjNone* Object::obj_none;
-
-Object::Object(TypeInfo type)
-    : type(type),
-      ref_count(0),
-      no_delete(false)
-{
-  alert_ctor;
-
-  // GarbageCollector::add(this);
-
-  all_obj[this] = 1;
-}
-
-Object::~Object()
-{
-  alert_dtor;
-
-  all_obj[this] = 0;
-}
 
 void Object::initialize()
 {

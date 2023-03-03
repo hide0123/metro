@@ -17,45 +17,65 @@
 
 #define astdef(T) auto ast = (AST::T*)_ast
 
-class StepView {
-public:
-  StepView(Evaluator& E, std::string const& source)
-      : E(E),
-        source(source),
-        position(0)
-  {
-  }
-
-  void set_position(size_t pos)
-  {
-  }
-
-  void view()
-  {
-    std::cin.get();
-  }
-
-private:
-  Evaluator& E;
-  std::string const& source;
-
-  size_t position;
-};
-
 Object* Evaluator::none;
-std::vector<Object*> Evaluator::g_temp;
+std::map<Object*, bool> Evaluator::allocated_objects;
+
+static bool _gc_stopped;
+
+#if METRO_DEBUG
+std::map<Object*, int> _all_obj;
+#endif
+
+Object::Object(TypeInfo type)
+    : type(type),
+      ref_count(0),
+      no_delete(false)
+{
+  alert_ctor;
+
+  Evaluator::allocated_objects[this] = 1;
+
+  debug(_all_obj[this] = 1);
+}
+
+Object::~Object()
+{
+  alert_dtor;
+
+  debug(_all_obj[this] = 0);
+}
+
+void Evaluator::delete_object(Object* p)
+{
+  if (_gc_stopped)
+    return;
+
+  if (this->return_binds[p] != nullptr)
+    return;
+
+  if (allocated_objects[p] == 0)
+    return;
+
+  if (p->ref_count == 0 && !p->no_delete) {
+    alertmsg("delete_object(): " << p);
+    allocated_objects[p] = 0;
+    delete p;
+  }
+}
+
+void Evaluator::clean_obj()
+{
+  for (auto&& [p, b] : allocated_objects) {
+    delete_object(p);
+  }
+}
 
 Evaluator::Evaluator()
 {
-  GarbageCollector::set_object_list(&g_temp);
-
-  none = new ObjNone;
 }
 
 Evaluator::~Evaluator()
 {
-  delete none;
-
   for (auto&& [x, y] : this->immediate_objects) {
     delete y;
   }
@@ -64,7 +84,7 @@ Evaluator::~Evaluator()
 Object* Evaluator::evaluate(AST::Base* _ast)
 {
   if (!_ast)
-    return none;
+    return new ObjNone();
 
   switch (_ast->kind) {
     case AST_None:
@@ -79,7 +99,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Array: {
       astdef(Array);
 
-      auto ret = new ObjVector;
+      auto ret = new ObjVector();
 
       ret->type = Sema::value_type_cache[ast];
 
@@ -99,7 +119,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Dict: {
       astdef(Dict);
 
-      auto ret = new ObjDict;
+      auto ret = new ObjDict();
       ret->type = Sema::value_type_cache[_ast];
 
       for (auto&& elem : ast->elements) {
@@ -194,35 +214,34 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto func = ast->callee;
 
       // コールスタック作成
-      auto& cs = this->enter_function(func);
+      this->enter_function(func);
 
       // 引数
       auto& vst = this->vst_list.emplace_front();
       for (auto xx = func->args.begin(); auto&& obj : args) {
-        // obj->ref_count++;
         vst.vmap[xx->name.str] = obj;
+
+        obj->ref_count++;
       }
 
       // 関数実行
       this->evaluate(func->code);
-      // for (auto&& xx : func->code->list) {
-      //   this->evaluate(xx);
-
-      //   if (cs.is_returned)
-      //     break;
-      // }
 
       // 戻り値を取得
       auto result = this->get_current_func_stack().result;
 
       if (!result) {
-        result = none;
+        result = new ObjNone();
       }
 
       assert(result != nullptr);
 
+      for (auto&& obj : args) {
+        obj->ref_count--;
+      }
+
       for (auto&& [n, v] : vst.vmap) {
-        this->delete_object(v);
+        // this->delete_object(v);
       }
 
       this->vst_list.pop_front();
@@ -232,11 +251,15 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       this->return_binds[result] = nullptr;
 
-      // result->no_delete = false;
+      debug(
 
-      // this->vst_list.begin()->temp.emplace_back(result);
+          alert;
+          alertmsg(COL_YELLOW "ret: " << result->to_string());
 
-      result->no_delete = 0;
+          Error(ast, "returnnn " + result->to_string())
+              .emit(Error::EL_Note);
+
+      );
 
       // 戻り値を返す
       return result;
@@ -247,7 +270,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Expr: {
       auto x = (AST::Expr*)_ast;
 
-      auto ret = this->evaluate(x->first);
+      auto ret = this->evaluate(x->first)->clone();
 
       for (auto&& elem : x->elements) {
         ret = Evaluator::compute_expr_operator(
@@ -293,8 +316,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto& vst = this->vst_list.emplace_front();
 
-      // GarbageCollector::set_object_list(&vst.temp);
-
       for (auto&& item : ast->list) {
         this->evaluate(item);
 
@@ -315,23 +336,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         }
       }
 
-      // alertmsg("uoo @@@@");
-      for (auto&& obj : vst.temp) {
-        delete obj;
-        // this->delete_object(obj);
-      }
-
-      // GarbageCollector::clean();
-
       this->vst_list.pop_front();
-
-      // if (this->vst_list.empty()) {
-      //   GarbageCollector::set_object_list(&g_temp);
-      // }
-      // else {
-      //   GarbageCollector::set_object_list(
-      //       &this->vst_list.rbegin()->temp);
-      // }
+      this->clean_obj();
 
       break;
     }
@@ -359,34 +365,18 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto& fs = this->get_current_func_stack();
 
       if (ast->expr) {
+        auto _flag_b = _gc_stopped;
+
+        _gc_stopped = true;
+
         fs.result = this->evaluate(ast->expr);
-        fs.result->no_delete = 1;
 
-        // fs.result->no_delete = true;
-
-        auto& vst = *this->vst_list.begin();
-
-        // for (auto&& obj : vst.temp) {
-        //   if (obj == fs.result) {
-        //     // panic("returnnn");
-        //     obj = nullptr;
-
-        //     auto vv = this->vst_list.begin();
-        //     vv++;
-        //     vv++;
-
-        //     alert;
-        //     vv->temp.emplace_back(fs.result);
-
-        //     alert;
-        //     break;
-        //   }
-        // }
+        _gc_stopped = _flag_b;
 
         this->return_binds[fs.result] = ast;
       }
       else
-        fs.result = none;
+        fs.result = new ObjNone();
 
       // フラグ有効化
       fs.is_returned = true;
@@ -415,7 +405,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       todo_impl;
   }
 
-  return none;
+  return new ObjNone;
 }
 
 Object*& Evaluator::eval_left(AST::Base* _ast)
@@ -464,7 +454,8 @@ Object* Evaluator::compute_expr_operator(
 {
   using EX = AST::Expr::ExprKind;
 
-  auto ret = left->clone();
+  // auto ret = left->clone();
+  auto ret = left;
 
   switch (kind) {
     case EX::EX_Add: {
@@ -472,6 +463,9 @@ Object* Evaluator::compute_expr_operator(
         case TYPE_Int:
           ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
           break;
+
+        default:
+          todo_impl;
       }
       break;
     }
@@ -481,6 +475,9 @@ Object* Evaluator::compute_expr_operator(
         case TYPE_Int:
           ((ObjLong*)ret)->value -= ((ObjLong*)right)->value;
           break;
+
+        default:
+          todo_impl;
       }
       break;
     }
@@ -490,6 +487,9 @@ Object* Evaluator::compute_expr_operator(
         case TYPE_Int:
           ((ObjLong*)ret)->value *= ((ObjLong*)right)->value;
           break;
+
+        default:
+          todo_impl;
       }
       break;
     }
@@ -617,12 +617,4 @@ void Evaluator::leave_function()
 Evaluator::FunctionStack& Evaluator::get_current_func_stack()
 {
   return *this->call_stack.begin();
-}
-
-void Evaluator::delete_object(Object*& p)
-{
-  if (p->ref_count == 0 && !p->no_delete) {
-    alertmsg("delete_object(): " << p);
-    delete p;
-  }
 }

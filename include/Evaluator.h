@@ -8,6 +8,8 @@
 //  Evaluator
 // ---------------------------------------------
 class Evaluator {
+  friend struct Object;
+
   struct FunctionStack {
     AST::Function const* ast;
 
@@ -113,7 +115,7 @@ private:
    */
   void pop_object_with_count(size_t count);
 
-  void delete_object(Object*& p);
+  void delete_object(Object* p);
 
   //
   // オブジェクトスタック
@@ -133,12 +135,13 @@ private:
 
   struct var_storage {
     std::map<std::string_view, Object*> vmap;
-    std::vector<Object*> temp;
-    std::vector<Object*> result;
   };
 
   std::list<var_storage> vst_list;
-  static std::vector<Object*> g_temp;
+
+  static std::map<Object*, bool> allocated_objects;
+
+  void clean_obj();
 
   static Object* none;
 

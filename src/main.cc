@@ -132,7 +132,11 @@ int Application::main(int argc, char** argv)
   chkerr;
 
   alert;
-  Evaluator().evaluate(ast);
+  auto res = Evaluator().evaluate(ast);
+
+  debug(printf("AAA %p\n", res));
+
+  delete res;
 
   alert;
   debug(_show_all_obj());
