@@ -78,9 +78,14 @@ AST::Base* Parser::primary()
     return ast;
   }
 
-  if (this->eat("none")) {
-    return new AST::None(*this->ate);
-  }
+  if (this->eat("none"))
+    return new AST::ConstKeyword(AST_None, *this->ate);
+
+  if (this->eat("true"))
+    return new AST::ConstKeyword(AST_True, *this->ate);
+
+  if (this->eat("false"))
+    return new AST::ConstKeyword(AST_False, *this->ate);
 
   //
   // トークンの種類ごとの処理

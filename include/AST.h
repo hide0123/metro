@@ -13,6 +13,8 @@ enum ASTKind {
   AST_Type,
 
   AST_None,
+  AST_True,
+  AST_False,
 
   AST_Cast,
 
@@ -81,9 +83,14 @@ protected:
   }
 };
 
-struct None : Base {
-  None(Token const& token)
-      : Base(AST_None, token)
+/**
+ * @brief constant value keyword
+ * example: none, true, false, ...
+ *
+ */
+struct ConstKeyword : Base {
+  ConstKeyword(ASTKind kind, Token const& token)
+      : Base(kind, token)
   {
   }
 };

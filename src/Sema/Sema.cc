@@ -51,6 +51,13 @@ TypeInfo Sema::check(AST::Base* _ast)
 
   switch (_ast->kind) {
     case AST_None:
+      break;
+
+    case AST_True:
+    case AST_False:
+      _ret = TYPE_Bool;
+      break;
+
     case AST_Break:
     case AST_Continue:
       break;

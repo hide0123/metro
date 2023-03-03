@@ -91,6 +91,12 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Function:
       break;
 
+    case AST_True:
+      return new ObjBool(true);
+
+    case AST_False:
+      return new ObjBool(false);
+
     // 即値
     case AST_Value: {
       return Evaluator::create_object((AST::Value*)_ast);
