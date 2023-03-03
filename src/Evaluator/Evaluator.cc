@@ -166,7 +166,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Variable:
     case AST_GlobalVar:
     case AST_IndexRef:
-      return this->eval_left(_ast);
+      return this->eval_left(_ast)->clone();
 
     case AST_Dict: {
       astdef(Dict);
@@ -175,8 +175,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       ret->type = Sema::value_type_cache[_ast];
 
       for (auto&& elem : ast->elements) {
-        ret->items.emplace_back(this->evaluate(elem.key),
-                                this->evaluate(elem.value));
+        ret->append(this->evaluate(elem.key),
+                    this->evaluate(elem.value));
       }
 
       return ret;
@@ -270,8 +270,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Assign: {
       astdef(Assign);
 
-      return this->eval_left(ast->dest) =
-                 this->evaluate(ast->expr);
+      auto& dest = this->eval_left(ast->dest);
+
+      dest->ref_count--;
+
+      dest = this->evaluate(ast->expr);
+      dest->ref_count++;
+
+      return dest;
     }
 
     //
@@ -497,7 +503,7 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
   for (auto&& index_ast : ast->indexes) {
     auto obj_index = this->evaluate(index_ast);
 
-    switch (obj->type.kind) {
+    switch ((*ret)->type.kind) {
       case TYPE_Vector: {
         auto& obj_vec = *(ObjVector**)ret;
 
@@ -525,7 +531,7 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
       }
 
       case TYPE_Dict: {
-        auto& obj_dict = *(ObjDict**)obj;
+        auto& obj_dict = *(ObjDict**)ret;
 
         for (auto&& item : obj_dict->items) {
           if (item.key->equals(obj_index)) {
@@ -534,12 +540,16 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
           }
         }
 
-        ret = &obj_dict->items
-                   .emplace_back(
-                       obj_index,
-                       this->default_constructer(
-                           obj_dict->type.type_params[1]))
-                   .value;
+        {
+          auto& item = obj_dict->append(
+              obj_index, this->default_constructer(
+                             obj_dict->type.type_params[1]));
+
+          // item.key->ref_count++;
+          // item.value->ref_count++;
+
+          ret = &item.value;
+        }
 
       _dict_value_found:
         break;

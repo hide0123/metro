@@ -229,6 +229,16 @@ struct ObjDict : Object {
     return true;
   }
 
+  Item& append(Object* key, Object* value)
+  {
+    auto& item = this->items.emplace_back(key, value);
+
+    item.key->ref_count++;
+    item.value->ref_count++;
+
+    return item;
+  }
+
   ObjDict()
       : Object(TYPE_Dict)
   {
@@ -239,6 +249,16 @@ struct ObjDict : Object {
         items(_items)
   {
     for (auto&& item : this->items) {
+      item.key->ref_count++;
+      item.value->ref_count++;
+    }
+  }
+
+  ~ObjDict()
+  {
+    for (auto&& item : this->items) {
+      item.key->ref_count--;
+      item.value->ref_count--;
     }
   }
 };
