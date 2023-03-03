@@ -57,7 +57,7 @@ bool TypeInfo::equals(TypeInfo const& type) const
   if (this->kind == TYPE_Template || type.kind == TYPE_Template)
     return true;
 
-  if (this->kind != type.kind || this->is_const != type.is_const)
+  if (this->kind != type.kind)
     return false;
 
   if (this->type_params.size() != type.type_params.size())

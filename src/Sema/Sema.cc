@@ -299,6 +299,10 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto dest = this->check_as_left(ast->dest);
 
+      if (dest.is_const) {
+        Error(ast, "destination is not mutable").emit().exit();
+      }
+
       if (!dest.equals(this->check(ast->expr))) {
         Error(ast->token, "type mismatch").emit().exit();
       }
