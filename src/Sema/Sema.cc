@@ -50,6 +50,9 @@ TypeInfo Sema::check(AST::Base* _ast)
   TypeInfo _ret = TYPE_None;
 
   switch (_ast->kind) {
+    case AST_None:
+      break;
+
     case AST_Value: {
       TypeInfo ret;
 
@@ -354,11 +357,17 @@ TypeInfo Sema::check(AST::Base* _ast)
       if (!type.equals(this->check(resp))) {
         Error(ast->expr, "type mismatch").emit();
 
-        Error(resp, "specified '" + resp->to_string() +
-                        "' as result type, "
-                        "but statement return '" +
-                        type.to_string() + "'")
-            .emit(Error::EL_Note);
+        if (resp == nullptr) {
+          Error(cur_func, "resultl type is not specified")
+              .emit(Error::EL_Note);
+        }
+        else {
+          Error(resp, "specified '" + resp->to_string() +
+                          "' as result type, "
+                          "but statement return '" +
+                          type.to_string() + "'")
+              .emit(Error::EL_Note);
+        }
       }
 
       _ret = type;
@@ -411,7 +420,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       this->check(ast->code);
 
       break;
-      break;
     }
 
     //
@@ -432,7 +440,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       this->variable_stack_offs = voffs;
 
       this->scope_list.pop_front();
-      break;
       break;
     }
 

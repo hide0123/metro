@@ -82,7 +82,7 @@ DEPENDS	= $(OFILES:.o=.d)
 
 $(OUTPUT): $(OFILES)
 	@echo linking...
-	@$(LD) $(LDFLAGS) -pthread -o $@ $^
+	@$(LD) $(LDFLAGS) -o $@ $^
 
 -include $(DEPENDS)
 

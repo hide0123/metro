@@ -11,13 +11,14 @@
 #include "Lexer.h"
 #include "Parser.h"
 #include "Sema.h"
-#include "Compiler.h"
 #include "Evaluator.h"
 
 #include "Application.h"
 #include "Error.h"
 
 #include "debug/alert.h"
+
+void _show_all_obj();
 
 namespace Utils::String {
 
@@ -86,7 +87,7 @@ int Application::main(int argc, char** argv)
 {
 #define chkerr              \
   if (Error::was_emitted()) \
-    return -1;
+  return -1
 
   (void)argc;
   (void)argv;
@@ -111,9 +112,9 @@ int Application::main(int argc, char** argv)
 
   alertmsg(ast->to_string());
 
-  chkerr
+  chkerr;
 
-      Token toktok{TOK_End};
+  Token toktok{TOK_End};
   toktok.str = "main";
 
   auto azz = new AST::CallFunc(toktok);
@@ -128,17 +129,13 @@ int Application::main(int argc, char** argv)
   alert;
   alertmsg("check(ast) = " << type.to_string());
 
-  chkerr
-
-      // Compiler com;
-
-      // alert;
-      // com.compile(ast);
-
-      Evaluator eval;
+  chkerr;
 
   alert;
-  eval.evaluate(ast);
+  Evaluator().evaluate(ast);
+
+  alert;
+  debug(_show_all_obj());
 
   return 0;
 }

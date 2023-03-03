@@ -78,6 +78,10 @@ AST::Base* Parser::primary()
     return ast;
   }
 
+  if (this->eat("none")) {
+    return new AST::None(*this->ate);
+  }
+
   //
   // トークンの種類ごとの処理
   switch (this->cur->kind) {
@@ -549,9 +553,10 @@ AST::Function* Parser::parse_function()
     this->expect(")");  // 閉じかっこ
   }
 
-  this->expect("->");  // 型指定トークン
-
-  func->result_type = this->expect_typename();  // 戻り値の型
+  // 戻り値の型
+  if (this->eat("->")) {
+    func->result_type = this->expect_typename();
+  }
 
   func->code = this->expect_scope();  // 処理 (スコープ)
 

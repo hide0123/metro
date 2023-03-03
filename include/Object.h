@@ -12,6 +12,7 @@ struct ObjNone;
 struct Object {
   TypeInfo type;
   size_t ref_count;
+  bool no_delete;
 
   static ObjNone* obj_none;
 

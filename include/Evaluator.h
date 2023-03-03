@@ -113,6 +113,8 @@ private:
    */
   void pop_object_with_count(size_t count);
 
+  void delete_object(Object*& p);
+
   //
   // オブジェクトスタック
   // 変数・引数で使う
@@ -127,11 +129,18 @@ private:
   // 即値・リテラル
   std::map<AST::Value*, Object*> immediate_objects;
 
+  std::map<Object*, AST::Return*> return_binds;
+
   struct var_storage {
     std::map<std::string_view, Object*> vmap;
+    std::vector<Object*> temp;
+    std::vector<Object*> result;
   };
 
   std::list<var_storage> vst_list;
+  static std::vector<Object*> g_temp;
+
+  static Object* none;
 
   Object*& get_var(std::string_view const& sv)
   {
@@ -141,8 +150,4 @@ private:
 
     std::exit(-111);
   }
-
-  //
-  // ガベージコレクタ
-  GarbageCollector gc;
 };

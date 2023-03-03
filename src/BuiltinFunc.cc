@@ -1,5 +1,6 @@
 #include <iostream>
 
+#include "common.h"
 #include "Object.h"
 #include "BuiltinFunc.h"
 
@@ -19,6 +20,18 @@ static Object* print_impl(std::vector<Object*> const& args)
 }
 
 static std::vector<BuiltinFunc> const _builtin_functions{
+    // id
+    BuiltinFunc{
+        .name = "id",
+        .is_template = true,
+        .result_type = TYPE_Int,
+        .arg_types = {TYPE_Template},
+        .impl = [](std::vector<Object*> const& args) -> Object* {
+          return new ObjString(Utils::String::to_wstr(
+              Utils::format("%p", args[0])));
+          // std::to_wstring(std::hash<Object*>()(args[0]))
+        }},
+
     // print
     BuiltinFunc{.name = "print",
                 .is_template = false,

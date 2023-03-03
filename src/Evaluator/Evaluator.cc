@@ -17,34 +17,54 @@
 
 #define astdef(T) auto ast = (AST::T*)_ast
 
-static ObjNone objnone;
-static ObjNone* none = &objnone;
+class StepView {
+public:
+  StepView(Evaluator& E, std::string const& source)
+      : E(E),
+        source(source),
+        position(0)
+  {
+  }
+
+  void set_position(size_t pos)
+  {
+  }
+
+  void view()
+  {
+    std::cin.get();
+  }
+
+private:
+  Evaluator& E;
+  std::string const& source;
+
+  size_t position;
+};
+
+Object* Evaluator::none;
+std::vector<Object*> Evaluator::g_temp;
 
 Evaluator::Evaluator()
 {
-  ::objnone.ref_count = 1;
+  GarbageCollector::set_object_list(&g_temp);
+
+  none = new ObjNone;
 }
 
 Evaluator::~Evaluator()
 {
+  delete none;
+
+  for (auto&& [x, y] : this->immediate_objects) {
+    delete y;
+  }
 }
 
 Object* Evaluator::evaluate(AST::Base* _ast)
 {
-  debug(
-      /*
-      std::this_thread::sleep_for(
-        std::chrono::milliseconds(100)
-      );
-
-      if(!_ast){
-        alertmsg("_ast == nullptr")
-        return none;
-      }
-      */
-      )
-
-      if (!_ast) return none;
+  if (!_ast)
+    return none;
 
   switch (_ast->kind) {
     case AST_None:
@@ -102,20 +122,19 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           case TYPE_Vector: {
             auto obj_vec = (ObjVector*)obj;
 
-            size_t index;
-            {
-              switch (obj_index->type.kind) {
-                case TYPE_Int:
-                  index = ((ObjLong*)obj_index)->value;
-                  break;
+            size_t index = 0;
 
-                case TYPE_USize:
-                  index = ((ObjUSize*)obj_index)->value;
-                  break;
+            switch (obj_index->type.kind) {
+              case TYPE_Int:
+                index = ((ObjLong*)obj_index)->value;
+                break;
 
-                default:
-                  panic("int or usize??aa");
-              }
+              case TYPE_USize:
+                index = ((ObjUSize*)obj_index)->value;
+                break;
+
+              default:
+                panic("int or usize??aa");
             }
 
             if (index >= obj_vec->elements.size()) {
@@ -175,16 +194,23 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto func = ast->callee;
 
       // コールスタック作成
-      this->enter_function(func);
+      auto& cs = this->enter_function(func);
 
       // 引数
       auto& vst = this->vst_list.emplace_front();
       for (auto xx = func->args.begin(); auto&& obj : args) {
+        // obj->ref_count++;
         vst.vmap[xx->name.str] = obj;
       }
 
       // 関数実行
       this->evaluate(func->code);
+      // for (auto&& xx : func->code->list) {
+      //   this->evaluate(xx);
+
+      //   if (cs.is_returned)
+      //     break;
+      // }
 
       // 戻り値を取得
       auto result = this->get_current_func_stack().result;
@@ -195,10 +221,22 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       assert(result != nullptr);
 
+      for (auto&& [n, v] : vst.vmap) {
+        this->delete_object(v);
+      }
+
       this->vst_list.pop_front();
 
       // コールスタック削除
       this->leave_function();
+
+      this->return_binds[result] = nullptr;
+
+      // result->no_delete = false;
+
+      // this->vst_list.begin()->temp.emplace_back(result);
+
+      result->no_delete = 0;
 
       // 戻り値を返す
       return result;
@@ -253,7 +291,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
-      this->vst_list.emplace_front();
+      auto& vst = this->vst_list.emplace_front();
+
+      // GarbageCollector::set_object_list(&vst.temp);
 
       for (auto&& item : ast->list) {
         this->evaluate(item);
@@ -264,9 +304,34 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         }
       }
 
+      for (auto&& [name, obj] : vst.vmap) {
+        alertmsg("lvar " << name << ": " << obj
+                         << " ref_count=" << obj->ref_count);
+
+        obj->ref_count--;
+
+        if (obj->ref_count == 0) {
+          this->delete_object(obj);
+        }
+      }
+
+      // alertmsg("uoo @@@@");
+      for (auto&& obj : vst.temp) {
+        delete obj;
+        // this->delete_object(obj);
+      }
+
+      // GarbageCollector::clean();
+
       this->vst_list.pop_front();
 
-      gc.clean();
+      // if (this->vst_list.empty()) {
+      //   GarbageCollector::set_object_list(&g_temp);
+      // }
+      // else {
+      //   GarbageCollector::set_object_list(
+      //       &this->vst_list.rbegin()->temp);
+      // }
 
       break;
     }
@@ -275,13 +340,11 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Let: {
       auto ast = (AST::VariableDeclaration*)_ast;
 
+      auto& vst = *this->vst_list.begin();
+
       auto obj = this->evaluate(ast->init);
 
       obj->ref_count++;
-
-      this->gc.register_object(obj);
-
-      auto& vst = *this->vst_list.begin();
 
       vst.vmap[ast->name] = obj;
 
@@ -295,8 +358,33 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto& fs = this->get_current_func_stack();
 
-      if (ast->expr)
+      if (ast->expr) {
         fs.result = this->evaluate(ast->expr);
+        fs.result->no_delete = 1;
+
+        // fs.result->no_delete = true;
+
+        auto& vst = *this->vst_list.begin();
+
+        // for (auto&& obj : vst.temp) {
+        //   if (obj == fs.result) {
+        //     // panic("returnnn");
+        //     obj = nullptr;
+
+        //     auto vv = this->vst_list.begin();
+        //     vv++;
+        //     vv++;
+
+        //     alert;
+        //     vv->temp.emplace_back(fs.result);
+
+        //     alert;
+        //     break;
+        //   }
+        // }
+
+        this->return_binds[fs.result] = ast;
+      }
       else
         fs.result = none;
 
@@ -510,6 +598,8 @@ Object* Evaluator::create_object(AST::Value* ast)
 
   assert(obj != nullptr);
 
+  obj->no_delete = 1;
+
   return obj;
 }
 
@@ -527,4 +617,12 @@ void Evaluator::leave_function()
 Evaluator::FunctionStack& Evaluator::get_current_func_stack()
 {
   return *this->call_stack.begin();
+}
+
+void Evaluator::delete_object(Object*& p)
+{
+  if (p->ref_count == 0 && !p->no_delete) {
+    alertmsg("delete_object(): " << p);
+    delete p;
+  }
 }

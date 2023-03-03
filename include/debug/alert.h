@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include "../color.h"
 
-#define ENABLE_CDSTRUCT 0
+#define ENABLE_CDSTRUCT 1
 
 #define _RGB MAKE_COLOR
 #define _BRGB MAKE_BK_COLOR
@@ -99,5 +99,5 @@ inline void _alert_impl(char const* tag, char const* msg,
   memset(buf2 + len, ' ', 0x400 - len);
   buf2[endpos] = 0;
 
-  fprintf(stderr, "%s" COL_DEFAULT "\n", buf2);
+  printf("%s" COL_DEFAULT "\n", buf2);
 }
