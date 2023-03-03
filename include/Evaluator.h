@@ -63,6 +63,7 @@ public:
    * @return Object*
    */
   static Object* compute_expr_operator(AST::Expr::ExprKind kind,
+                                       Token const& token,
                                        Object* left,
                                        Object* right);
 
@@ -86,6 +87,12 @@ private:
    */
   Object* create_object(AST::Value* ast);
 
+  /**
+   * @brief 型情報から初期値を作成する
+   *
+   * @param type
+   * @return Object*
+   */
   Object* default_constructer(TypeInfo const& type);
 
   /**

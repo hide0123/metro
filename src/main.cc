@@ -92,6 +92,21 @@ int Application::main(int argc, char** argv)
   (void)argc;
   (void)argv;
 
+  // todo: parse arguments
+
+  for (int i = 0; i < argc; i++) {
+    std::string const arg = argv[i];
+
+    if (arg == "-help") {
+      std::cout <<
+    }
+  }
+
+  if (this->file_path.empty()) {
+    std::cout << "metro: no input files.\n";
+    return -1;
+  }
+
   Application::initialize();
 
   this->file_path = "test.txt";

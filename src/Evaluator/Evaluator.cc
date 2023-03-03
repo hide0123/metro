@@ -167,13 +167,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
                           ((ObjLong*)end)->value);
     }
 
-    // case AST_IndexRef: {
-    //   astdef(IndexRef);
-
-    //   return this->eval_index_ref(this->evaluate(ast->expr),
-    //                               ast);
-    // }
-
     //
     // 関数呼び出し
     case AST_CallFunc: {
@@ -228,16 +221,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       this->return_binds[result] = nullptr;
 
-      // debug(
-
-      //     alert;
-      //     alertmsg(COL_YELLOW "ret: " << result->to_string());
-
-      //     Error(ast, "returnnn " + result->to_string())
-      //         .emit(Error::EL_Note);
-
-      // );
-
       // 戻り値を返す
       return result;
     }
@@ -251,7 +234,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       for (auto&& elem : x->elements) {
         ret = Evaluator::compute_expr_operator(
-            elem.kind, ret, this->evaluate(elem.ast));
+            elem.kind, elem.op, ret, this->evaluate(elem.ast));
       }
 
       return ret;
@@ -573,7 +556,8 @@ Object* Evaluator::default_constructer(TypeInfo const& type)
 }
 
 Object* Evaluator::compute_expr_operator(
-    AST::Expr::ExprKind kind, Object* left, Object* right)
+    AST::Expr::ExprKind kind, Token const& op, Object* left,
+    Object* right)
 {
   using EX = AST::Expr::ExprKind;
 
@@ -611,11 +595,65 @@ Object* Evaluator::compute_expr_operator(
           ((ObjLong*)ret)->value *= ((ObjLong*)right)->value;
           break;
 
+        case TYPE_Float:
+          ((ObjFloat*)ret)->value *= ((ObjFloat*)right)->value;
+          break;
+
         default:
           todo_impl;
       }
       break;
     }
+
+    case EX::EX_Div: {
+      switch (left->type.kind) {
+        case TYPE_Int: {
+          auto rval = ((ObjLong*)right)->value;
+
+          if (rval == 0) {
+            Error(op, "division by zero").emit().exit();
+          }
+
+          ((ObjLong*)ret)->value /= rval;
+          break;
+        }
+
+        case TYPE_Float: {
+          auto rval = ((ObjFloat*)right)->value;
+
+          if (rval == 0) {
+            Error(op, "division by zero").emit().exit();
+          }
+
+          ((ObjFloat*)ret)->value /= rval;
+          break;
+        }
+
+        default:
+          todo_impl;
+      }
+      break;
+    }
+
+    case EX::EX_LShift:
+      ((ObjLong*)ret)->value <<= ((ObjLong*)right)->value;
+      break;
+
+    case EX::EX_RShift:
+      ((ObjLong*)ret)->value >>= ((ObjLong*)right)->value;
+      break;
+
+    case EX::EX_BitAND:
+      ((ObjLong*)ret)->value &= ((ObjLong*)right)->value;
+      break;
+
+    case EX::EX_BitXOR:
+      ((ObjLong*)ret)->value ^= ((ObjLong*)right)->value;
+      break;
+
+    case EX::EX_BitOR:
+      ((ObjLong*)ret)->value |= ((ObjLong*)right)->value;
+      break;
 
     case EX::EX_And: {
       ((ObjBool*)ret)->value =
