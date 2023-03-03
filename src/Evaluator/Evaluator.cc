@@ -443,15 +443,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           todo_impl;
       }
 
-      // if (ast->iter->kind == AST_Variable) {
-      //   (*p_iter)->
-      // }
-
       this->loop_stack.pop_front();
       this->vst_list.pop_front();
 
       _obj->ref_count--;
-
       break;
     }
 
@@ -619,6 +614,18 @@ Object* Evaluator::compute_expr_operator(
         default:
           todo_impl;
       }
+      break;
+    }
+
+    case EX::EX_And: {
+      ((ObjBool*)ret)->value =
+          ((ObjBool*)left)->value && ((ObjBool*)right)->value;
+      break;
+    }
+
+    case EX::EX_Or: {
+      ((ObjBool*)ret)->value =
+          ((ObjBool*)left)->value || ((ObjBool*)right)->value;
       break;
     }
 

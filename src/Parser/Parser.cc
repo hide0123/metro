@@ -340,15 +340,33 @@ AST::Base* Parser::bit_op()
   return x;
 }
 
-AST::Base* Parser::range()
+AST::Base* Parser::log_and_or()
 {
   auto x = this->bit_op();
+
+  while (this->check()) {
+    if (this->eat("&&"))
+      AST::Expr::create(x)->append(EXKind::EX_And, *this->ate,
+                                   this->compare());
+    else if (this->eat("||"))
+      AST::Expr::create(x)->append(EXKind::EX_Or, *this->ate,
+                                   this->compare());
+    else
+      break;
+  }
+
+  return x;
+}
+
+AST::Base* Parser::range()
+{
+  auto x = this->log_and_or();
 
   if (this->eat("..")) {
     auto y = new AST::Range(*this->ate);
 
     y->begin = x;
-    y->end = this->bit_op();
+    y->end = this->log_and_or();
 
     x = y;
   }

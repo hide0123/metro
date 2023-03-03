@@ -26,6 +26,7 @@ public:
   AST::Base* shift();
   AST::Base* compare();
   AST::Base* bit_op();
+  AST::Base* log_and_or();
 
   AST::Base* range();
 
