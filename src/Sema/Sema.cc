@@ -58,6 +58,62 @@ TypeInfo Sema::check(AST::Base* _ast)
       _ret = TYPE_Bool;
       break;
 
+    case AST_Cast: {
+      astdef(Cast);
+
+      _ret = this->check(ast->cast_to);
+
+      auto x = this->check(ast->expr);
+
+      if (_ret.equals(x)) {
+        Error(ast, "same type, don't need to use cast")
+            .emit()
+            .exit();
+      }
+
+      if (x.equals(TYPE_None)) {
+        Error(ast,
+              "cannot cast 'none' to '" + _ret.to_string() + "'")
+            .emit()
+            .exit();
+      }
+
+      switch (x.kind) {
+        case TYPE_Int:
+          switch (_ret.kind) {
+            case TYPE_Float:
+            case TYPE_Bool:
+            case TYPE_Char:
+              goto _cast_done;
+          }
+          break;
+
+        case TYPE_Float:
+          switch (_ret.kind) {
+            case TYPE_Int:
+            case TYPE_Bool:
+              goto _cast_done;
+          }
+          break;
+
+        case TYPE_Bool:
+          switch (_ret.kind) {
+            case TYPE_Int:
+            case TYPE_Float:
+              goto _cast_done;
+          }
+          break;
+      }
+
+      Error(ast, "cannot cast '" + _ret.to_string() + "' to '" +
+                     x.to_string() + "'")
+          .emit()
+          .exit();
+
+    _cast_done:
+      break;
+    }
+
     case AST_Break:
     case AST_Continue:
       break;
@@ -285,7 +341,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         }
 
         // 初期化式がある場合
-        //  => 指定された型と初期化式の型が一致しないならエラー
+        //  =>
+        //  指定された型と初期化式の型が一致しないならエラー
         if (ast->init && !type.equals(init_expr_type)) {
           Error(ast->init, "mismatched type").emit().exit();
         }
@@ -758,7 +815,8 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
             Error(ast, "too few arguments").emit().exit();
           }
           alertmsg(
-              "WTF バグ起きたらこのメッセージ出る てか眠すぎ");
+              "WTF バグ起きたらこのメッセージ出る "
+              "てか眠すぎ");
         }
         else if (Q) {  // true!=true で、ループ終了
           break;

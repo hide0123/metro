@@ -97,6 +97,26 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_False:
       return new ObjBool(false);
 
+    case AST_Cast: {
+      astdef(Cast);
+
+      auto const& cast_to = Sema::value_type_cache[ast->cast_to];
+
+      auto obj = this->evaluate(ast->expr);
+
+      switch (cast_to.kind) {
+        case TYPE_Int: {
+          switch (obj->type.kind) {
+            case TYPE_Float:
+              return new ObjLong((float)((ObjFloat*)obj)->value);
+          }
+          break;
+        }
+      }
+
+      todo_impl;
+    }
+
     // 即値
     case AST_Value: {
       return Evaluator::create_object((AST::Value*)_ast);

@@ -87,6 +87,20 @@ AST::Base* Parser::primary()
   if (this->eat("false"))
     return new AST::ConstKeyword(AST_False, *this->ate);
 
+  if (this->eat("cast")) {
+    auto ast = new AST::Cast(*this->ate);
+
+    this->expect("<");
+    ast->cast_to = this->expect_typename();
+    this->expect(">");
+
+    this->expect("(");
+    ast->expr = this->expr();
+    this->expect(")");
+
+    return ast;
+  }
+
   //
   // トークンの種類ごとの処理
   switch (this->cur->kind) {
