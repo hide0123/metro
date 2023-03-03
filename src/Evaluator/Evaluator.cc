@@ -250,10 +250,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         obj->ref_count--;
       }
 
-      for (auto&& [n, v] : vst.vmap) {
-        // this->delete_object(v);
-      }
-
       this->vst_list.pop_front();
 
       // コールスタック削除
@@ -261,15 +257,15 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       this->return_binds[result] = nullptr;
 
-      debug(
+      // debug(
 
-          alert;
-          alertmsg(COL_YELLOW "ret: " << result->to_string());
+      //     alert;
+      //     alertmsg(COL_YELLOW "ret: " << result->to_string());
 
-          Error(ast, "returnnn " + result->to_string())
-              .emit(Error::EL_Note);
+      //     Error(ast, "returnnn " + result->to_string())
+      //         .emit(Error::EL_Note);
 
-      );
+      // );
 
       // 戻り値を返す
       return result;
@@ -332,10 +328,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         if (vst.is_skipped)
           break;
 
-        // if (!this->call_stack.empty() &&
-        //     this->get_current_func_stack().is_returned) {
-        //   break;
-        // }
+        if (auto L = this->get_cur_loop(); L && L->is_breaked)
+          break;
+
+        if (!this->call_stack.empty() &&
+            this->get_current_func_stack().is_returned) {
+          break;
+        }
       }
 
       for (auto&& [name, obj] : vst.vmap) {
@@ -375,8 +374,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Return: {
       auto ast = (AST::Return*)_ast;
 
-      auto& vst = *this->vst_list.begin();
-
       auto& fs = this->get_current_func_stack();
 
       if (ast->expr) {
@@ -396,7 +393,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       // フラグ有効化
       fs.is_returned = true;
 
-      vst.is_skipped = 1;
+      // vst.is_skipped = 1;
 
       assert(fs.result != nullptr);
       break;
@@ -430,10 +427,11 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       astdef(For);
 
       auto _obj = this->evaluate(ast->iterable);
+      _obj->ref_count++;
 
       auto& v = this->vst_list.emplace_front();
 
-      this->loop_stack.emplace_front();
+      auto& loop = this->loop_stack.emplace_front(v);
 
       Object** p_iter = nullptr;
 
@@ -447,13 +445,25 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           auto obj = (ObjRange*)_obj;
 
           iter = new ObjLong(obj->begin);
-          iter->ref_count = 1;
+          iter->no_delete = 1;
 
           while (iter->value < obj->end) {
+            alert;
+
+            alertmsg(iter->value);
+
+            v.is_skipped = 0;
+
             this->evaluate(ast->code);
+
+            if (loop.is_breaked) {
+              break;
+            }
 
             iter->value++;
           }
+
+          delete iter;
 
           break;
         }
@@ -462,11 +472,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           todo_impl;
       }
 
-      if (ast->iter->kind == AST_Variable) {
-        (*p_iter)->ref_count = 0;
-      }
+      // if (ast->iter->kind == AST_Variable) {
+      //   (*p_iter)->
+      // }
 
+      this->loop_stack.pop_front();
       this->vst_list.pop_front();
+
+      _obj->ref_count--;
 
       break;
     }

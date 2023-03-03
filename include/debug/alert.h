@@ -7,7 +7,7 @@
 #include <cstdlib>
 #include "../color.h"
 
-#define ENABLE_CDSTRUCT 1
+#define ENABLE_CDSTRUCT 0
 
 #define _RGB MAKE_COLOR
 #define _BRGB MAKE_BK_COLOR

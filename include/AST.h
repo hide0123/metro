@@ -331,6 +331,13 @@ struct Return : Base {
   }
 };
 
+struct LoopController : Base {
+  LoopController(Token const& token, ASTKind kind)
+      : Base(kind, token)
+  {
+  }
+};
+
 struct If : Base {
   AST::Base* condition;
   AST::Base* if_true;

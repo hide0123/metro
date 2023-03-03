@@ -466,6 +466,24 @@ AST::Base* Parser::stmt()
     return ast;
   }
 
+  // break
+  if (this->eat("break")) {
+    auto ret = new AST::LoopController(*this->ate, AST_Break);
+
+    this->expect_semi();
+
+    return ret;
+  }
+
+  // continue
+  if (this->eat("continue")) {
+    auto ret = new AST::LoopController(*this->ate, AST_Continue);
+
+    this->expect_semi();
+
+    return ret;
+  }
+
   auto ast = this->expr();
 
   this->expect_semi();
