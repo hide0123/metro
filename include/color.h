@@ -9,7 +9,7 @@
 #define COL_YELLOW "\033[33m"
 #define COL_BLUE "\033[34m"
 #define COL_MAGENTA "\033[35m"
-#define COL_CYAN "\033[36;5m"
+#define COL_CYAN "\033[36m"
 #define COL_WHITE "\033[37m"
 
 #define COL_BK_BLACK "\033[40m"
@@ -18,7 +18,7 @@
 #define COL_BK_YELLOW "\033[43m"
 #define COL_BK_BLUE "\033[44m"
 #define COL_BK_MAGENTA "\033[45m"
-#define COL_BK_CYAN "\033[46;5m"
+#define COL_BK_CYAN "\033[46m"
 #define COL_BK_WHITE "\033[47m"
 
 #define MAKE_COLOR(r, g, b) "\033[38;2;" #r ";" #g ";" #b "m"

@@ -114,6 +114,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     // 左辺値
     case AST_Variable:
     case AST_GlobalVar:
+    case AST_IndexRef:
       return this->eval_left(_ast);
 
     case AST_Dict: {
@@ -140,68 +141,12 @@ Object* Evaluator::evaluate(AST::Base* _ast)
                           ((ObjLong*)end)->value);
     }
 
-    case AST_IndexRef: {
-      astdef(IndexRef);
+    // case AST_IndexRef: {
+    //   astdef(IndexRef);
 
-      auto obj = this->evaluate(ast->expr);
-
-      for (auto&& index_ast : ast->indexes) {
-        auto obj_index = this->evaluate(index_ast);
-
-        switch (obj->type.kind) {
-          case TYPE_Vector: {
-            auto obj_vec = (ObjVector*)obj;
-
-            size_t index = 0;
-
-            switch (obj_index->type.kind) {
-              case TYPE_Int:
-                index = ((ObjLong*)obj_index)->value;
-                break;
-
-              case TYPE_USize:
-                index = ((ObjUSize*)obj_index)->value;
-                break;
-
-              default:
-                panic("int or usize??aa");
-            }
-
-            if (index >= obj_vec->elements.size()) {
-              Error(index_ast, "index out of range")
-                  .emit()
-                  .exit();
-            }
-
-            obj = obj_vec->elements[index];
-            break;
-          }
-
-          case TYPE_Dict: {
-            auto obj_dict = (ObjDict*)obj;
-
-            for (auto&& item : obj_dict->items) {
-              if (item.key->equals(obj_index)) {
-                obj = item.value;
-                goto _dict_value_found;
-              }
-            }
-
-            obj = obj_dict->items
-                      .emplace_back(
-                          obj_index,
-                          this->default_constructer(
-                              obj_dict->type.type_params[1]))
-                      .value;
-
-          _dict_value_found:
-            break;
-          }
-        }
-      }
-
-      return obj;
-    }
+    //   return this->eval_index_ref(this->evaluate(ast->expr),
+    //                               ast);
+    // }
 
     //
     // 関数呼び出し
@@ -502,10 +447,81 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
 
       return this->get_var(ast->token.str);
     }
+
+    case AST_IndexRef: {
+      astdef(IndexRef);
+
+      return this->eval_index_ref(this->eval_left(ast->expr),
+                                  ast);
+    }
   }
 
   panic("fck, ain't left value. " << _ast);
   throw 10;
+}
+
+Object*& Evaluator::eval_index_ref(Object*& obj,
+                                   AST::IndexRef* ast)
+{
+  Object** ret{};
+
+  for (auto&& index_ast : ast->indexes) {
+    auto obj_index = this->evaluate(index_ast);
+
+    switch (obj->type.kind) {
+      case TYPE_Vector: {
+        auto obj_vec = (ObjVector*)obj;
+
+        size_t index = 0;
+
+        switch (obj_index->type.kind) {
+          case TYPE_Int:
+            index = ((ObjLong*)obj_index)->value;
+            break;
+
+          case TYPE_USize:
+            index = ((ObjUSize*)obj_index)->value;
+            break;
+
+          default:
+            panic("int or usize??aa");
+        }
+
+        if (index >= obj_vec->elements.size()) {
+          Error(index_ast, "index out of range").emit().exit();
+        }
+
+        ret = &obj_vec->elements[index];
+        break;
+      }
+
+      case TYPE_Dict: {
+        auto obj_dict = (ObjDict*)obj;
+
+        for (auto&& item : obj_dict->items) {
+          if (item.key->equals(obj_index)) {
+            obj = item.value;
+            goto _dict_value_found;
+          }
+        }
+
+        ret = &obj_dict->items
+                   .emplace_back(
+                       obj_index,
+                       this->default_constructer(
+                           obj_dict->type.type_params[1]))
+                   .value;
+
+      _dict_value_found:
+        break;
+      }
+
+      default:
+        panic("no index");
+    }
+  }
+
+  return *ret;
 }
 
 Object* Evaluator::default_constructer(TypeInfo const& type)

@@ -45,8 +45,23 @@ public:
    */
   Object*& eval_left(AST::Base* ast);
 
-  //
-  // 演算子
+  /**
+   * @brief
+   *
+   * @param obj
+   * @param ast
+   * @return Object*&
+   */
+  Object*& eval_index_ref(Object*& obj, AST::IndexRef* ast);
+
+  /**
+   * @brief 演算子
+   *
+   * @param kind
+   * @param left
+   * @param right
+   * @return Object*
+   */
   static Object* compute_expr_operator(AST::Expr::ExprKind kind,
                                        Object* left,
                                        Object* right);
