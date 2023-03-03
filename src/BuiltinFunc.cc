@@ -4,6 +4,8 @@
 #include "Object.h"
 #include "BuiltinFunc.h"
 
+#include "debug/alert.h"
+
 static Object* print_impl(std::vector<Object*> const& args)
 {
   size_t len = 0;
@@ -65,6 +67,29 @@ static std::vector<BuiltinFunc> const _builtin_functions{
           ((ObjVector*)args[0])->elements.emplace_back(args[1]);
           return new ObjNone;
         }},
+
+    // to_string
+    BuiltinFunc{
+        .name = "to_string",
+        .is_template = true,
+        .result_type = TYPE_String,
+        .arg_types = {TYPE_Template},
+        .impl = [](std::vector<Object*> const& args) -> Object* {
+          return new ObjString(
+              Utils::String::to_wstr(args[0]->to_string()));
+        }},
+
+    // type
+    BuiltinFunc{
+        .name = "type",
+        .is_template = true,
+        .result_type = TYPE_String,
+        .arg_types = {TYPE_Template},
+        .impl = [](std::vector<Object*> const& args) -> Object* {
+          return new ObjString(
+              Utils::String::to_wstr(args[0]->type.to_string()));
+        }},
+
 };
 
 std::vector<BuiltinFunc> const& BuiltinFunc::get_builtin_list()

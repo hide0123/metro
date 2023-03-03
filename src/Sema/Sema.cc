@@ -838,6 +838,25 @@ std::optional<TypeInfo> Sema::is_valid_expr(
         return lhs;
     }
 
+    //
+    // bit-calc
+    case AST::Expr::EX_LShift:
+    case AST::Expr::EX_RShift:
+    case AST::Expr::EX_BitAND:
+    case AST::Expr::EX_BitXOR:
+    case AST::Expr::EX_BitOR:
+      if (lhs.equals(TYPE_Int) && rhs.equals(TYPE_Int))
+        return lhs;
+
+      break;
+
+    case AST::Expr::EX_And:
+    case AST::Expr::EX_Or:
+      if (lhs.equals(TYPE_Bool) && rhs.equals(TYPE_Bool))
+        return lhs;
+
+      break;
+
     default:
       todo_impl;
   }

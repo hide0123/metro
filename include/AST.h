@@ -14,6 +14,8 @@ enum ASTKind {
 
   AST_None,
 
+  AST_Cast,
+
   AST_Value,
   AST_Array,
   AST_Dict,
@@ -25,6 +27,9 @@ enum ASTKind {
   AST_MemberAccess,
 
   AST_CallFunc,
+
+  AST_UnaryPlus,
+  AST_UnaryMinus,
 
   AST_Compare,
 
@@ -83,6 +88,17 @@ struct None : Base {
   }
 };
 
+struct Type;
+struct Cast : Base {
+  Type* cast_to;
+  Base* expr;
+
+  Cast(Token const& token)
+      : Base(AST_Cast, token)
+  {
+  }
+};
+
 struct Value : Base {
   Object* object;
 
@@ -108,7 +124,6 @@ struct Array : Base {
   }
 };
 
-struct Type;
 struct Dict : Base {
   struct Item {
     Token const& colon;
