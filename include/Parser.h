@@ -10,7 +10,7 @@ class Parser {
   using token_iter = std::list<Token>::iterator;
 
 public:
-  Parser(std::list<Token>&& token_list);
+  Parser(std::list<Token>& token_list);
   ~Parser();
 
   AST::Scope* parse();
@@ -68,5 +68,5 @@ private:
 
   token_iter cur;
   token_iter ate;
-  std::list<Token> token_list;
+  std::list<Token>& _token_list;
 };

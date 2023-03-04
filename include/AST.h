@@ -4,12 +4,13 @@
 #include <vector>
 #include <map>
 #include "Token.h"
+#include "ASTfwd.h"
 
 // ---------------------------------------------
 //  AST
 // ---------------------------------------------
 
-enum ASTKind {
+enum ASTKind : uint8_t {
   AST_Type,
 
   AST_None,
@@ -59,9 +60,6 @@ enum ASTKind {
 
   AST_Function
 };
-
-struct Object;
-struct BuiltinFunc;
 
 namespace AST {
 

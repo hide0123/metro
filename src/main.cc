@@ -38,6 +38,62 @@ std::string to_str(std::wstring const& str)
 
 static Application* app_inst;
 
+bool Application::ScriptFileContext::open_file()
+{
+  std::ifstream ifs{this->file_path};
+
+  if (ifs.fail()) {
+    std::cout << "fatal: cannot open '" << this->file_path << "'"
+              << std::endl;
+
+    return false;
+  }
+
+  for (std::string line; std::getline(ifs, line);) {
+    this->source_code += line + '\n';
+  }
+
+  return true;
+}
+
+bool Application::ScriptFileContext::lex()
+{
+  Lexer lexer{this->source_code};
+
+  this->token_list = lexer.lex();
+
+  return Error::was_emitted();
+}
+
+bool Application::ScriptFileContext::parse()
+{
+  Parser parser{this->token_list};
+
+  this->ast = parser.parse();
+
+  return Error::was_emitted();
+}
+
+bool Application::ScriptFileContext::check()
+{
+  Sema sema{this->ast};
+
+  sema.check();
+
+  return Error::was_emitted();
+}
+
+Application::ScriptFileContext::ScriptFileContext(
+    std::string const& path)
+    : file_path(path),
+      ast(nullptr)
+{
+}
+
+Application::ScriptFileContext::~ScriptFileContext()
+{
+}
+
 Application::Application()
 {
   ::app_inst = this;
@@ -125,9 +181,10 @@ int Application::main(int argc, char** argv)
   Lexer lexer{this->source_code};
 
   alert;
+  auto xx = lexer.lex();
 
   // 構文解析
-  Parser parser{lexer.lex()};
+  Parser parser{xx};
 
   alert;
   auto ast = parser.parse();
