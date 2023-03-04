@@ -33,13 +33,19 @@ AST::Scope* Parser::parse()
 
   while (this->check()) {
     if (this->eat("import")) {
+      auto token = this->ate;
       std::string path;
 
       do {
         path += this->expect_identifier()->str;
       } while (this->eat("/"));
 
-      this->_context.import(path);
+      if (!this->_context.import(path)) {
+        Error(*token, "cannot open file '" + path + "'")
+            .emit()
+            .exit();
+      }
+
       continue;
     }
 

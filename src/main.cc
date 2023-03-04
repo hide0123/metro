@@ -71,9 +71,6 @@ bool ScriptFileContext::open_file()
   std::ifstream ifs{this->file_path};
 
   if (ifs.fail()) {
-    std::cout << "fatal: cannot open '" << this->file_path << "'"
-              << std::endl;
-
     return false;
   }
 
@@ -81,6 +78,24 @@ bool ScriptFileContext::open_file()
     this->source_code += line + '\n';
   }
 
+  return true;
+}
+
+bool ScriptFileContext::import(std::string const& path,
+                               AST::Scope* add_to)
+{
+  auto& ctx = this->imported.emplace_back(path);
+
+  if (!ctx.open_file())
+    return false;
+
+  if (!ctx.lex())
+    return false;
+
+  if (!ctx.parse())
+    return false;
+
+  add_to->append(ctx.ast);
   return true;
 }
 
@@ -99,7 +114,7 @@ bool ScriptFileContext::lex()
 
 bool ScriptFileContext::parse()
 {
-  Parser parser{this->token_list};
+  Parser parser{*this, this->token_list};
 
   this->ast = parser.parse();
 
@@ -164,21 +179,21 @@ Application& Application::get_current_instance()
   return *::app_inst;
 }
 
-Object* Application::execute_full(ScriptFileContext& context)
+void Application::execute_full(ScriptFileContext& context)
 {
   if (!context.open_file())
-    return nullptr;
+    return;
 
   if (!context.lex())
-    return nullptr;
+    return;
 
   if (!context.parse())
-    return nullptr;
+    return;
 
   if (!context.check())
-    return nullptr;
+    return;
 
-  return context.evaluate();
+  context.evaluate();
 }
 
 int Application::main(int argc, char** argv)

@@ -11,7 +11,7 @@ public:
   ~ScriptFileContext();
 
   bool open_file();
-  bool import(std::string const& path);
+  bool import(std::string const& path, AST::Scope* add_to);
 
   bool lex();
   bool parse();
@@ -41,7 +41,7 @@ public:
 
   int main(int argc, char** argv);
 
-  Object* execute_full(ScriptFileContext& context);
+  void execute_full(ScriptFileContext& context);
 
   static void initialize();
 
