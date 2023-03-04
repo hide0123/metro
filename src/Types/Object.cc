@@ -2,14 +2,11 @@
 #include <iostream>
 #include <map>
 
-#include "common.h"
+#include "Utils.h"
+#include "debug/alert.h"
 
 #include "Token.h"
 #include "Object.h"
-
-#include "debug/alert.h"
-
-#include "GC.h"
 
 // --------------------------------------------------------
 //  Object
@@ -61,10 +58,11 @@ bool Object::equals(Object* object) const
   // なんなのこれ
   // めんどくさすぎ
   switch (this->type.kind) {
-    eeeee(Int, Long) ajjja(Float) ajjja(Bool) ajjja(Char)
-        ajjja(String) ajjja(Dict) ajjja(Vector)
+  eeeee(Int, Long) ajjja(Float) ajjja(Bool) ajjja(Char)
+      ajjja(String) ajjja(Dict) ajjja(Vector)
 
-            case TYPE_None : return 1;
+          case TYPE_None:
+    return 1;
   }
 
   todo_impl;

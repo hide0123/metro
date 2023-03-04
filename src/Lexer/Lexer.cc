@@ -1,12 +1,11 @@
 #include <cstring>
 
-#include "common.h"
+#include "Utils.h"
+#include "debug/alert.h"
 
 #include "Token.h"
 #include "Lexer.h"
 #include "Error.h"
-
-#include "debug/alert.h"
 
 static char const* punctuators[]{
     "->",

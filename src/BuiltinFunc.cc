@@ -1,10 +1,10 @@
 #include <iostream>
 
-#include "common.h"
+#include "Utils.h"
+#include "debug/alert.h"
+
 #include "Object.h"
 #include "BuiltinFunc.h"
-
-#include "debug/alert.h"
 
 static Object* print_impl(std::vector<Object*> const& args)
 {
@@ -31,7 +31,6 @@ static std::vector<BuiltinFunc> const _builtin_functions{
         .impl = [](std::vector<Object*> const& args) -> Object* {
           return new ObjString(Utils::String::to_wstr(
               Utils::format("%p", args[0])));
-          // std::to_wstring(std::hash<Object*>()(args[0]))
         }},
 
     // print

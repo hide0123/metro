@@ -1,11 +1,11 @@
 #include <iostream>
 
+#include "Utils.h"
+#include "debug/alert.h"
+
 #include "AST.h"
 #include "Error.h"
 #include "Application.h"
-#include "common.h"
-
-#include "debug/alert.h"
 
 static bool __was_emitted;
 
@@ -103,9 +103,8 @@ Error& Error::emit(ErrorLevel level)
 
   // エラーが起きたファイルと行番号
   std::cout << std::endl
-            << COL_GREEN "    --> "
-            << Color(0, 255, 255).to_str() << app.file_path
-            << ":" << line_num
+            << COL_GREEN "    --> " << _RGB(0, 255, 255)
+            << app.file_path << ":" << line_num
             << std::endl
 
             // エラーが起きた行

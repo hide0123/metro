@@ -3,7 +3,8 @@
 #include <codecvt>
 #include <locale>
 
-#include "common.h"
+#include "Utils.h"
+#include "debug/alert.h"
 
 #include "AST.h"
 #include "Object.h"
@@ -15,8 +16,6 @@
 
 #include "Application.h"
 #include "Error.h"
-
-#include "debug/alert.h"
 
 void _show_all_obj();
 

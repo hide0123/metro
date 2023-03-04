@@ -1,9 +1,9 @@
 #include <cassert>
-
 #include <thread>
 #include <chrono>
 
-#include "common.h"
+#include "Utils.h"
+#include "debug/alert.h"
 
 #include "AST.h"
 #include "Object.h"
@@ -12,8 +12,6 @@
 #include "Error.h"
 #include "Sema.h"
 #include "Evaluator.h"
-
-#include "debug/alert.h"
 
 #define astdef(T) auto ast = (AST::T*)_ast
 
@@ -383,8 +381,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       // フラグ有効化
       fs.is_returned = true;
-
-      // vst.is_skipped = 1;
 
       assert(fs.result != nullptr);
       break;

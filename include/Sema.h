@@ -1,5 +1,15 @@
+/* ------------------------------------------------------------
+
+Sema
+
+意味解析を行う
+型推論、型チェック、など
+
+  ------------------------------------------------------------ */
+
 #pragma once
 
+#include <functional>
 #include <optional>
 #include <tuple>
 #include <list>
@@ -88,7 +98,8 @@ public:
    * @param ast
    * @return TypeInfo&
    */
-  TypeInfo& sema_index_ref(TypeInfo& type, AST::IndexRef* ast);
+  TypeInfo& get_subscripted_type(
+      TypeInfo& type, std::vector<AST::Base*> const& indexes);
 
   /**
    * @brief 関数呼び出しが正しいか検査する
@@ -117,6 +128,14 @@ public:
    * @return AST::Function*
    */
   AST::Function* find_function(std::string_view name);
+
+  /**
+   * @brief ビルトイン関数を探す
+   *
+   * @param name
+   * @return BuiltinFunc const*
+   */
+  BuiltinFunc const* find_builtin_func(std::string_view name);
 
 private:
   using CaptureFunction = std::function<void(AST::Base*)>;

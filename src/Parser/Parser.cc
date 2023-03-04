@@ -1,6 +1,7 @@
 #include <fstream>
 
-#include "common.h"
+#include "Utils.h"
+#include "debug/alert.h"
 
 #include "AST.h"
 #include "Parser.h"
@@ -8,8 +9,6 @@
 #include "Lexer.h"
 
 #include "Error.h"
-
-#include "debug/alert.h"
 
 using EXKind = AST::Expr::ExprKind;
 

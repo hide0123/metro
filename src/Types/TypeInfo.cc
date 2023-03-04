@@ -1,13 +1,11 @@
 #include <cassert>
 #include <iostream>
 
-#include "common.h"
+#include "Utils.h"
+#include "debug/alert.h"
 
 #include "Token.h"
 #include "TypeInfo.h"
-
-#include "color.h"
-#include "debug/alert.h"
 
 static std::vector<std::string> const all_type_names{
     "none",   "int",   "usize",  "float", "bool", "char",
