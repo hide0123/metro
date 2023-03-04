@@ -642,7 +642,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto ast = (AST::Function*)_ast;
 
       if (auto f = this->find_function(ast->name.str);
-          f != ast) {
+          f && f != ast) {
         Error(ast->name, "function '" +
                              std::string(ast->name.str) +
                              "' is already found")
@@ -688,9 +688,12 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       if (!res_type.equals(TYPE_None) && return_types.empty()) {
         Error(ast,
-              "result type is not none, "
+              "return type is not none, "
               "but function return nothing")
-            .emit()
+            .emit();
+
+        Error(ast->result_type, "return type specified here")
+            .emit(Error::EL_Note)
             .exit();
       }
 

@@ -56,8 +56,12 @@ Application& Application::get_current_instance()
 
 void Application::execute_full(ScriptFileContext& context)
 {
-  if (!context.open_file())
+  if (!context.open_file()) {
+    std::cout << "metro: cannot open file '" << context.file_path
+              << "'" << std::endl;
+
     return;
+  }
 
   if (!context.lex())
     return;
@@ -95,8 +99,7 @@ int Application::main(int argc, char** argv)
 
   // execute
   for (auto&& script : this->scripts) {
-    if (!script.open_file()) {
-    }
+    this->execute_full(script);
   }
 
   return 0;

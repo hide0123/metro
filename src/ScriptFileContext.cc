@@ -2,6 +2,7 @@
 #include <fstream>
 #include <codecvt>
 #include <locale>
+#include <cassert>
 
 #include "Utils.h"
 #include "debug/alert.h"
@@ -53,7 +54,10 @@ bool ScriptFileContext::import(std::string const& path,
   if (!ctx.parse())
     return false;
 
-  add_to->append(ctx.ast);
+  for (auto&& ast : ctx.ast->list) {
+    add_to->append(ast);
+  }
+
   return true;
 }
 
@@ -67,7 +71,7 @@ bool ScriptFileContext::lex()
     token.src_loc.context = this;
   }
 
-  return Error::was_emitted();
+  return !Error::was_emitted();
 }
 
 bool ScriptFileContext::parse()
@@ -76,7 +80,9 @@ bool ScriptFileContext::parse()
 
   this->ast = parser.parse();
 
-  return Error::was_emitted();
+  assert(this->ast->kind == AST_Scope);
+
+  return !Error::was_emitted();
 }
 
 bool ScriptFileContext::check()
@@ -85,14 +91,14 @@ bool ScriptFileContext::check()
 
   sema.check(this->ast);
 
-  return Error::was_emitted();
+  return !Error::was_emitted();
 }
 
-Object* ScriptFileContext::evaluate()
+void ScriptFileContext::evaluate()
 {
   Evaluator eval;
 
-  return eval.evaluate(this->ast);
+  eval.evaluate(this->ast);
 }
 
 std::string const& ScriptFileContext::get_path() const

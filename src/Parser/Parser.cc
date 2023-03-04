@@ -769,7 +769,9 @@ Parser::token_iter Parser::expect_semi()
 Parser::token_iter Parser::expect_identifier()
 {
   if (this->cur->kind != TOK_Ident) {
-    Error(*this->cur, "expected identifier").emit().exit();
+    Error(*(--this->cur), "expected identifier after this token")
+        .emit()
+        .exit();
   }
 
   this->ate = this->cur++;

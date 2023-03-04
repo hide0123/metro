@@ -5,7 +5,10 @@
 #include <vector>
 #include "ASTfwd.h"
 
+class Application;
 class ScriptFileContext {
+  friend class Application;
+
 public:
   ScriptFileContext(std::string const& path);
   ~ScriptFileContext();
@@ -18,7 +21,7 @@ public:
   bool parse();
   bool check();
 
-  Object* evaluate();
+  void evaluate();
 
   std::string const& get_path() const;
   std::string const& get_source_code() const;

@@ -156,7 +156,8 @@ std::list<Token> Lexer::lex()
     this->pass_space();
   }
 
-  ret.emplace_back(TOK_End);
+  ret.emplace_back(TOK_End).src_loc.position =
+      this->source.length() - 1;
 
   return ret;
 }
