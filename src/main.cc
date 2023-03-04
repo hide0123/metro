@@ -9,38 +9,8 @@
 #include "AST.h"
 #include "Object.h"
 
-#include "Lexer.h"
-#include "Parser.h"
-#include "Sema.h"
-#include "Evaluator.h"
-
 #include "Application.h"
 #include "Error.h"
-
-/**
- * @brief テキストファイルを開く
- *
- * @param path
- * @return std::string
- */
-std::string open_file(std::string const& path)
-{
-  std::ifstream ifs{path};
-
-  if (ifs.fail()) {
-    std::cout << "fatal: cannot open '" << path << "'"
-              << std::endl;
-
-    std::exit(1);
-  }
-
-  std::string source;
-
-  for (std::string line; std::getline(ifs, line);)
-    source += line + '\n';
-
-  return source;
-}
 
 void _show_all_obj();
 
@@ -62,101 +32,6 @@ std::string to_str(std::wstring const& str)
 }  // namespace Utils::String
 
 static Application* app_inst;
-
-bool ScriptFileContext::open_file()
-{
-  if (this->is_open)
-    return false;
-
-  std::ifstream ifs{this->file_path};
-
-  if (ifs.fail()) {
-    return false;
-  }
-
-  for (std::string line; std::getline(ifs, line);) {
-    this->source_code += line + '\n';
-  }
-
-  return true;
-}
-
-bool ScriptFileContext::import(std::string const& path,
-                               AST::Scope* add_to)
-{
-  auto& ctx = this->imported.emplace_back(path);
-
-  if (!ctx.open_file())
-    return false;
-
-  if (!ctx.lex())
-    return false;
-
-  if (!ctx.parse())
-    return false;
-
-  add_to->append(ctx.ast);
-  return true;
-}
-
-bool ScriptFileContext::lex()
-{
-  Lexer lexer{this->source_code};
-
-  this->token_list = lexer.lex();
-
-  for (auto&& token : this->token_list) {
-    token.src_loc.context = this;
-  }
-
-  return Error::was_emitted();
-}
-
-bool ScriptFileContext::parse()
-{
-  Parser parser{*this, this->token_list};
-
-  this->ast = parser.parse();
-
-  return Error::was_emitted();
-}
-
-bool ScriptFileContext::check()
-{
-  Sema sema{this->ast};
-
-  sema.check(this->ast);
-
-  return Error::was_emitted();
-}
-
-Object* ScriptFileContext::evaluate()
-{
-  Evaluator eval;
-
-  return eval.evaluate(this->ast);
-}
-
-std::string const& ScriptFileContext::get_path() const
-{
-  return this->file_path;
-}
-
-std::string const& ScriptFileContext::get_source_code() const
-{
-  return this->source_code;
-}
-
-ScriptFileContext::ScriptFileContext(std::string const& path)
-    : is_open(false),
-      file_path(path),
-      ast(nullptr)
-{
-}
-
-ScriptFileContext::~ScriptFileContext()
-{
-}
 
 Application::Application()
 {
@@ -198,31 +73,31 @@ void Application::execute_full(ScriptFileContext& context)
 
 int Application::main(int argc, char** argv)
 {
-#define chkerr              \
-  if (Error::was_emitted()) \
-  return -1
+  Application::initialize();
 
-  (void)argc;
-  (void)argv;
-
-  // todo: parse arguments
-
+  // parse arguments
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
 
     if (arg == "-help") {
       std::cout << "usage: metro <input file>\n";
     }
-    else {
+    else if (arg.ends_with(".metro")) {
+      this->scripts.emplace_back(arg);
     }
   }
 
+  // no input file
   if (this->scripts.empty()) {
     std::cout << "metro: no input files.\n";
     return -1;
   }
 
-  Application::initialize();
+  // execute
+  for (auto&& script : this->scripts) {
+    if (!script.open_file()) {
+    }
+  }
 
   return 0;
 }

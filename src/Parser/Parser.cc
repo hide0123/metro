@@ -33,15 +33,17 @@ AST::Scope* Parser::parse()
 
   while (this->check()) {
     if (this->eat("import")) {
-      auto token = this->ate;
+      auto const& token = *this->ate;
       std::string path;
 
       do {
         path += this->expect_identifier()->str;
       } while (this->eat("/"));
 
-      if (!this->_context.import(path)) {
-        Error(*token, "cannot open file '" + path + "'")
+      path += ".metro";
+
+      if (!this->_context.import(path, token, root_scope)) {
+        Error(token, "failed to import file '" + path + "'")
             .emit()
             .exit();
       }

@@ -11,7 +11,8 @@ public:
   ~ScriptFileContext();
 
   bool open_file();
-  bool import(std::string const& path, AST::Scope* add_to);
+  bool import(std::string const& path, Token const& token,
+              AST::Scope* add_to);
 
   bool lex();
   bool parse();
