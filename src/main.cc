@@ -12,8 +12,6 @@
 #include "Application.h"
 #include "Error.h"
 
-void _show_all_obj();
-
 namespace Utils::String {
 
 static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>
@@ -101,8 +99,6 @@ int Application::main(int argc, char** argv)
   for (auto&& script : this->scripts) {
     this->execute_full(script);
   }
-
-  debug(_show_all_obj());
 
   return 0;
 }

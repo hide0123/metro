@@ -9,6 +9,9 @@ enum ASTKind : uint8_t;
 
 namespace AST {
 
+enum CmpKind : uint8_t;
+enum ExprKind : uint8_t;
+
 struct Type;
 
 struct Base;
@@ -41,8 +44,5 @@ struct Loop;
 struct Scope;
 
 struct Function;
-
-using Expr = ExprBase<ExprKind, AST_Expr>;
-using Compare = ExprBase<CmpKind, AST_Compare>;
 
 }  // namespace AST

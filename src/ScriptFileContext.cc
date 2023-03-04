@@ -56,6 +56,7 @@ bool ScriptFileContext::import(std::string const& path,
 
   for (auto&& ast : ctx.ast->list) {
     add_to->append(ast);
+    ast = nullptr;
   }
 
   return true;

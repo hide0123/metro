@@ -63,7 +63,10 @@ enum ASTKind : uint8_t {
 
 namespace AST {
 
-enum CmpKind {
+using Expr = ExprBase<ExprKind, AST_Expr>;
+using Compare = ExprBase<CmpKind, AST_Compare>;
+
+enum CmpKind : uint8_t {
   CMP_LeftBigger,  // >
   CMP_RightBigger,  // <
   CMP_LeftBigOrEqual,  // >=
@@ -72,7 +75,7 @@ enum CmpKind {
   CMP_NotEqual,
 };
 
-enum ExprKind {
+enum ExprKind : uint8_t {
   EX_Add,
   EX_Sub,
   EX_Mul,
@@ -232,8 +235,11 @@ struct Dict : Base {
 
   ~Dict()
   {
-    delete this->key_type;
-    delete this->value_type;
+    if (this->key_type)
+      delete this->key_type;
+
+    if (this->value_type)
+      delete this->value_type;
   }
 };
 
@@ -384,8 +390,11 @@ struct Assign : Base {
 
   ~Assign()
   {
-    delete this->dest;
-    delete this->expr;
+    if (this->dest)
+      delete this->dest;
+
+    if (this->expr)
+      delete this->expr;
   }
 };
 
@@ -402,6 +411,15 @@ struct VariableDeclaration : Base {
         init(nullptr)
   {
   }
+
+  ~VariableDeclaration()
+  {
+    if (this->type)
+      delete this->type;
+
+    if (this->init)
+      delete this->init;
+  }
 };
 
 struct Return : Base {
@@ -412,74 +430,17 @@ struct Return : Base {
         expr(nullptr)
   {
   }
+
+  ~Return()
+  {
+    if (this->expr)
+      delete this->expr;
+  }
 };
 
 struct LoopController : Base {
   LoopController(Token const& token, ASTKind kind)
       : Base(kind, token)
-  {
-  }
-};
-
-struct If : Base {
-  AST::Base* condition;
-  AST::Base* if_true;
-  AST::Base* if_false;
-
-  explicit If(Token const& token)
-      : Base(AST_If, token),
-        condition(nullptr),
-        if_true(nullptr),
-        if_false(nullptr)
-  {
-  }
-};
-
-struct For : Base {
-  Base* iter;
-  Base* iterable;
-  Base* code;
-
-  For(Token const& tok)
-      : Base(AST_For, tok),
-        iter(nullptr),
-        iterable(nullptr),
-        code(nullptr)
-  {
-  }
-};
-
-struct Scope;
-struct While : Base {
-  Base* cond;
-  Scope* code;
-
-  While(Token const& tok)
-      : Base(AST_While, tok),
-        cond(nullptr),
-        code(nullptr)
-  {
-  }
-};
-
-struct DoWhile : Base {
-  Scope* code;
-  Base* cond;
-
-  DoWhile(Token const& tok)
-      : Base(AST_DoWhile, tok),
-        code(nullptr),
-        cond(nullptr)
-  {
-  }
-};
-
-struct Loop : Base {
-  Base* code;
-
-  Loop(Base* cc)
-      : Base(AST_Loop, cc->token),
-        code(cc)
   {
   }
 };
@@ -498,6 +459,107 @@ struct Scope : Base {
         var_count(0)
   {
   }
+
+  ~Scope()
+  {
+    for (auto&& x : this->list)
+      delete x;
+  }
+};
+
+struct If : Base {
+  Base* condition;
+  Base* if_true;
+  Base* if_false;
+
+  explicit If(Token const& token)
+      : Base(AST_If, token),
+        condition(nullptr),
+        if_true(nullptr),
+        if_false(nullptr)
+  {
+  }
+
+  ~If()
+  {
+    delete this->condition;
+    delete this->if_true;
+
+    if (this->if_false)
+      delete this->if_false;
+  }
+};
+
+struct For : Base {
+  Base* iter;
+  Base* iterable;
+  Base* code;
+
+  For(Token const& tok)
+      : Base(AST_For, tok),
+        iter(nullptr),
+        iterable(nullptr),
+        code(nullptr)
+  {
+  }
+
+  ~For()
+  {
+    delete this->iter;
+    delete this->iterable;
+    delete this->code;
+  }
+};
+
+struct While : Base {
+  Base* cond;
+  Scope* code;
+
+  While(Token const& tok)
+      : Base(AST_While, tok),
+        cond(nullptr),
+        code(nullptr)
+  {
+  }
+
+  ~While()
+  {
+    delete this->cond;
+    delete this->code;
+  }
+};
+
+struct DoWhile : Base {
+  Scope* code;
+  Base* cond;
+
+  DoWhile(Token const& tok)
+      : Base(AST_DoWhile, tok),
+        code(nullptr),
+        cond(nullptr)
+  {
+  }
+
+  ~DoWhile()
+  {
+    delete this->code;
+    delete this->cond;
+  }
+};
+
+struct Loop : Base {
+  Base* code;
+
+  Loop(Base* code)
+      : Base(AST_Loop, code->token),
+        code(code)
+  {
+  }
+
+  ~Loop()
+  {
+    delete this->code;
+  }
 };
 
 struct Function : Base {
@@ -510,13 +572,18 @@ struct Function : Base {
           type(type)
     {
     }
+
+    ~Argument()
+    {
+      delete this->type;
+    }
   };
 
   Token const& name;  // 名前
   std::vector<Argument> args;  // 引数
 
-  AST::Type* result_type;  // 戻り値の型
-  AST::Scope* code;  // 処理
+  Type* result_type;  // 戻り値の型
+  Scope* code;  // 処理
 
   size_t var_count = 0;
 
@@ -544,6 +611,14 @@ struct Function : Base {
         result_type(nullptr),
         code(nullptr)
   {
+  }
+
+  ~Function()
+  {
+    if (this->result_type)
+      delete this->result_type;
+
+    delete this->code;
   }
 };
 

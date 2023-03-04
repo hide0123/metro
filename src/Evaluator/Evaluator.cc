@@ -20,27 +20,16 @@ std::map<Object*, bool> Evaluator::allocated_objects;
 
 static bool _gc_stopped;
 
-#if METRO_DEBUG
-std::map<Object*, int> _all_obj;
-#endif
-
 Object::Object(TypeInfo type)
     : type(type),
       ref_count(0),
       no_delete(false)
 {
-  alert_ctor;
-
   Evaluator::allocated_objects[this] = 1;
-
-  debug(_all_obj[this] = 1);
 }
 
 Object::~Object()
 {
-  alert_dtor;
-
-  debug(_all_obj[this] = 0);
 }
 
 void Evaluator::delete_object(Object* p)
@@ -77,13 +66,6 @@ Evaluator::~Evaluator()
   for (auto&& [x, y] : this->immediate_objects) {
     delete y;
   }
-
-  debug(for (auto&& [p, b]
-             : allocated_objects) {
-    printf("~Evaluator  %p %d\n", p, (int)b);
-  });
-
-  // this->clean_obj();
 }
 
 Object* Evaluator::evaluate(AST::Base* _ast)

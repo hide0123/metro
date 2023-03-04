@@ -14,38 +14,6 @@
 
 static bool nested = 0;
 
-#if METRO_DEBUG
-
-extern std::map<Object*, int> _all_obj;
-
-void _show_all_obj()
-{
-  bool eee = 0;
-
-  for (auto&& [p, i] : _all_obj) {
-    if (!i)
-      continue;
-    else
-      eee = 1;
-
-    printf("%p ", p);
-
-    if (i) {
-      std::cout << p->to_string()
-                << Utils::format(" no_delete=%d ref_count=%d",
-                                 p->no_delete, p->ref_count);
-    }
-
-    printf("\n");
-  }
-
-  if (!eee) {
-    printf("[memory leak not found]");
-  }
-}
-
-#endif
-
 ObjNone* Object::obj_none;
 
 void Object::initialize()
@@ -198,7 +166,8 @@ ObjVector* ObjVector::clone() const
 {
   auto ret = new ObjVector;
 
-  for (auto&& xx : this->elements) ret->append(xx->clone());
+  for (auto&& xx : this->elements)
+    ret->append(xx->clone());
 
   return ret;
 }
