@@ -122,4 +122,6 @@ ScriptFileContext::ScriptFileContext(std::string const& path)
 
 ScriptFileContext::~ScriptFileContext()
 {
+  if (this->ast)
+    delete ast;
 }

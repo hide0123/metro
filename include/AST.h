@@ -63,6 +63,33 @@ enum ASTKind : uint8_t {
 
 namespace AST {
 
+enum CmpKind {
+  CMP_LeftBigger,  // >
+  CMP_RightBigger,  // <
+  CMP_LeftBigOrEqual,  // >=
+  CMP_RightBigOrEqual,  // <=
+  CMP_Equal,
+  CMP_NotEqual,
+};
+
+enum ExprKind {
+  EX_Add,
+  EX_Sub,
+  EX_Mul,
+  EX_Div,
+  EX_Mod,
+
+  EX_LShift,  // <<
+  EX_RShift,  // >>
+
+  EX_BitAND,  // &
+  EX_BitXOR,  // ^
+  EX_BitOR,  // |
+
+  EX_And,  // &&
+  EX_Or,  // ||
+};
+
 struct Base {
   ASTKind kind;
   Token const& token;
@@ -93,6 +120,23 @@ struct ConstKeyword : Base {
   }
 };
 
+struct Type : Base {
+  std::vector<Type*> parameters;
+  bool is_const;
+
+  explicit Type(Token const& token)
+      : Base(AST_Type, token),
+        is_const(false)
+  {
+  }
+
+  ~Type()
+  {
+    for (auto&& p : this->parameters)
+      delete p;
+  }
+};
+
 struct UnaryOp : Base {
   Base* expr;
 
@@ -100,6 +144,11 @@ struct UnaryOp : Base {
       : Base(kind, token),
         expr(expr)
   {
+  }
+
+  ~UnaryOp()
+  {
+    delete this->expr;
   }
 };
 
@@ -112,17 +161,21 @@ struct Cast : Base {
       : Base(AST_Cast, token)
   {
   }
+
+  ~Cast()
+  {
+    delete this->cast_to;
+    delete this->expr;
+  }
 };
 
 struct Value : Base {
-  Object* object;
+  std::string to_string() const;
 
   Value(Token const& tok)
       : Base(AST_Value, tok)
   {
   }
-
-  std::string to_string() const;
 };
 
 struct Array : Base {
@@ -136,6 +189,12 @@ struct Array : Base {
   Array(Token const& token)
       : Base(AST_Array, token)
   {
+  }
+
+  ~Array()
+  {
+    for (auto&& e : this->elements)
+      delete e;
   }
 };
 
@@ -151,6 +210,12 @@ struct Dict : Base {
           value(v)
     {
     }
+
+    ~Item()
+    {
+      delete this->key;
+      delete this->value;
+    }
   };
 
   std::vector<Item> elements;
@@ -163,6 +228,12 @@ struct Dict : Base {
         key_type(nullptr),
         value_type(nullptr)
   {
+  }
+
+  ~Dict()
+  {
+    delete this->key_type;
+    delete this->value_type;
   }
 };
 
@@ -185,6 +256,14 @@ struct IndexRef : Base {
         expr(nullptr)
   {
   }
+
+  ~IndexRef()
+  {
+    delete this->expr;
+
+    for (auto&& i : this->indexes)
+      delete i;
+  }
 };
 
 struct Range : Base {
@@ -196,6 +275,12 @@ struct Range : Base {
         begin(nullptr),
         end(nullptr)
   {
+  }
+
+  ~Range()
+  {
+    delete this->begin;
+    delete this->end;
   }
 };
 
@@ -218,108 +303,71 @@ struct CallFunc : Base {
         callee(nullptr)
   {
   }
+
+  ~CallFunc()
+  {
+    for (auto&& arg : this->args)
+      delete arg;
+  }
 };
 
-struct Compare : Base {
-  enum CmpKind {
-    CMP_LeftBigger,  // >
-    CMP_RightBigger,  // <
-    CMP_LeftBigOrEqual,  // >=
-    CMP_RightBigOrEqual,  // <=
-    CMP_Equal,
-    CMP_NotEqual,
-  };
-
+template <class Kind, ASTKind _self_kind>
+struct ExprBase : Base {
   struct Element {
-    CmpKind kind;
+    Kind kind;
     Token const& op;
     Base* ast;
 
-    Element(CmpKind kind, Token const& op, Base* ast)
+    explicit Element(Kind kind, Token const& op, Base* ast)
         : kind(kind),
           op(op),
           ast(ast)
     {
+    }
+
+    ~Element()
+    {
+      delete this->ast;
     }
   };
 
   Base* first;
   std::vector<Element> elements;
 
-  Compare(Base* first)
-      : Base(AST_Compare, first->token),
-        first(first)
+  std::string to_string() const
   {
-  }
+    auto s = this->first->to_string();
 
-  Element& append(CmpKind kind, Token const& op, Base* ast)
-  {
-    return this->elements.emplace_back(kind, op, ast);
-  }
-
-  static Compare* create(Base*& ast)
-  {
-    if (ast->kind != AST_Compare)
-      ast = new Compare(ast);
-
-    return (Compare*)ast;
-  }
-};
-
-struct Expr : Base {
-  enum ExprKind {
-    EX_Add,
-    EX_Sub,
-    EX_Mul,
-    EX_Div,
-    EX_Mod,
-
-    EX_LShift,  // <<
-    EX_RShift,  // >>
-
-    EX_BitAND,  // &
-    EX_BitXOR,  // ^
-    EX_BitOR,  // |
-
-    EX_And,  // &&
-    EX_Or,  // ||
-  };
-
-  struct Element {
-    ExprKind kind;
-    Token const& op;
-    Base* ast;
-
-    explicit Element(ExprKind kind, Token const& op, Base* ast)
-        : kind(kind),
-          op(op),
-          ast(ast)
-    {
+    for (auto&& elem : this->elements) {
+      s += " " + std::string(elem.op.str) + " " +
+           elem.ast->to_string();
     }
-  };
 
-  Base* first;
-  std::vector<Element> elements;
-
-  Expr(Base* first)
-      : Base(AST_Expr, first->token),
-        first(first)
-  {
+    return s;
   }
 
-  std::string to_string() const;
-
-  Element& append(ExprKind kind, Token const& op, Base* ast)
+  Element& append(Kind kind, Token const& op, Base* ast)
   {
     return this->elements.emplace_back(kind, op, ast);
   }
 
-  static Expr* create(Base*& ast)
+  static ExprBase* create(Base*& ast)
   {
-    if (ast->kind != AST_Expr)
-      ast = new Expr(ast);
+    if (ast->kind != _self_kind)
+      ast = new ExprBase<Kind, _self_kind>(ast);
 
-    return (Expr*)ast;
+    return (ExprBase*)ast;
+  }
+
+  ExprBase(Base* first)
+      : Base(_self_kind, first->token),
+        first(first)
+  {
+  }
+
+  ~ExprBase()
+  {
+    delete this->first;
   }
 };
 
@@ -333,11 +381,16 @@ struct Assign : Base {
         expr(nullptr)
   {
   }
+
+  ~Assign()
+  {
+    delete this->dest;
+    delete this->expr;
+  }
 };
 
 //
 // 変数定義
-struct Type;
 struct VariableDeclaration : Base {
   std::string_view name;
   Type* type;
@@ -490,17 +543,6 @@ struct Function : Base {
         name(name),
         result_type(nullptr),
         code(nullptr)
-  {
-  }
-};
-
-struct Type : Base {
-  std::vector<Type*> parameters;
-  bool is_const;
-
-  explicit Type(Token const& token)
-      : Base(AST_Type, token),
-        is_const(false)
   {
   }
 };

@@ -10,7 +10,7 @@
 
 #include "Application.h"
 
-using EXKind = AST::Expr::ExprKind;
+using EXKind = AST::ExprKind;
 
 std::string open_file(std::string const& path);
 
@@ -324,27 +324,23 @@ AST::Base* Parser::compare()
 
   while (this->check()) {
     if (this->eat("=="))
-      AST::Compare::create(x)->append(AST::Compare::CMP_Equal,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
+                                      this->shift());
     else if (this->eat("!="))
-      AST::Compare::create(x)->append(AST::Compare::CMP_Equal,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
+                                      this->shift());
     else if (this->eat(">="))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_LeftBigOrEqual, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_LeftBigOrEqual,
+                                      *this->ate, this->shift());
     else if (this->eat("<="))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_RightBigOrEqual, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_RightBigOrEqual,
+                                      *this->ate, this->shift());
     else if (this->eat(">"))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_LeftBigger, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_LeftBigger,
+                                      *this->ate, this->shift());
     else if (this->eat("<"))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_RightBigger, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_RightBigger,
+                                      *this->ate, this->shift());
     else
       break;
   }

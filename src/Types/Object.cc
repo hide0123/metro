@@ -20,7 +20,14 @@ extern std::map<Object*, int> _all_obj;
 
 void _show_all_obj()
 {
+  bool eee = 0;
+
   for (auto&& [p, i] : _all_obj) {
+    if (!i)
+      continue;
+    else
+      eee = 1;
+
     printf("%p ", p);
 
     if (i) {
@@ -28,11 +35,12 @@ void _show_all_obj()
                 << Utils::format(" no_delete=%d ref_count=%d",
                                  p->no_delete, p->ref_count);
     }
-    else {
-      printf(COL_RED "(deleted)" COL_DEFAULT);
-    }
 
     printf("\n");
+  }
+
+  if (!eee) {
+    printf("[memory leak not found]");
   }
 }
 

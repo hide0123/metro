@@ -18,9 +18,9 @@
  * @param rhs
  * @return std::optional<TypeInfo>
  */
-std::optional<TypeInfo> Sema::is_valid_expr(
-    AST::Expr::ExprKind kind, TypeInfo const& lhs,
-    TypeInfo const& rhs)
+std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
+                                            TypeInfo const& lhs,
+                                            TypeInfo const& rhs)
 {
   if (lhs.equals(TYPE_None) || rhs.equals(TYPE_None))
     return std::nullopt;
@@ -28,7 +28,7 @@ std::optional<TypeInfo> Sema::is_valid_expr(
   switch (kind) {
     //
     // add
-    case AST::Expr::EX_Add: {
+    case AST::EX_Add: {
       if (lhs.equals(rhs))
         return lhs;
 
@@ -37,7 +37,7 @@ std::optional<TypeInfo> Sema::is_valid_expr(
 
     //
     // sub
-    case AST::Expr::EX_Sub: {
+    case AST::EX_Sub: {
       // remove element from vector
       if (lhs.kind == TYPE_Vector) {
         if (lhs.type_params[0].equals(rhs)) {
@@ -56,7 +56,7 @@ std::optional<TypeInfo> Sema::is_valid_expr(
 
     //
     // mul
-    case AST::Expr::EX_Mul: {
+    case AST::EX_Mul: {
       if (rhs.is_numeric())
         return lhs;
 
@@ -65,25 +65,25 @@ std::optional<TypeInfo> Sema::is_valid_expr(
 
     //
     // div
-    case AST::Expr::EX_Div: {
+    case AST::EX_Div: {
       if (lhs.is_numeric() && rhs.is_numeric())
         return lhs;
     }
 
     //
     // bit-calc
-    case AST::Expr::EX_LShift:
-    case AST::Expr::EX_RShift:
-    case AST::Expr::EX_BitAND:
-    case AST::Expr::EX_BitXOR:
-    case AST::Expr::EX_BitOR:
+    case AST::EX_LShift:
+    case AST::EX_RShift:
+    case AST::EX_BitAND:
+    case AST::EX_BitXOR:
+    case AST::EX_BitOR:
       if (lhs.equals(TYPE_Int) && rhs.equals(TYPE_Int))
         return lhs;
 
       break;
 
-    case AST::Expr::EX_And:
-    case AST::Expr::EX_Or:
+    case AST::EX_And:
+    case AST::EX_Or:
       if (lhs.equals(TYPE_Bool) && rhs.equals(TYPE_Bool))
         return lhs;
 

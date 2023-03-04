@@ -15,18 +15,6 @@ std::string Value::to_string() const
   return std::string(this->token.str);
 }
 
-std::string Expr::to_string() const
-{
-  auto s = this->first->to_string();
-
-  for (auto&& elem : this->elements) {
-    s += " " + std::string(elem.op.str) + " " +
-         elem.ast->to_string();
-  }
-
-  return s;
-}
-
 std::string CallFunc::to_string() const
 {
   auto ret = std::string(this->name) + "(";

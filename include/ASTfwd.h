@@ -26,9 +26,10 @@ struct Dict;
 struct UnaryOp;
 struct IndexRef;
 struct Range;
-struct Compare;
 struct Assign;
-struct Expr;
+
+template <class K, ASTKind _self_kind>
+struct ExprBase;
 
 struct Return;
 struct LoopController;
@@ -40,5 +41,8 @@ struct Loop;
 struct Scope;
 
 struct Function;
+
+using Expr = ExprBase<ExprKind, AST_Expr>;
+using Compare = ExprBase<CmpKind, AST_Compare>;
 
 }  // namespace AST

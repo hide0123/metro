@@ -117,7 +117,7 @@ public:
    * @param rhs
    * @return std::optional<TypeInfo>
    */
-  std::optional<TypeInfo> is_valid_expr(AST::Expr::ExprKind kind,
+  std::optional<TypeInfo> is_valid_expr(AST::ExprKind kind,
                                         TypeInfo const& lhs,
                                         TypeInfo const& rhs);
 
