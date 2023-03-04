@@ -98,7 +98,9 @@ void ScriptFileContext::evaluate()
 {
   Evaluator eval;
 
-  eval.evaluate(this->ast);
+  auto result = eval.evaluate(this->ast);
+
+  delete result;
 }
 
 std::string const& ScriptFileContext::get_path() const

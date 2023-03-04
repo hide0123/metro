@@ -153,7 +153,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       ret->type = Sema::value_type_cache[ast];
 
       for (auto&& e : ast->elements) {
-        ret->elements.emplace_back(this->evaluate(e));
+        ret->append(this->evaluate(e));
       }
 
       return ret;
@@ -432,7 +432,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           auto obj = (ObjRange*)_obj;
 
           iter = new ObjLong(obj->begin);
-          iter->no_delete = 1;
+          iter->ref_count = 1;
 
           while (iter->value < obj->end) {
             alert;
@@ -546,9 +546,6 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
           auto& item = obj_dict->append(
               obj_index, this->default_constructer(
                              obj_dict->type.type_params[1]));
-
-          // item.key->ref_count++;
-          // item.value->ref_count++;
 
           ret = &item.value;
         }

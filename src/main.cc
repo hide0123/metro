@@ -102,6 +102,8 @@ int Application::main(int argc, char** argv)
     this->execute_full(script);
   }
 
+  debug(_show_all_obj());
+
   return 0;
 }
 

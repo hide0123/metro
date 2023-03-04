@@ -180,8 +180,7 @@ ObjDict* ObjDict::clone() const
   auto ret = new ObjDict;
 
   for (auto&& item : this->items) {
-    ret->items.emplace_back(item.key->clone(),
-                            item.value->clone());
+    ret->append(item.key->clone(), item.value->clone());
   }
 
   return ret;
@@ -191,8 +190,7 @@ ObjVector* ObjVector::clone() const
 {
   auto ret = new ObjVector;
 
-  for (auto&& xx : this->elements)
-    ret->elements.emplace_back(xx->clone());
+  for (auto&& xx : this->elements) ret->append(xx->clone());
 
   return ret;
 }
