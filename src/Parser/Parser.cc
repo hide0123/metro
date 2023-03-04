@@ -4,21 +4,23 @@
 #include "debug/alert.h"
 
 #include "AST.h"
-#include "Parser.h"
-
 #include "Lexer.h"
-
+#include "Parser.h"
 #include "Error.h"
+
+#include "Application.h"
 
 using EXKind = AST::Expr::ExprKind;
 
 std::string open_file(std::string const& path);
 
-Parser::Parser(std::list<Token>&& token_list)
-    : token_list(std::move(token_list))
+Parser::Parser(ScriptFileContext& context,
+               std::list<Token>& token_list)
+    : _context(context),
+      _token_list(token_list)
 {
-  this->cur = this->token_list.begin();
-  this->ate = this->token_list.end();
+  this->cur = this->_token_list.begin();
+  this->ate = this->_token_list.end();
 }
 
 Parser::~Parser()
@@ -31,40 +33,13 @@ AST::Scope* Parser::parse()
 
   while (this->check()) {
     if (this->eat("import")) {
-      auto tok = this->ate;
-
       std::string path;
 
       do {
         path += this->expect_identifier()->str;
       } while (this->eat("/"));
 
-      path += ".metro";
-
-      std::ifstream ifs{path};
-
-      if (ifs.fail()) {
-        Error(*tok, "cannot open script file '" + path + "'")
-            .emit()
-            .exit();
-      }
-
-      auto source = new std::string;
-
-      for (std::string line; std::getline(ifs, line);) {
-        source->append(line + '\n');
-      }
-
-      auto _lexer = new Lexer(*source);
-
-      auto _parser = new Parser(_lexer->lex());
-
-      auto _imported = _parser->parse();
-
-      for (auto&& x : _imported->list) {
-        root_scope->append(x);
-      }
-
+      this->_context.import(path);
       continue;
     }
 

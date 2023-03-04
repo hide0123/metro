@@ -1,16 +1,20 @@
-#pragma once
-
-#include <list>
-#include "AST.h"
-
 // ---------------------------------------------
 //  Parser
 // ---------------------------------------------
+
+#pragma once
+
+#include <list>
+#include "ASTfwd.h"
+
+class ScriptFileContext;
 class Parser {
   using token_iter = std::list<Token>::iterator;
 
 public:
-  Parser(std::list<Token>& token_list);
+  Parser(ScriptFileContext& context,
+         std::list<Token>& token_list);
+
   ~Parser();
 
   AST::Scope* parse();
@@ -68,5 +72,7 @@ private:
 
   token_iter cur;
   token_iter ate;
+
+  ScriptFileContext& _context;
   std::list<Token>& _token_list;
 };

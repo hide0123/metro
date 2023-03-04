@@ -80,6 +80,22 @@ enum BracketKind : uint8_t {
   BR_Angle  // <>
 };
 
+class ScriptFileContext;
+struct SourceLoc {
+  ScriptFileContext* context;
+  size_t position;
+  size_t length;
+
+  std::string const& get_source() const;
+
+  SourceLoc()
+      : context(nullptr),
+        position(0),
+        length(0)
+  {
+  }
+};
+
 struct Token {
   union {
     uint32_t _kind;
@@ -94,14 +110,15 @@ struct Token {
 
   std::string_view str;
 
-  size_t pos;
+  SourceLoc src_loc;
 
   static Token const semi;
 
   explicit Token(TokenKind kind)
-      : _kind(0),
-        pos(0)
+      : _kind(0)
   {
     this->kind = kind;
   }
+
+  std::string const& get_source_code() const;
 };
