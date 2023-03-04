@@ -187,11 +187,11 @@ AST::Base* Parser::unary()
 {
   if (this->eat("-"))
     return new AST::UnaryOp(AST_UnaryMinus, *this->ate,
-                            this->expr());
+                            this->primary());
 
   if (this->eat("+"))
     return new AST::UnaryOp(AST_UnaryPlus, *this->ate,
-                            this->expr());
+                            this->primary());
 
   return this->primary();
 }
