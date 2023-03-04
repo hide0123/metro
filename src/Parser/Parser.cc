@@ -4,21 +4,23 @@
 #include "debug/alert.h"
 
 #include "AST.h"
-#include "Parser.h"
-
 #include "Lexer.h"
-
+#include "Parser.h"
 #include "Error.h"
 
-using EXKind = AST::Expr::ExprKind;
+#include "Application.h"
+
+using EXKind = AST::ExprKind;
 
 std::string open_file(std::string const& path);
 
-Parser::Parser(std::list<Token>&& token_list)
-    : token_list(std::move(token_list))
+Parser::Parser(ScriptFileContext& context,
+               std::list<Token>& token_list)
+    : _context(context),
+      _token_list(token_list)
 {
-  this->cur = this->token_list.begin();
-  this->ate = this->token_list.end();
+  this->cur = this->_token_list.begin();
+  this->ate = this->_token_list.end();
 }
 
 Parser::~Parser()
@@ -31,8 +33,7 @@ AST::Scope* Parser::parse()
 
   while (this->check()) {
     if (this->eat("import")) {
-      auto tok = this->ate;
-
+      auto const& token = *this->ate;
       std::string path;
 
       do {
@@ -41,28 +42,10 @@ AST::Scope* Parser::parse()
 
       path += ".metro";
 
-      std::ifstream ifs{path};
-
-      if (ifs.fail()) {
-        Error(*tok, "cannot open script file '" + path + "'")
+      if (!this->_context.import(path, token, root_scope)) {
+        Error(token, "failed to import file '" + path + "'")
             .emit()
             .exit();
-      }
-
-      auto source = new std::string;
-
-      for (std::string line; std::getline(ifs, line);) {
-        source->append(line + '\n');
-      }
-
-      auto _lexer = new Lexer(*source);
-
-      auto _parser = new Parser(_lexer->lex());
-
-      auto _imported = _parser->parse();
-
-      for (auto&& x : _imported->list) {
-        root_scope->append(x);
       }
 
       continue;
@@ -341,27 +324,23 @@ AST::Base* Parser::compare()
 
   while (this->check()) {
     if (this->eat("=="))
-      AST::Compare::create(x)->append(AST::Compare::CMP_Equal,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
+                                      this->shift());
     else if (this->eat("!="))
-      AST::Compare::create(x)->append(AST::Compare::CMP_Equal,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
+                                      this->shift());
     else if (this->eat(">="))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_LeftBigOrEqual, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_LeftBigOrEqual,
+                                      *this->ate, this->shift());
     else if (this->eat("<="))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_RightBigOrEqual, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_RightBigOrEqual,
+                                      *this->ate, this->shift());
     else if (this->eat(">"))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_LeftBigger, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_LeftBigger,
+                                      *this->ate, this->shift());
     else if (this->eat("<"))
-      AST::Compare::create(x)->append(
-          AST::Compare::CMP_RightBigger, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_RightBigger,
+                                      *this->ate, this->shift());
     else
       break;
   }
@@ -786,7 +765,9 @@ Parser::token_iter Parser::expect_semi()
 Parser::token_iter Parser::expect_identifier()
 {
   if (this->cur->kind != TOK_Ident) {
-    Error(*this->cur, "expected identifier").emit().exit();
+    Error(*(--this->cur), "expected identifier after this token")
+        .emit()
+        .exit();
   }
 
   this->ate = this->cur++;

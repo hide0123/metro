@@ -9,12 +9,6 @@
 
 static bool __was_emitted;
 
-Error::ErrLoc::ErrLoc(size_t pos)
-    : type(LOC_Position),
-      pos(pos)
-{
-}
-
 Error::ErrLoc::ErrLoc(Token const& token)
     : type(LOC_Token),
       token(&token)
@@ -31,26 +25,29 @@ Error& Error::emit(ErrorLevel level)
 {
   typedef int64_t i64;
 
-  auto& app = Application::get_current_instance();
+  // auto& app = Application::get_current_instance();
 
-  auto const& source = app.get_source_code();
+  // auto const& source = app.get_source_code();
 
   i64 errpos = 0;
+  Token const* ptoken = nullptr;
 
   // ソースコード上の位置を取得
   switch (this->loc.type) {
-    case ErrLoc::LOC_Position:
-      errpos = this->loc.pos;
+    case ErrLoc::LOC_AST:
+      ptoken = &this->loc.ast->token;
+      errpos = this->loc.ast->token.src_loc.position;
       break;
 
     case ErrLoc::LOC_Token:
-      errpos = this->loc.token->pos;
-      break;
-
-    case ErrLoc::LOC_AST:
-      errpos = this->loc.ast->token.pos;
+      ptoken = this->loc.token;
+      errpos = this->loc.token->src_loc.position;
       break;
   }
+
+  auto pcontext = ptoken->src_loc.context;
+
+  std::string const& source = ptoken->src_loc.get_source();
 
   /// 行を切り取る
   i64 line_num = 1;
@@ -104,7 +101,7 @@ Error& Error::emit(ErrorLevel level)
   // エラーが起きたファイルと行番号
   std::cout << std::endl
             << COL_GREEN "    --> " << _RGB(0, 255, 255)
-            << app.file_path << ":" << line_num
+            << pcontext->get_path() << ":" << line_num
             << std::endl
 
             // エラーが起きた行

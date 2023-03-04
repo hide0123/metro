@@ -7,6 +7,8 @@
 #include "Lexer.h"
 #include "Error.h"
 
+#include "Application.h"
+
 static char const* punctuators[]{
     "->",
 
@@ -34,6 +36,11 @@ static char const* punctuators[]{
 
 };
 
+std::string const& SourceLoc::get_source() const
+{
+  return this->context->get_source_code();
+}
+
 Lexer::Lexer(std::string const& source)
     : source(source),
       position(0)
@@ -58,7 +65,7 @@ std::list<Token> Lexer::lex()
     auto ch = this->peek();
     auto str = this->source.data() + this->position;
 
-    token.pos = this->position;
+    token.src_loc.position = this->position;
 
     // digits
     if (isdigit(ch)) {
@@ -69,7 +76,8 @@ std::list<Token> Lexer::lex()
         token.kind = TOK_USize;
 
         this->position++;
-        token.str = {str, this->position - token.pos};
+        token.str = {str,
+                     this->position - token.src_loc.position};
       }
       else if (this->peek() == '.') {
         this->position++;
@@ -77,7 +85,8 @@ std::list<Token> Lexer::lex()
         if (isdigit(this->peek())) {
           this->pass_while(isdigit);
           token.kind = TOK_Float;
-          token.str = {str, this->position - token.pos};
+          token.str = {str,
+                       this->position - token.src_loc.position};
         }
         else {
           this->position--;
@@ -142,10 +151,13 @@ std::list<Token> Lexer::lex()
       panic("unknown token at " << this->position);
     }
 
+    token.src_loc.length = token.str.length();
+
     this->pass_space();
   }
 
-  ret.emplace_back(TOK_End);
+  ret.emplace_back(TOK_End).src_loc.position =
+      this->source.length() - 1;
 
   return ret;
 }

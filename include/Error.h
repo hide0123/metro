@@ -10,22 +10,19 @@ class Error {
 public:
   struct ErrLoc {
     enum LocationType {
-      LOC_Position,
-      LOC_Token,
-      LOC_AST
+      LOC_AST,
+      LOC_Token
     };
 
     LocationType type;
 
     union {
-      size_t pos;
-      Token const* token;
       AST::Base const* ast;
+      Token const* token;
     };
 
-    ErrLoc(size_t pos);
-    ErrLoc(Token const& token);
     ErrLoc(AST::Base const* ast);
+    ErrLoc(Token const& token);
   };
 
   enum ErrorLevel {

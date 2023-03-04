@@ -20,27 +20,16 @@ std::map<Object*, bool> Evaluator::allocated_objects;
 
 static bool _gc_stopped;
 
-#if METRO_DEBUG
-std::map<Object*, int> _all_obj;
-#endif
-
 Object::Object(TypeInfo type)
     : type(type),
       ref_count(0),
       no_delete(false)
 {
-  alert_ctor;
-
   Evaluator::allocated_objects[this] = 1;
-
-  debug(_all_obj[this] = 1);
 }
 
 Object::~Object()
 {
-  alert_dtor;
-
-  debug(_all_obj[this] = 0);
 }
 
 void Evaluator::delete_object(Object* p)
@@ -153,7 +142,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       ret->type = Sema::value_type_cache[ast];
 
       for (auto&& e : ast->elements) {
-        ret->elements.emplace_back(this->evaluate(e));
+        ret->append(this->evaluate(e));
       }
 
       return ret;
@@ -432,7 +421,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           auto obj = (ObjRange*)_obj;
 
           iter = new ObjLong(obj->begin);
-          iter->no_delete = 1;
+          iter->ref_count = 1;
 
           while (iter->value < obj->end) {
             alert;
@@ -450,7 +439,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
             iter->value++;
           }
 
-          delete iter;
+          // delete iter;
+          iter->ref_count = 0;
+          this->delete_object(iter);
 
           break;
         }
@@ -547,9 +538,6 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
               obj_index, this->default_constructer(
                              obj_dict->type.type_params[1]));
 
-          // item.key->ref_count++;
-          // item.value->ref_count++;
-
           ret = &item.value;
         }
 
@@ -600,17 +588,16 @@ Object* Evaluator::default_constructer(TypeInfo const& type)
   panic("u9r043290");
 }
 
-Object* Evaluator::compute_expr_operator(
-    AST::Expr::ExprKind kind, Token const& op, Object* left,
-    Object* right)
+Object* Evaluator::compute_expr_operator(AST::ExprKind kind,
+                                         Token const& op,
+                                         Object* left,
+                                         Object* right)
 {
-  using EX = AST::Expr::ExprKind;
-
   // auto ret = left->clone();
   auto ret = left;
 
   switch (kind) {
-    case EX::EX_Add: {
+    case AST::EX_Add: {
       switch (left->type.kind) {
         case TYPE_Int:
           ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
@@ -622,7 +609,7 @@ Object* Evaluator::compute_expr_operator(
       break;
     }
 
-    case EX::EX_Sub: {
+    case AST::EX_Sub: {
       switch (left->type.kind) {
         case TYPE_Int:
           ((ObjLong*)ret)->value -= ((ObjLong*)right)->value;
@@ -634,7 +621,7 @@ Object* Evaluator::compute_expr_operator(
       break;
     }
 
-    case EX::EX_Mul: {
+    case AST::EX_Mul: {
       switch (left->type.kind) {
         case TYPE_Int:
           ((ObjLong*)ret)->value *= ((ObjLong*)right)->value;
@@ -650,7 +637,7 @@ Object* Evaluator::compute_expr_operator(
       break;
     }
 
-    case EX::EX_Div: {
+    case AST::EX_Div: {
       switch (left->type.kind) {
         case TYPE_Int: {
           auto rval = ((ObjLong*)right)->value;
@@ -680,33 +667,33 @@ Object* Evaluator::compute_expr_operator(
       break;
     }
 
-    case EX::EX_LShift:
+    case AST::EX_LShift:
       ((ObjLong*)ret)->value <<= ((ObjLong*)right)->value;
       break;
 
-    case EX::EX_RShift:
+    case AST::EX_RShift:
       ((ObjLong*)ret)->value >>= ((ObjLong*)right)->value;
       break;
 
-    case EX::EX_BitAND:
+    case AST::EX_BitAND:
       ((ObjLong*)ret)->value &= ((ObjLong*)right)->value;
       break;
 
-    case EX::EX_BitXOR:
+    case AST::EX_BitXOR:
       ((ObjLong*)ret)->value ^= ((ObjLong*)right)->value;
       break;
 
-    case EX::EX_BitOR:
+    case AST::EX_BitOR:
       ((ObjLong*)ret)->value |= ((ObjLong*)right)->value;
       break;
 
-    case EX::EX_And: {
+    case AST::EX_And: {
       ((ObjBool*)ret)->value =
           ((ObjBool*)left)->value && ((ObjBool*)right)->value;
       break;
     }
 
-    case EX::EX_Or: {
+    case AST::EX_Or: {
       ((ObjBool*)ret)->value =
           ((ObjBool*)left)->value || ((ObjBool*)right)->value;
       break;
@@ -719,11 +706,9 @@ Object* Evaluator::compute_expr_operator(
   return ret;
 }
 
-bool Evaluator::compute_compare(AST::Compare::CmpKind kind,
-                                Object* left, Object* right)
+bool Evaluator::compute_compare(AST::CmpKind kind, Object* left,
+                                Object* right)
 {
-  using CK = AST::Compare::CmpKind;
-
   float a = left->type.kind == TYPE_Int
                 ? ((ObjLong*)left)->value
                 : ((ObjFloat*)left)->value;
@@ -733,22 +718,22 @@ bool Evaluator::compute_compare(AST::Compare::CmpKind kind,
                 : ((ObjFloat*)right)->value;
 
   switch (kind) {
-    case CK::CMP_LeftBigger:
+    case AST::CMP_LeftBigger:
       return a > b;
 
-    case CK::CMP_RightBigger:
+    case AST::CMP_RightBigger:
       return a < b;
 
-    case CK::CMP_LeftBigOrEqual:
+    case AST::CMP_LeftBigOrEqual:
       return a >= b;
 
-    case CK::CMP_RightBigOrEqual:
+    case AST::CMP_RightBigOrEqual:
       return a <= b;
 
-    case CK::CMP_Equal:
+    case AST::CMP_Equal:
       return a == b;
 
-    case CK::CMP_NotEqual:
+    case AST::CMP_NotEqual:
       return a != b;
   }
 

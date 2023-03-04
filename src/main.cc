@@ -9,15 +9,8 @@
 #include "AST.h"
 #include "Object.h"
 
-#include "Lexer.h"
-#include "Parser.h"
-#include "Sema.h"
-#include "Evaluator.h"
-
 #include "Application.h"
 #include "Error.h"
-
-void _show_all_obj();
 
 namespace Utils::String {
 
@@ -48,11 +41,6 @@ Application::~Application()
   ::app_inst = nullptr;
 }
 
-std::string const& Application::get_source_code()
-{
-  return this->source_code;
-}
-
 // 初期化
 void Application::initialize()
 {
@@ -64,98 +52,53 @@ Application& Application::get_current_instance()
   return *::app_inst;
 }
 
-/**
- * @brief テキストファイルを開く
- *
- * @param path
- * @return std::string
- */
-std::string open_file(std::string const& path)
+void Application::execute_full(ScriptFileContext& context)
 {
-  std::ifstream ifs{path};
+  if (!context.open_file()) {
+    std::cout << "metro: cannot open file '" << context.file_path
+              << "'" << std::endl;
 
-  if (ifs.fail()) {
-    std::cout << "fatal: cannot open '" << path << "'"
-              << std::endl;
-
-    std::exit(1);
+    return;
   }
 
-  std::string source;
+  if (!context.lex())
+    return;
 
-  for (std::string line; std::getline(ifs, line);)
-    source += line + '\n';
+  if (!context.parse())
+    return;
 
-  return source;
+  if (!context.check())
+    return;
+
+  context.evaluate();
 }
 
 int Application::main(int argc, char** argv)
 {
-#define chkerr              \
-  if (Error::was_emitted()) \
-  return -1
+  Application::initialize();
 
-  (void)argc;
-  (void)argv;
-
-  // todo: parse arguments
-
+  // parse arguments
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
 
     if (arg == "-help") {
       std::cout << "usage: metro <input file>\n";
     }
-    else {
-      this->file_path = std::move(arg);
+    else if (arg.ends_with(".metro")) {
+      this->scripts.emplace_back(arg);
     }
   }
 
-  if (this->file_path.empty()) {
+  // no input file
+  if (this->scripts.empty()) {
     std::cout << "metro: no input files.\n";
     return -1;
   }
 
-  Application::initialize();
-
-  this->source_code = open_file(this->file_path);
-
-  //
-  // 字句解析
-  Lexer lexer{this->source_code};
-
-  alert;
-
-  // 構文解析
-  Parser parser{lexer.lex()};
-
-  alert;
-  auto ast = parser.parse();
-
-  alertmsg(ast->to_string());
-
-  chkerr;
-
-  // 意味解析
-  Sema sema{ast};
-
-  alert;
-  auto type = sema.check(ast);
-
-  alert;
-  alertmsg("check(ast) = " << type.to_string());
-
-  chkerr;
-
-  alert;
-  auto res = Evaluator().evaluate(ast);
-
-  debug(printf("AAA %p\n", res));
-
-  delete res;
-
-  alert;
-  debug(_show_all_obj());
+  // execute
+  for (auto&& script : this->scripts) {
+    this->execute_full(script);
+  }
 
   return 0;
 }

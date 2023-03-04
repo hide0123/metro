@@ -52,7 +52,7 @@ all: $(BUILD)
 
 debug: $(BUILD)
 	@$(MAKE) --no-print-directory OPTFLAGS="-O0 -g" \
-	DBGFLAGS="-DMETRO_DEBUG" LDFLAGS="" \
+	DBGFLAGS="-DMETRO_DEBUG -gdwarf-4" LDFLAGS="" \
 	-C $(BUILD) -f $(CURDIR)/Makefile
 
 $(BUILD):

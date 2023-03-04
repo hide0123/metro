@@ -301,6 +301,9 @@ struct ObjVector : Object {
       : Object(TYPE_Vector),
         elements(std::move(elems))
   {
+    for (auto&& e : this->elements) {
+      e->ref_count++;
+    }
   }
 
   ~ObjVector()

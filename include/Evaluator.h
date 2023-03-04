@@ -62,7 +62,7 @@ public:
    * @param right
    * @return Object*
    */
-  static Object* compute_expr_operator(AST::Expr::ExprKind kind,
+  static Object* compute_expr_operator(AST::ExprKind kind,
                                        Token const& token,
                                        Object* left,
                                        Object* right);
@@ -73,8 +73,8 @@ public:
    * @return true
    * @return false
    */
-  static bool compute_compare(AST::Compare::CmpKind kind,
-                              Object* left, Object* right);
+  static bool compute_compare(AST::CmpKind kind, Object* left,
+                              Object* right);
 
 private:
   /**

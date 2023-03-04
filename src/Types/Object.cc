@@ -14,30 +14,6 @@
 
 static bool nested = 0;
 
-#if METRO_DEBUG
-
-extern std::map<Object*, int> _all_obj;
-
-void _show_all_obj()
-{
-  for (auto&& [p, i] : _all_obj) {
-    printf("%p ", p);
-
-    if (i) {
-      std::cout << p->to_string()
-                << Utils::format(" no_delete=%d ref_count=%d",
-                                 p->no_delete, p->ref_count);
-    }
-    else {
-      printf(COL_RED "(deleted)" COL_DEFAULT);
-    }
-
-    printf("\n");
-  }
-}
-
-#endif
-
 ObjNone* Object::obj_none;
 
 void Object::initialize()
@@ -180,8 +156,7 @@ ObjDict* ObjDict::clone() const
   auto ret = new ObjDict;
 
   for (auto&& item : this->items) {
-    ret->items.emplace_back(item.key->clone(),
-                            item.value->clone());
+    ret->append(item.key->clone(), item.value->clone());
   }
 
   return ret;
@@ -192,7 +167,7 @@ ObjVector* ObjVector::clone() const
   auto ret = new ObjVector;
 
   for (auto&& xx : this->elements)
-    ret->elements.emplace_back(xx->clone());
+    ret->append(xx->clone());
 
   return ret;
 }
