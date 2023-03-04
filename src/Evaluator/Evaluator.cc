@@ -603,6 +603,10 @@ Object* Evaluator::compute_expr_operator(AST::ExprKind kind,
           ((ObjLong*)ret)->value += ((ObjLong*)right)->value;
           break;
 
+        case TYPE_String:
+          ((ObjString*)ret)->value += ((ObjString*)right)->value;
+          break;
+
         default:
           todo_impl;
       }

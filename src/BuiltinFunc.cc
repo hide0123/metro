@@ -55,6 +55,19 @@ static std::vector<BuiltinFunc> const _builtin_functions{
           return ret;
         }},
 
+    BuiltinFunc{
+        .name = "input",
+        .is_template = false,
+        .result_type = TYPE_String,
+        .arg_types = {},
+        .impl = [](std::vector<Object*> const& args) -> Object* {
+          std::string input;
+
+          std::cin >> input;
+
+          return new ObjString(Utils::String::to_wstr(input));
+        }},
+
     // push
     BuiltinFunc{
         .name = "push",
