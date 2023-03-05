@@ -8,11 +8,7 @@
 #include "Parser.h"
 #include "Error.h"
 
-#include "Application.h"
-
-using EXKind = AST::ExprKind;
-
-std::string open_file(std::string const& path);
+#include "ScriptFileContext.h"
 
 Parser::Parser(ScriptFileContext& context,
                std::list<Token>& token_list)

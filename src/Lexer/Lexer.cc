@@ -8,6 +8,7 @@
 #include "Error.h"
 
 #include "Application.h"
+#include "ScriptFileContext.h"
 
 static char const* punctuators[]{
     "->",

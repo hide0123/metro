@@ -13,6 +13,8 @@
 #include "Evaluator.h"
 
 #include "Application.h"
+#include "ScriptFileContext.h"
+
 #include "Error.h"
 
 bool ScriptFileContext::open_file()
