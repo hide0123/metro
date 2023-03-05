@@ -13,17 +13,18 @@ public:
 
   int main(int argc, char** argv);
 
-  void execute_full(ScriptFileContext& context);
+  //
+  // check if opened the path in any ScriptFileContext
+  ScriptFileContext const* get_context(
+      std::string const& path) const;
+
+  ScriptFileContext const* get_current_context() const;
 
   static void initialize();
 
-  static Application& get_current_instance();
-
-  //
-  // check if opened the path in any ScriptFileContext
-  static ScriptFileContext const* get_context_with_path(
-      std::string const& path);
+  static Application* get_instance();
 
 private:
-  std::vector<ScriptFileContext> _scripts;
+  ScriptFileContext const* _cur_ctx;
+  std::vector<ScriptFileContext> _contexts;
 };

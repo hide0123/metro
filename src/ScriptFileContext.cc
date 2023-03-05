@@ -22,14 +22,21 @@ ScriptFileContext::ScriptFileContext(std::string const& path)
     : _is_open(false),
       _file_path(std::filesystem::canonical(path)),
       _ast(nullptr),
-      _owner(nullptr)
+      _owner(nullptr),
+      _importer_token(nullptr)
 {
+  debug(std::cout << this->_file_path << std::endl);
 }
 
 ScriptFileContext::~ScriptFileContext()
 {
   if (this->_ast)
     delete this->_ast;
+}
+
+bool ScriptFileContext::is_opened() const
+{
+  return this->_is_open;
 }
 
 //
@@ -60,6 +67,34 @@ bool ScriptFileContext::import(std::string const& path,
 {
   auto& ctx = this->_imported.emplace_back(path);
 
+  ctx._owner = this;
+  ctx._importer_token = &token;
+
+  if (auto find = Application::get_instance()->get_context(
+          ctx._file_path);
+      find && find != &ctx) {
+    for (auto p = this->_owner; p; p = p->_owner) {
+      if (p->_file_path == ctx._file_path) {
+        Error(token, "cannot import recursively").emit();
+
+        if (p->_importer_token) {
+          Error(*p->_importer_token, "first imported here")
+              .emit(Error::EL_Note)
+              .exit();
+        }
+        else {
+          Error(token, "'" + path +
+                           "' is already opened by argument in "
+                           "command line")
+              .emit(Error::EL_Note)
+              .exit();
+        }
+      }
+    }
+
+    Error(token, "cannot import self").emit().exit();
+  }
+
   if (!ctx.open_file()) {
     Error(token, "cannot open file '" + path + "'").emit();
 
@@ -76,8 +111,6 @@ bool ScriptFileContext::import(std::string const& path,
     add_to->append(ast);
     ast = nullptr;
   }
-
-  ctx._owner = this;
 
   return true;
 }
@@ -111,11 +144,34 @@ bool ScriptFileContext::check()
   return !Error::was_emitted();
 }
 
-void ScriptFileContext::evaluate()
+Object* ScriptFileContext::evaluate()
 {
   Evaluator eval;
 
   auto result = eval.evaluate(this->_ast);
+
+  return result;
+}
+
+void ScriptFileContext::execute_full()
+{
+  if (!this->open_file()) {
+    std::cout << "metro: cannot open file '" << this->get_path()
+              << "'" << std::endl;
+
+    return;
+  }
+
+  if (!this->lex())
+    return;
+
+  if (!this->parse())
+    return;
+
+  if (!this->check())
+    return;
+
+  auto result = this->evaluate();
 
   delete result;
 }

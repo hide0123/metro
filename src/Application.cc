@@ -13,16 +13,17 @@
 #include "Application.h"
 #include "Error.h"
 
-static Application* app_inst;
+static Application* _g_inst;
 
 Application::Application()
+    : _cur_ctx(nullptr)
 {
-  ::app_inst = this;
+  _g_inst = this;
 }
 
 Application::~Application()
 {
-  ::app_inst = nullptr;
+  _g_inst = nullptr;
 }
 
 int Application::main(int argc, char** argv)
@@ -37,43 +38,43 @@ int Application::main(int argc, char** argv)
       std::cout << "usage: metro <input file>\n";
     }
     else if (arg.ends_with(".metro")) {
-      this->scripts.emplace_back(arg);
+      this->_contexts.emplace_back(arg);
     }
   }
 
   // no input file
-  if (this->scripts.empty()) {
+  if (this->_contexts.empty()) {
     std::cout << "metro: no input files.\n";
     return -1;
   }
 
   // execute
-  for (auto&& script : this->scripts) {
-    this->execute_full(script);
+  for (auto&& script : this->_contexts) {
+    this->_cur_ctx = &script;
+
+    script.execute_full();
   }
 
   return 0;
 }
 
-void Application::execute_full(ScriptFileContext& context)
+ScriptFileContext const* Application::get_context(
+    std::string const& path) const
 {
-  if (!context.open_file()) {
-    std::cout << "metro: cannot open file '"
-              << context.get_path() << "'" << std::endl;
+  for (auto&& ctx : this->_contexts) {
+    if (ctx.get_path() == path)
+      return &ctx;
 
-    return;
+    if (auto p = ctx.is_imported(path); p)
+      return p;
   }
 
-  if (!context.lex())
-    return;
+  return nullptr;
+}
 
-  if (!context.parse())
-    return;
-
-  if (!context.check())
-    return;
-
-  context.evaluate();
+ScriptFileContext const* Application::get_current_context() const
+{
+  return this->_cur_ctx;
 }
 
 // 初期化
@@ -82,13 +83,7 @@ void Application::initialize()
   Object::initialize();
 }
 
-Application& Application::get_current_instance()
+Application* Application::get_instance()
 {
-  return *::app_inst;
-}
-
-ScriptFileContext const* Application::get_context_with_path(
-    std::string const& path)
-{
-  for (auto&&)
+  return _g_inst;
 }

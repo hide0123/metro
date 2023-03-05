@@ -1,8 +1,4 @@
 #include <iostream>
-
-#include "Utils.h"
-#include "debug/alert.h"
-
 #include "Application.h"
 
 int main(int argc, char** argv)
@@ -11,10 +7,11 @@ int main(int argc, char** argv)
     return Application().main(argc, argv);
   }
   catch (std::exception e) {
-    alertmsg(e.what());
-  }
-  catch (...) {
-    alert;
+    std::cout << "unhandled exception has been occurred:"
+              << std::endl
+              << "  " << e.what() << std::endl
+              << std::endl
+              << "please report this bug" << std::endl;
   }
 
   return -1;

@@ -11,6 +11,8 @@ public:
   explicit ScriptFileContext(std::string const& path);
   ~ScriptFileContext();
 
+  bool is_opened() const;
+
   bool open_file();
   bool import(std::string const& path, Token const& token,
               AST::Scope* add_to);
@@ -18,8 +20,9 @@ public:
   bool lex();
   bool parse();
   bool check();
+  Object* evaluate();
 
-  void evaluate();
+  void execute_full();
 
   std::string const& get_path() const;
   std::string const& get_source_code() const;
@@ -42,6 +45,8 @@ private:
   //
   // if other file importing this, the pointer to that file
   ScriptFileContext const* _owner;
+
+  Token const* _importer_token;
 
   std::vector<ScriptFileContext> _imported;
 };
