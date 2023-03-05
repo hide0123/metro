@@ -20,7 +20,7 @@ enum ASTKind : uint8_t {
   AST_Cast,
 
   AST_Value,
-  AST_Array,
+  AST_Vector,
   AST_Dict,
 
   AST_Variable,
@@ -181,7 +181,7 @@ struct Value : Base {
   }
 };
 
-struct Array : Base {
+struct Vector : Base {
   std::vector<Base*> elements;
 
   Base*& append(Base* ast)
@@ -189,12 +189,12 @@ struct Array : Base {
     return this->elements.emplace_back(ast);
   }
 
-  Array(Token const& token)
-      : Base(AST_Array, token)
+  Vector(Token const& token)
+      : Base(AST_Vector, token)
   {
   }
 
-  ~Array()
+  ~Vector()
   {
     for (auto&& e : this->elements)
       delete e;

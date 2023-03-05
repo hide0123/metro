@@ -134,8 +134,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
-    case AST_Array: {
-      astdef(Array);
+    case AST_Vector: {
+      astdef(Vector);
 
       auto ret = new ObjVector();
 

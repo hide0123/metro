@@ -12,9 +12,9 @@ namespace AST {
 enum CmpKind : uint8_t;
 enum ExprKind : uint8_t;
 
-struct Type;
-
 struct Base;
+
+struct Type;
 
 struct ConstKeyword;
 
@@ -23,7 +23,7 @@ struct Variable;
 struct CallFunc;
 
 struct Cast;
-struct Array;
+struct Vector;
 struct Dict;
 
 struct UnaryOp;
@@ -34,13 +34,15 @@ struct Assign;
 template <class K, ASTKind _self_kind>
 struct ExprBase;
 
-struct Return;
-struct LoopController;
 struct If;
+struct Return;
+
 struct For;
 struct While;
 struct DoWhile;
 struct Loop;
+struct LoopController;
+
 struct Scope;
 
 struct Function;
