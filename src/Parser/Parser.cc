@@ -1,10 +1,7 @@
-#include <fstream>
-
 #include "Utils.h"
 #include "debug/alert.h"
 
 #include "AST.h"
-#include "Lexer.h"
 #include "Parser.h"
 #include "Error.h"
 
