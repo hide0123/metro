@@ -135,3 +135,17 @@ ScriptFileContext::get_imported_list() const
 {
   return this->_imported;
 }
+
+ScriptFileContext const* ScriptFileContext::is_imported(
+    std::string const& path) const
+{
+  for (auto&& ctx : this->_imported) {
+    if (ctx._file_path == path)
+      return &ctx;
+
+    if (auto p = ctx.is_imported(path); p)
+      return p;
+  }
+
+  return nullptr;
+}

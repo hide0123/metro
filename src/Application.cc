@@ -58,8 +58,8 @@ int Application::main(int argc, char** argv)
 void Application::execute_full(ScriptFileContext& context)
 {
   if (!context.open_file()) {
-    std::cout << "metro: cannot open file '" << context.file_path
-              << "'" << std::endl;
+    std::cout << "metro: cannot open file '"
+              << context.get_path() << "'" << std::endl;
 
     return;
   }
@@ -87,6 +87,8 @@ Application& Application::get_current_instance()
   return *::app_inst;
 }
 
-bool Application::is_opened(std::string const& path)
+ScriptFileContext const* Application::get_context_with_path(
+    std::string const& path)
 {
+  for (auto&&)
 }

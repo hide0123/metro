@@ -7,8 +7,6 @@
 
 class Application;
 class ScriptFileContext {
-  friend class Application;
-
 public:
   explicit ScriptFileContext(std::string const& path);
   ~ScriptFileContext();
@@ -28,6 +26,9 @@ public:
 
   std::vector<ScriptFileContext> const& get_imported_list()
       const;
+
+  ScriptFileContext const* is_imported(
+      std::string const& path) const;
 
 private:
   bool _is_open;

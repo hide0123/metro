@@ -21,8 +21,9 @@ public:
 
   //
   // check if opened the path in any ScriptFileContext
-  static bool is_opened(std::string const& path);
+  static ScriptFileContext const* get_context_with_path(
+      std::string const& path);
 
 private:
-  std::vector<ScriptFileContext> scripts;
+  std::vector<ScriptFileContext> _scripts;
 };
