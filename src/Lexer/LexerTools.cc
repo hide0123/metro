@@ -10,6 +10,65 @@
 #include "Application.h"
 #include "ScriptFileContext.h"
 
+static char const* punctuators[]{
+    // specify return type
+    "->",
+
+    // logical
+    "&&",
+    "||",
+
+    // shift
+    "<<",
+    ">>",
+
+    // range
+    "..",
+
+    // compare
+    "==",
+    "!=",
+    ">=",
+    "<=",
+    ">",
+    "<",
+
+    "!",
+    "?",
+
+    // bit-calculation
+    "&",
+    "^",
+    "|",
+    "~",
+
+    // assignment
+    "=",
+
+    // expr
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+
+    ",",  // comma
+    ".",  // dot
+
+    ";",  // semicolon
+    ":",  // colon
+
+    // brackets
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    "<",
+    ">",
+};
+
 bool Lexer::check()
 {
   return this->position < this->source.length();
@@ -38,4 +97,40 @@ size_t Lexer::pass_while(std::function<bool(char)> cond)
   }
 
   return len;
+}
+
+size_t Lexer::pass_space()
+{
+  return this->pass_while(isspace);
+}
+
+bool Lexer::find_punctuator(Token& token)
+{
+  size_t kind_offs = 0;
+
+  for (auto&& s : punctuators) {
+    if (this->match(s)) {
+      token.kind = TOK_Punctuater;
+
+      token.punct_kind = static_cast<PunctuatorKind>(kind_offs);
+
+      if (token.punct_kind >= PU_Bracket) {
+        kind_offs -= PU_Bracket;
+
+        token.bracket_kind =
+            static_cast<BracketKind>(kind_offs / 2);
+
+        token.is_bracket_opened = !(token.bracket_kind % 2);
+      }
+
+      token.str = s;
+      this->position += token.str.length();
+
+      return true;
+    }
+
+    kind_offs++;
+  }
+
+  return false;
 }

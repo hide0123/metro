@@ -151,7 +151,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     //
     // 左辺値
     case AST_Variable:
-    case AST_GlobalVar:
     case AST_IndexRef:
       return this->eval_left(_ast)->clone();
 

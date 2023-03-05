@@ -63,7 +63,7 @@ bool ScriptFileContext::import(std::string const& path,
 
 bool ScriptFileContext::lex()
 {
-  Lexer lexer{this->source_code};
+  Lexer lexer{*this};
 
   this->token_list = lexer.lex();
 

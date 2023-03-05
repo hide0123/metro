@@ -22,7 +22,6 @@ enum ASTKind : uint8_t {
   AST_Dict,
 
   AST_Variable,
-  AST_GlobalVar,
 
   AST_IndexRef,
   AST_MemberAccess,
@@ -44,21 +43,21 @@ enum ASTKind : uint8_t {
   AST_If,
   AST_Switch,
   AST_Return,
+  AST_Break,
+  AST_Continue,
 
   //
-  //
+  // loop-statements
   AST_Loop,
   AST_For,
   AST_While,
   AST_DoWhile,
 
-  AST_Break,
-  AST_Continue,
-
+  //
+  // A Scope
   AST_Scope,
 
   AST_Let,
-  AST_Shadow,
 
   AST_Function
 };
