@@ -19,6 +19,9 @@ struct ExprBase;
 
 struct Type;
 
+//
+// ConstKeyword:
+//  Only have one token of value-keyword
 struct ConstKeyword;
 
 struct Value;

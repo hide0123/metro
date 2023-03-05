@@ -5,121 +5,14 @@
 
 #include <map>
 #include <vector>
+
 #include "Token.h"
 #include "ASTfwd.h"
 
-enum ASTKind : uint8_t {
-  AST_Type,
-
-  AST_None,
-  AST_True,
-  AST_False,
-
-  AST_Cast,
-
-  AST_Value,
-  AST_Vector,
-  AST_Dict,
-
-  AST_Variable,
-
-  AST_IndexRef,
-  AST_MemberAccess,
-
-  AST_CallFunc,
-
-  AST_UnaryPlus,
-  AST_UnaryMinus,
-
-  AST_Compare,
-
-  AST_Range,
-
-  AST_Assign,
-  AST_Expr,
-
-  //
-  // control-statements
-  AST_If,
-  AST_Switch,
-  AST_Return,
-  AST_Break,
-  AST_Continue,
-
-  //
-  // loop-statements
-  AST_Loop,
-  AST_For,
-  AST_While,
-  AST_DoWhile,
-
-  //
-  // A Scope
-  AST_Scope,
-
-  AST_Let,
-
-  AST_Function
-};
+#include "AST/Kind.h"
+#include "AST/Base.h"
 
 namespace AST {
-
-enum CmpKind : uint8_t {
-  CMP_LeftBigger,  // >
-  CMP_RightBigger,  // <
-  CMP_LeftBigOrEqual,  // >=
-  CMP_RightBigOrEqual,  // <=
-  CMP_Equal,
-  CMP_NotEqual,
-};
-
-enum ExprKind : uint8_t {
-  EX_Add,
-  EX_Sub,
-  EX_Mul,
-  EX_Div,
-  EX_Mod,
-
-  EX_LShift,  // <<
-  EX_RShift,  // >>
-
-  EX_BitAND,  // &
-  EX_BitXOR,  // ^
-  EX_BitOR,  // |
-
-  EX_And,  // &&
-  EX_Or,  // ||
-};
-
-struct Base {
-  ASTKind kind;
-  Token const& token;
-
-  virtual ~Base()
-  {
-  }
-
-  virtual std::string to_string() const;
-
-protected:
-  explicit Base(ASTKind kind, Token const& token)
-      : kind(kind),
-        token(token)
-  {
-  }
-};
-
-/**
- * @brief constant value keyword
- * example: none, true, false, ...
- *
- */
-struct ConstKeyword : Base {
-  ConstKeyword(ASTKind kind, Token const& token)
-      : Base(kind, token)
-  {
-  }
-};
 
 struct Type : Base {
   std::vector<Type*> parameters;
@@ -132,6 +25,13 @@ struct Type : Base {
   }
 
   ~Type();
+};
+
+struct ConstKeyword : Base {
+  ConstKeyword(ASTKind kind, Token const& token)
+      : Base(kind, token)
+  {
+  }
 };
 
 struct UnaryOp : Base {
@@ -267,66 +167,6 @@ struct CallFunc : Base {
   }
 
   ~CallFunc();
-};
-
-template <class Kind, ASTKind _self_kind>
-struct ExprBase : Base {
-  struct Element {
-    Kind kind;
-    Token const& op;
-    Base* ast;
-
-    explicit Element(Kind kind, Token const& op, Base* ast)
-        : kind(kind),
-          op(op),
-          ast(ast)
-    {
-    }
-
-    ~Element()
-    {
-      delete this->ast;
-    }
-  };
-
-  Base* first;
-  std::vector<Element> elements;
-
-  std::string to_string() const
-  {
-    auto s = this->first->to_string();
-
-    for (auto&& elem : this->elements) {
-      s += " " + std::string(elem.op.str) + " " +
-           elem.ast->to_string();
-    }
-
-    return s;
-  }
-
-  Element& append(Kind kind, Token const& op, Base* ast)
-  {
-    return this->elements.emplace_back(kind, op, ast);
-  }
-
-  static ExprBase* create(Base*& ast)
-  {
-    if (ast->kind != _self_kind)
-      ast = new ExprBase<Kind, _self_kind>(ast);
-
-    return (ExprBase*)ast;
-  }
-
-  ExprBase(Base* first)
-      : Base(_self_kind, first->token),
-        first(first)
-  {
-  }
-
-  ~ExprBase()
-  {
-    delete this->first;
-  }
 };
 
 struct Assign : Base {

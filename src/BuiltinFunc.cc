@@ -61,6 +61,8 @@ static std::vector<BuiltinFunc> const _builtin_functions{
         .result_type = TYPE_String,
         .arg_types = {},
         .impl = [](std::vector<Object*> const& args) -> Object* {
+          (void)args;
+
           std::string input;
 
           std::cin >> input;

@@ -2,31 +2,67 @@
 
 namespace AST {
 
-std::string Base::to_string() const
+template <class Kind, ASTKind _self>
+ExprBase<Kind, _self>::Element::Element(Kind kind,
+                                        Token const& op,
+                                        Base* ast)
+    : kind(kind),
+      op(op),
+      ast(ast)
 {
-  return std::string(this->token.str);
 }
 
-std::string Value::to_string() const
+template <class Kind, ASTKind _self>
+ExprBase<Kind, _self>::Element::~Element()
 {
-  if (this->token.kind == TOK_String)
-    return '"' + std::string(this->token.str) + '"';
-
-  return std::string(this->token.str);
+  delete this->ast;
 }
 
-std::string CallFunc::to_string() const
+template <class Kind, ASTKind _self>
+std::string ExprBase<Kind, _self>::to_string() const
 {
-  auto ret = std::string(this->name) + "(";
+  auto s = this->first->to_string();
 
-  for (auto&& arg : this->args) {
-    ret += arg->to_string();
-    if (arg != *this->args.rbegin())
-      ret += ",";
+  for (auto&& elem : this->elements) {
+    s += " " + std::string(elem.op.str) + " " +
+         elem.ast->to_string();
   }
 
-  return ret + ")";
+  return s;
 }
+
+template <class Kind, ASTKind _self>
+typename ExprBase<Kind, _self>::Element&
+ExprBase<Kind, _self>::append(Kind kind, Token const& op,
+                              Base* ast)
+{
+  return this->elements.emplace_back(kind, op, ast);
+}
+
+template <class Kind, ASTKind _self>
+ExprBase<Kind, _self>* ExprBase<Kind, _self>::create(Base*& ast)
+{
+  if (ast->kind != _self)
+    ast = new ExprBase<Kind, _self>(ast);
+
+  return (ExprBase*)ast;
+}
+
+template <class Kind, ASTKind _self>
+ExprBase<Kind, _self>::ExprBase(Base* first)
+    : Base(_self, first->token),
+      first(first)
+{
+}
+
+template <class Kind, ASTKind _self>
+ExprBase<Kind, _self>::~ExprBase()
+{
+  delete this->first;
+}
+
+template struct ExprBase<ExprKind, AST_Expr>;
+template struct ExprBase<CmpKind, AST_Compare>;
 
 Type::~Type()
 {
