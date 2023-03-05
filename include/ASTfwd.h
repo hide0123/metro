@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+struct Token;
 struct Object;
 struct BuiltinFunc;
 
@@ -12,10 +13,16 @@ namespace AST {
 enum CmpKind : uint8_t;
 enum ExprKind : uint8_t;
 
-struct Type;
-
 struct Base;
 
+template <class K, ASTKind _self_kind>
+struct ExprBase;
+
+struct Type;
+
+//
+// ConstKeyword:
+//  Only have one token of value-keyword
 struct ConstKeyword;
 
 struct Value;
@@ -23,7 +30,7 @@ struct Variable;
 struct CallFunc;
 
 struct Cast;
-struct Array;
+struct Vector;
 struct Dict;
 
 struct UnaryOp;
@@ -31,16 +38,15 @@ struct IndexRef;
 struct Range;
 struct Assign;
 
-template <class K, ASTKind _self_kind>
-struct ExprBase;
-
-struct Return;
-struct LoopController;
 struct If;
+struct Return;
+
 struct For;
 struct While;
 struct DoWhile;
 struct Loop;
+struct LoopController;
+
 struct Scope;
 
 struct Function;

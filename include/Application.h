@@ -5,39 +5,7 @@
 #include <vector>
 #include "ASTfwd.h"
 
-class Application;
-class ScriptFileContext {
-  friend class Application;
-
-public:
-  ScriptFileContext(std::string const& path);
-  ~ScriptFileContext();
-
-  bool open_file();
-  bool import(std::string const& path, Token const& token,
-              AST::Scope* add_to);
-
-  bool lex();
-  bool parse();
-  bool check();
-
-  void evaluate();
-
-  std::string const& get_path() const;
-  std::string const& get_source_code() const;
-
-private:
-  bool is_open;
-
-  std::string file_path;
-  std::string source_code;
-
-  std::list<Token> token_list;
-  AST::Scope* ast;
-
-  std::vector<ScriptFileContext> imported;
-};
-
+class ScriptFileContext;
 class Application {
 public:
   Application();
@@ -45,12 +13,18 @@ public:
 
   int main(int argc, char** argv);
 
-  void execute_full(ScriptFileContext& context);
+  //
+  // check if opened the path in any ScriptFileContext
+  ScriptFileContext const* get_context(
+      std::string const& path) const;
+
+  ScriptFileContext const* get_current_context() const;
 
   static void initialize();
 
-  static Application& get_current_instance();
+  static Application* get_instance();
 
 private:
-  std::vector<ScriptFileContext> scripts;
+  ScriptFileContext const* _cur_ctx;
+  std::vector<ScriptFileContext> _contexts;
 };

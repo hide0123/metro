@@ -82,7 +82,7 @@ enum BracketKind : uint8_t {
 
 class ScriptFileContext;
 struct SourceLoc {
-  ScriptFileContext* context;
+  ScriptFileContext const* context;
   size_t position;
   size_t length;
 
@@ -119,6 +119,4 @@ struct Token {
   {
     this->kind = kind;
   }
-
-  std::string const& get_source_code() const;
 };

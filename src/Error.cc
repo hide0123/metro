@@ -5,6 +5,7 @@
 
 #include "AST.h"
 #include "Error.h"
+#include "ScriptFileContext.h"
 #include "Application.h"
 
 static bool __was_emitted;

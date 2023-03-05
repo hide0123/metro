@@ -11,6 +11,7 @@ TOPDIR	?= $(CURDIR)
 BUILD	= build
 INCLUDE	= include
 SOURCES	= src \
+	src/AST \
 	src/Evaluator \
 	src/GC \
 	src/Lexer \

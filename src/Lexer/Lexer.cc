@@ -1,5 +1,3 @@
-#include <cstring>
-
 #include "Utils.h"
 #include "debug/alert.h"
 
@@ -7,43 +5,12 @@
 #include "Lexer.h"
 #include "Error.h"
 
-#include "Application.h"
+#include "ScriptFileContext.h"
 
-static char const* punctuators[]{
-    "->",
-
-    "&&", "||",
-
-    "<<", ">>",
-
-    "..",
-
-    "==", "!=", ">=", "<=", ">", "<",
-
-    "!",  "?",
-
-    "&",  "^",  "|",  "~",
-
-    "=",  "+",  "-",  "*",  "/", "%",
-
-    ",",  // comma
-    ".",  // dot
-
-    ";",  // semicolon
-    ":",  // colon
-
-    "(",  ")",  "[",  "]",  "{", "}", "<", ">",
-
-};
-
-std::string const& SourceLoc::get_source() const
-{
-  return this->context->get_source_code();
-}
-
-Lexer::Lexer(std::string const& source)
-    : source(source),
-      position(0)
+Lexer::Lexer(ScriptFileContext const& context)
+    : source(context.get_source_code()),
+      position(0),
+      _context(context)
 {
 }
 
@@ -65,6 +32,7 @@ std::list<Token> Lexer::lex()
     auto ch = this->peek();
     auto str = this->source.data() + this->position;
 
+    token.src_loc.context = &this->_context;
     token.src_loc.position = this->position;
 
     // digits
@@ -118,37 +86,9 @@ std::list<Token> Lexer::lex()
     }
 
     // punctuator
-    else if (std::all_of(
-                 std::begin(punctuators), std::end(punctuators),
-                 [&](char const*& s) {
-                   if (this->match(s)) {
-                     token.kind = TOK_Punctuater;
-
-                     auto kind_offs = (&s - punctuators) /
-                                      sizeof(char const*);
-
-                     token.punct_kind =
-                         static_cast<PunctuatorKind>(kind_offs);
-
-                     if (token.punct_kind >= PU_Bracket) {
-                       kind_offs -= PU_Bracket;
-
-                       token.bracket_kind =
-                           static_cast<BracketKind>(kind_offs /
-                                                    2);
-
-                       token.is_bracket_opened =
-                           !(token.bracket_kind % 2);
-                     }
-
-                     token.str = s;
-                     this->position += token.str.length();
-                     return false;
-                   }
-
-                   return true;
-                 })) {
-      panic("unknown token at " << this->position);
+    else if (!this->find_punctuator(token)) {
+      token.str = " ";
+      Error(token, "unknown token").emit().exit();
     }
 
     token.src_loc.length = token.str.length();
@@ -160,34 +100,4 @@ std::list<Token> Lexer::lex()
       this->source.length() - 1;
 
   return ret;
-}
-
-bool Lexer::check()
-{
-  return this->position < this->source.length();
-}
-
-char Lexer::peek()
-{
-  return this->source[this->position];
-}
-
-bool Lexer::match(std::string_view str)
-{
-  return this->position + str.length() <=
-             this->source.length() &&
-         std::memcmp(this->source.data() + this->position,
-                     str.data(), str.length()) == 0;
-}
-
-size_t Lexer::pass_while(std::function<bool(char)> cond)
-{
-  size_t len = 0;
-
-  while (this->check() && cond(this->peek())) {
-    len++;
-    this->position++;
-  }
-
-  return len;
 }

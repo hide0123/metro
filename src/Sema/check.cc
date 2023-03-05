@@ -276,8 +276,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
-    case AST_Array: {
-      astdef(Array);
+    case AST_Vector: {
+      astdef(Vector);
 
       _ret = TYPE_Vector;
 

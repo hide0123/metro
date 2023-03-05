@@ -1,127 +1,18 @@
-#pragma once
-
-#include <string>
-#include <vector>
-#include <map>
-#include "Token.h"
-#include "ASTfwd.h"
-
 // ---------------------------------------------
 //  AST
 // ---------------------------------------------
+#pragma once
 
-enum ASTKind : uint8_t {
-  AST_Type,
+#include <map>
+#include <vector>
 
-  AST_None,
-  AST_True,
-  AST_False,
+#include "Token.h"
+#include "ASTfwd.h"
 
-  AST_Cast,
-
-  AST_Value,
-  AST_Array,
-  AST_Dict,
-
-  AST_Variable,
-  AST_GlobalVar,
-
-  AST_IndexRef,
-  AST_MemberAccess,
-
-  AST_CallFunc,
-
-  AST_UnaryPlus,
-  AST_UnaryMinus,
-
-  AST_Compare,
-
-  AST_Range,
-
-  AST_Assign,
-  AST_Expr,
-
-  AST_If,
-  AST_Switch,
-  AST_Return,
-
-  AST_Loop,
-  AST_For,
-  AST_While,
-  AST_DoWhile,
-
-  AST_Break,
-  AST_Continue,
-
-  AST_Scope,
-
-  AST_Let,
-  AST_Shadow,
-
-  AST_Function
-};
+#include "AST/Kind.h"
+#include "AST/Base.h"
 
 namespace AST {
-
-using Expr = ExprBase<ExprKind, AST_Expr>;
-using Compare = ExprBase<CmpKind, AST_Compare>;
-
-enum CmpKind : uint8_t {
-  CMP_LeftBigger,  // >
-  CMP_RightBigger,  // <
-  CMP_LeftBigOrEqual,  // >=
-  CMP_RightBigOrEqual,  // <=
-  CMP_Equal,
-  CMP_NotEqual,
-};
-
-enum ExprKind : uint8_t {
-  EX_Add,
-  EX_Sub,
-  EX_Mul,
-  EX_Div,
-  EX_Mod,
-
-  EX_LShift,  // <<
-  EX_RShift,  // >>
-
-  EX_BitAND,  // &
-  EX_BitXOR,  // ^
-  EX_BitOR,  // |
-
-  EX_And,  // &&
-  EX_Or,  // ||
-};
-
-struct Base {
-  ASTKind kind;
-  Token const& token;
-
-  virtual ~Base()
-  {
-  }
-
-  virtual std::string to_string() const;
-
-protected:
-  explicit Base(ASTKind kind, Token const& token)
-      : kind(kind),
-        token(token)
-  {
-  }
-};
-
-/**
- * @brief constant value keyword
- * example: none, true, false, ...
- *
- */
-struct ConstKeyword : Base {
-  ConstKeyword(ASTKind kind, Token const& token)
-      : Base(kind, token)
-  {
-  }
-};
 
 struct Type : Base {
   std::vector<Type*> parameters;
@@ -133,10 +24,13 @@ struct Type : Base {
   {
   }
 
-  ~Type()
+  ~Type();
+};
+
+struct ConstKeyword : Base {
+  ConstKeyword(ASTKind kind, Token const& token)
+      : Base(kind, token)
   {
-    for (auto&& p : this->parameters)
-      delete p;
   }
 };
 
@@ -149,10 +43,7 @@ struct UnaryOp : Base {
   {
   }
 
-  ~UnaryOp()
-  {
-    delete this->expr;
-  }
+  ~UnaryOp();
 };
 
 struct Type;
@@ -165,11 +56,7 @@ struct Cast : Base {
   {
   }
 
-  ~Cast()
-  {
-    delete this->cast_to;
-    delete this->expr;
-  }
+  ~Cast();
 };
 
 struct Value : Base {
@@ -181,7 +68,7 @@ struct Value : Base {
   }
 };
 
-struct Array : Base {
+struct Vector : Base {
   std::vector<Base*> elements;
 
   Base*& append(Base* ast)
@@ -189,16 +76,12 @@ struct Array : Base {
     return this->elements.emplace_back(ast);
   }
 
-  Array(Token const& token)
-      : Base(AST_Array, token)
+  Vector(Token const& token)
+      : Base(AST_Vector, token)
   {
   }
 
-  ~Array()
-  {
-    for (auto&& e : this->elements)
-      delete e;
-  }
+  ~Vector();
 };
 
 struct Dict : Base {
@@ -207,18 +90,8 @@ struct Dict : Base {
     Base* key;
     Base* value;
 
-    Item(Token const& colon, Base* k, Base* v)
-        : colon(colon),
-          key(k),
-          value(v)
-    {
-    }
-
-    ~Item()
-    {
-      delete this->key;
-      delete this->value;
-    }
+    Item(Token const& colon, Base* k, Base* v);
+    ~Item();
   };
 
   std::vector<Item> elements;
@@ -233,14 +106,7 @@ struct Dict : Base {
   {
   }
 
-  ~Dict()
-  {
-    if (this->key_type)
-      delete this->key_type;
-
-    if (this->value_type)
-      delete this->value_type;
-  }
+  ~Dict();
 };
 
 struct Variable : Base {
@@ -263,13 +129,7 @@ struct IndexRef : Base {
   {
   }
 
-  ~IndexRef()
-  {
-    delete this->expr;
-
-    for (auto&& i : this->indexes)
-      delete i;
-  }
+  ~IndexRef();
 };
 
 struct Range : Base {
@@ -283,11 +143,7 @@ struct Range : Base {
   {
   }
 
-  ~Range()
-  {
-    delete this->begin;
-    delete this->end;
-  }
+  ~Range();
 };
 
 struct Function;
@@ -310,71 +166,7 @@ struct CallFunc : Base {
   {
   }
 
-  ~CallFunc()
-  {
-    for (auto&& arg : this->args)
-      delete arg;
-  }
-};
-
-template <class Kind, ASTKind _self_kind>
-struct ExprBase : Base {
-  struct Element {
-    Kind kind;
-    Token const& op;
-    Base* ast;
-
-    explicit Element(Kind kind, Token const& op, Base* ast)
-        : kind(kind),
-          op(op),
-          ast(ast)
-    {
-    }
-
-    ~Element()
-    {
-      delete this->ast;
-    }
-  };
-
-  Base* first;
-  std::vector<Element> elements;
-
-  std::string to_string() const
-  {
-    auto s = this->first->to_string();
-
-    for (auto&& elem : this->elements) {
-      s += " " + std::string(elem.op.str) + " " +
-           elem.ast->to_string();
-    }
-
-    return s;
-  }
-
-  Element& append(Kind kind, Token const& op, Base* ast)
-  {
-    return this->elements.emplace_back(kind, op, ast);
-  }
-
-  static ExprBase* create(Base*& ast)
-  {
-    if (ast->kind != _self_kind)
-      ast = new ExprBase<Kind, _self_kind>(ast);
-
-    return (ExprBase*)ast;
-  }
-
-  ExprBase(Base* first)
-      : Base(_self_kind, first->token),
-        first(first)
-  {
-  }
-
-  ~ExprBase()
-  {
-    delete this->first;
-  }
+  ~CallFunc();
 };
 
 struct Assign : Base {
@@ -388,14 +180,7 @@ struct Assign : Base {
   {
   }
 
-  ~Assign()
-  {
-    if (this->dest)
-      delete this->dest;
-
-    if (this->expr)
-      delete this->expr;
-  }
+  ~Assign();
 };
 
 //
@@ -412,14 +197,7 @@ struct VariableDeclaration : Base {
   {
   }
 
-  ~VariableDeclaration()
-  {
-    if (this->type)
-      delete this->type;
-
-    if (this->init)
-      delete this->init;
-  }
+  ~VariableDeclaration();
 };
 
 struct Return : Base {
@@ -431,11 +209,7 @@ struct Return : Base {
   {
   }
 
-  ~Return()
-  {
-    if (this->expr)
-      delete this->expr;
-  }
+  ~Return();
 };
 
 struct LoopController : Base {
@@ -460,11 +234,7 @@ struct Scope : Base {
   {
   }
 
-  ~Scope()
-  {
-    for (auto&& x : this->list)
-      delete x;
-  }
+  ~Scope();
 };
 
 struct If : Base {
@@ -480,14 +250,7 @@ struct If : Base {
   {
   }
 
-  ~If()
-  {
-    delete this->condition;
-    delete this->if_true;
-
-    if (this->if_false)
-      delete this->if_false;
-  }
+  ~If();
 };
 
 struct For : Base {
@@ -503,12 +266,7 @@ struct For : Base {
   {
   }
 
-  ~For()
-  {
-    delete this->iter;
-    delete this->iterable;
-    delete this->code;
-  }
+  ~For();
 };
 
 struct While : Base {
@@ -522,11 +280,7 @@ struct While : Base {
   {
   }
 
-  ~While()
-  {
-    delete this->cond;
-    delete this->code;
-  }
+  ~While();
 };
 
 struct DoWhile : Base {
@@ -540,11 +294,7 @@ struct DoWhile : Base {
   {
   }
 
-  ~DoWhile()
-  {
-    delete this->code;
-    delete this->cond;
-  }
+  ~DoWhile();
 };
 
 struct Loop : Base {
@@ -556,10 +306,7 @@ struct Loop : Base {
   {
   }
 
-  ~Loop()
-  {
-    delete this->code;
-  }
+  ~Loop();
 };
 
 struct Function : Base {
@@ -613,13 +360,10 @@ struct Function : Base {
   {
   }
 
-  ~Function()
-  {
-    if (this->result_type)
-      delete this->result_type;
-
-    delete this->code;
-  }
+  ~Function();
 };
+
+using Expr = ExprBase<ExprKind, AST_Expr>;
+using Compare = ExprBase<CmpKind, AST_Compare>;
 
 }  // namespace AST

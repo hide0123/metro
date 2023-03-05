@@ -19,6 +19,8 @@ public:
 
   AST::Scope* parse();
 
+  AST::Base* factor();
+
   AST::Base* primary();
   AST::Base* unary();
   AST::Base* indexref();
