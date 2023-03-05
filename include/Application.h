@@ -19,6 +19,10 @@ public:
 
   static Application& get_current_instance();
 
+  //
+  // check if opened the path in any ScriptFileContext
+  static bool is_opened(std::string const& path);
+
 private:
   std::vector<ScriptFileContext> scripts;
 };

@@ -2,6 +2,7 @@
 
 #include <cstdint>
 
+struct Token;
 struct Object;
 struct BuiltinFunc;
 

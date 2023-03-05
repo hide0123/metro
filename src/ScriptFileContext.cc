@@ -1,5 +1,6 @@
 #include <fstream>
 #include <cassert>
+#include <filesystem>
 
 #include "Utils.h"
 #include "debug/alert.h"
@@ -17,29 +18,47 @@
 
 #include "Error.h"
 
+ScriptFileContext::ScriptFileContext(std::string const& path)
+    : _is_open(false),
+      _file_path(std::filesystem::canonical(path)),
+      _ast(nullptr),
+      _owner(nullptr)
+{
+}
+
+ScriptFileContext::~ScriptFileContext()
+{
+  if (this->_ast)
+    delete this->_ast;
+}
+
+//
+// open the file
 bool ScriptFileContext::open_file()
 {
-  if (this->is_open)
+  if (this->_is_open)
     return false;
 
-  std::ifstream ifs{this->file_path};
+  std::ifstream ifs{this->_file_path};
 
   if (ifs.fail()) {
     return false;
   }
 
   for (std::string line; std::getline(ifs, line);) {
-    this->source_code += line + '\n';
+    this->_source_code += line + '\n';
   }
 
   return true;
 }
 
+//
+// import a script file
 bool ScriptFileContext::import(std::string const& path,
                                Token const& token,
                                AST::Scope* add_to)
 {
-  auto& ctx = this->imported.emplace_back(path);
+  auto& ctx = this->_imported.emplace_back(path);
 
   if (!ctx.open_file()) {
     Error(token, "cannot open file '" + path + "'").emit();
@@ -53,10 +72,12 @@ bool ScriptFileContext::import(std::string const& path,
   if (!ctx.parse())
     return false;
 
-  for (auto&& ast : ctx.ast->list) {
+  for (auto&& ast : ctx._ast->list) {
     add_to->append(ast);
     ast = nullptr;
   }
+
+  ctx._owner = this;
 
   return true;
 }
@@ -65,31 +86,27 @@ bool ScriptFileContext::lex()
 {
   Lexer lexer{*this};
 
-  this->token_list = lexer.lex();
-
-  for (auto&& token : this->token_list) {
-    token.src_loc.context = this;
-  }
+  this->_token_list = lexer.lex();
 
   return !Error::was_emitted();
 }
 
 bool ScriptFileContext::parse()
 {
-  Parser parser{*this, this->token_list};
+  Parser parser{*this, this->_token_list};
 
-  this->ast = parser.parse();
+  this->_ast = parser.parse();
 
-  assert(this->ast->kind == AST_Scope);
+  assert(this->_ast->kind == AST_Scope);
 
   return !Error::was_emitted();
 }
 
 bool ScriptFileContext::check()
 {
-  Sema sema{this->ast};
+  Sema sema{this->_ast};
 
-  sema.check(this->ast);
+  sema.check(this->_ast);
 
   return !Error::was_emitted();
 }
@@ -98,30 +115,23 @@ void ScriptFileContext::evaluate()
 {
   Evaluator eval;
 
-  auto result = eval.evaluate(this->ast);
+  auto result = eval.evaluate(this->_ast);
 
   delete result;
 }
 
 std::string const& ScriptFileContext::get_path() const
 {
-  return this->file_path;
+  return this->_file_path;
 }
 
 std::string const& ScriptFileContext::get_source_code() const
 {
-  return this->source_code;
+  return this->_source_code;
 }
 
-ScriptFileContext::ScriptFileContext(std::string const& path)
-    : is_open(false),
-      file_path(path),
-      ast(nullptr)
+std::vector<ScriptFileContext> const&
+ScriptFileContext::get_imported_list() const
 {
-}
-
-ScriptFileContext::~ScriptFileContext()
-{
-  if (this->ast)
-    delete ast;
+  return this->_imported;
 }

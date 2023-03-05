@@ -10,7 +10,7 @@ class ScriptFileContext {
   friend class Application;
 
 public:
-  ScriptFileContext(std::string const& path);
+  explicit ScriptFileContext(std::string const& path);
   ~ScriptFileContext();
 
   bool open_file();
@@ -26,14 +26,21 @@ public:
   std::string const& get_path() const;
   std::string const& get_source_code() const;
 
+  std::vector<ScriptFileContext> const& get_imported_list()
+      const;
+
 private:
-  bool is_open;
+  bool _is_open;
 
-  std::string file_path;
-  std::string source_code;
+  std::string _file_path;
+  std::string _source_code;
 
-  std::list<Token> token_list;
-  AST::Scope* ast;
+  std::list<Token> _token_list;
+  AST::Scope* _ast;
 
-  std::vector<ScriptFileContext> imported;
+  //
+  // if other file importing this, the pointer to that file
+  ScriptFileContext const* _owner;
+
+  std::vector<ScriptFileContext> _imported;
 };

@@ -25,38 +25,6 @@ Application::~Application()
   ::app_inst = nullptr;
 }
 
-// 初期化
-void Application::initialize()
-{
-  Object::initialize();
-}
-
-Application& Application::get_current_instance()
-{
-  return *::app_inst;
-}
-
-void Application::execute_full(ScriptFileContext& context)
-{
-  if (!context.open_file()) {
-    std::cout << "metro: cannot open file '" << context.file_path
-              << "'" << std::endl;
-
-    return;
-  }
-
-  if (!context.lex())
-    return;
-
-  if (!context.parse())
-    return;
-
-  if (!context.check())
-    return;
-
-  context.evaluate();
-}
-
 int Application::main(int argc, char** argv)
 {
   Application::initialize();
@@ -85,4 +53,40 @@ int Application::main(int argc, char** argv)
   }
 
   return 0;
+}
+
+void Application::execute_full(ScriptFileContext& context)
+{
+  if (!context.open_file()) {
+    std::cout << "metro: cannot open file '" << context.file_path
+              << "'" << std::endl;
+
+    return;
+  }
+
+  if (!context.lex())
+    return;
+
+  if (!context.parse())
+    return;
+
+  if (!context.check())
+    return;
+
+  context.evaluate();
+}
+
+// 初期化
+void Application::initialize()
+{
+  Object::initialize();
+}
+
+Application& Application::get_current_instance()
+{
+  return *::app_inst;
+}
+
+bool Application::is_opened(std::string const& path)
+{
 }
