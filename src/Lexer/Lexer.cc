@@ -118,6 +118,9 @@ std::list<Token> Lexer::lex()
                    })};
     }
 
+    else if (!this->find_punctuator(token)) {
+    }
+
     // punctuator
     else if (std::all_of(
                  std::begin(punctuators), std::end(punctuators),

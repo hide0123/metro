@@ -14,6 +14,9 @@ enum ExprKind : uint8_t;
 
 struct Base;
 
+template <class K, ASTKind _self_kind>
+struct ExprBase;
+
 struct Type;
 
 struct ConstKeyword;
@@ -30,9 +33,6 @@ struct UnaryOp;
 struct IndexRef;
 struct Range;
 struct Assign;
-
-template <class K, ASTKind _self_kind>
-struct ExprBase;
 
 struct If;
 struct Return;
