@@ -12,6 +12,15 @@
 
 AST::Base* Parser::factor()
 {
+  if (this->eat("none"))
+    return new AST::ConstKeyword(AST_None, *this->ate);
+
+  if (this->eat("true"))
+    return new AST::ConstKeyword(AST_True, *this->ate);
+
+  if (this->eat("false"))
+    return new AST::ConstKeyword(AST_False, *this->ate);
+
   //
   // トークンの種類ごとの処理
   switch (this->cur->kind) {
@@ -112,15 +121,6 @@ AST::Base* Parser::primary()
 
     return ast;
   }
-
-  if (this->eat("none"))
-    return new AST::ConstKeyword(AST_None, *this->ate);
-
-  if (this->eat("true"))
-    return new AST::ConstKeyword(AST_True, *this->ate);
-
-  if (this->eat("false"))
-    return new AST::ConstKeyword(AST_False, *this->ate);
 
   //
   // Cast to any type
