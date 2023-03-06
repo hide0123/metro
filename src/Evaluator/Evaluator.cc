@@ -66,6 +66,8 @@ Evaluator::~Evaluator()
   for (auto&& [x, y] : this->immediate_objects) {
     delete y;
   }
+
+  allocated_objects.clear();
 }
 
 Object* Evaluator::evaluate(AST::Base* _ast)
