@@ -43,7 +43,6 @@ void Evaluator::delete_object(Object* p)
     return;
 
   if (p->ref_count == 0 && !p->no_delete) {
-    alertmsg("delete_object(): " << p);
     allocated_objects[p] = 0;
     delete p;
   }
@@ -203,9 +202,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       this->enter_function(func);
 
       // 引数
-      auto& vst = this->vst_list.emplace_front();
-      for (auto xx = func->args.begin(); auto&& obj : args) {
-        vst.vmap[xx->name.str] = obj;
+      auto& vst = this->push_vst();
+      for (auto&& obj : args) {
+        vst.append_lvar(obj);
 
         obj->ref_count++;
       }
@@ -226,7 +225,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         obj->ref_count--;
       }
 
-      this->vst_list.pop_front();
+      this->pop_vst();
 
       // コールスタック削除
       this->leave_function();
@@ -292,7 +291,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
-      auto& vst = this->vst_list.emplace_front();
+      auto& vst = this->push_vst();
 
       for (auto&& item : ast->list) {
         this->evaluate(item);
@@ -309,10 +308,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         }
       }
 
-      for (auto&& [name, obj] : vst.vmap) {
-        alertmsg("lvar " << name << ": " << obj
-                         << " ref_count=" << obj->ref_count);
-
+      for (auto&& obj : vst.lvar_list) {
         obj->ref_count--;
 
         if (obj->ref_count == 0) {
@@ -320,7 +316,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         }
       }
 
-      this->vst_list.pop_front();
+      this->pop_vst();
       this->clean_obj();
 
       break;
@@ -330,9 +326,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Let: {
       auto ast = (AST::VariableDeclaration*)_ast;
 
-      auto& vst = *this->vst_list.begin();
-
-      auto& obj = vst.vmap[ast->name];
+      Object* obj{};
 
       if (!ast->init) {
         obj = this->default_constructer(
@@ -343,6 +337,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       }
 
       obj->ref_count++;
+
+      this->get_vst().append_lvar(obj);
 
       break;
     }
@@ -405,14 +401,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto _obj = this->evaluate(ast->iterable);
       _obj->ref_count++;
 
-      auto& v = this->vst_list.emplace_front();
+      auto& v = this->push_vst();
 
       auto& loop = this->loop_stack.emplace_front(v);
 
       Object** p_iter = nullptr;
 
       if (ast->iter->kind == AST_Variable) {
-        p_iter = &v.vmap[ast->iter->token.str];
+        p_iter = &v.append_lvar(nullptr);
       }
 
       switch (_obj->type.kind) {
@@ -451,7 +447,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       }
 
       this->loop_stack.pop_front();
-      this->vst_list.pop_front();
+      this->pop_vst();
 
       _obj->ref_count--;
       break;
@@ -470,11 +466,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 Object*& Evaluator::eval_left(AST::Base* _ast)
 {
   switch (_ast->kind) {
-    case AST_Variable: {
-      astdef(Variable);
-
-      return this->get_var(ast->token.str);
-    }
+    case AST_Variable:
+      return this->get_var((AST::Variable*)_ast);
 
     case AST_IndexRef: {
       astdef(IndexRef);

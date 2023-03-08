@@ -500,7 +500,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         auto& var =
             scope_emu.variables.emplace_back(ast->name, type);
 
-        var.offs = this->variable_stack_offs++;
+        var.index = scope_emu.variables.size() - 1;
 
         if (auto func = this->get_cur_func(); func) {
           func->var_count++;
@@ -535,7 +535,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         Error(ast->expr, "type mismatch").emit();
 
         if (resp == nullptr) {
-          Error(cur_func, "resultl type is not specified")
+          Error(cur_func->code, "return type is not specified")
               .emit(Error::EL_Note);
         }
         else {
@@ -665,7 +665,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         auto& V = S.variables.emplace_back(x.name.str,
                                            this->check(x.type));
 
-        V.offs = ww++;
+        V.index = ww++;
       }
 
       auto res_type = this->check(ast->result_type);
@@ -682,9 +682,11 @@ TypeInfo Sema::check(AST::Base* _ast)
             }
           });
 
-      for (auto&& x : ast->code->list) {
-        this->check(x);
-      }
+      // for (auto&& x : ast->code->list) {
+      //   this->check(x);
+      // }
+
+      this->check(ast->code);
 
       if (!res_type.equals(TYPE_None) && return_types.empty()) {
         Error(ast,
@@ -780,15 +782,18 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
     case AST_Variable: {
       astdef(Variable);
 
-      for (auto&& S : this->scope_list) {
+      for (size_t step = 0; auto&& S : this->scope_list) {
         for (auto it = S.variables.rbegin();
              it != S.variables.rend(); it++) {
           if (it->name == ast->token.str) {
-            ast->index = it->offs;
+            ast->step = step;
+            ast->index = it->index;
 
             return it->type;
           }
         }
+
+        step++;
       }
 
       Error(ast->token, "undefined variable name").emit().exit();

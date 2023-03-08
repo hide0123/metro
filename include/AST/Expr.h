@@ -84,10 +84,12 @@ struct Dict : Base {
 };
 
 struct Variable : Base {
+  size_t step;
   size_t index;
 
   Variable(Token const& tok)
       : Base(AST_Variable, tok),
+        step(0),
         index(0)
   {
   }
