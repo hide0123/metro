@@ -65,7 +65,7 @@ static std::vector<BuiltinFunc> const _builtin_functions{
 
           std::string input;
 
-          std::cin >> input;
+          std::getline(std::cin, input);
 
           return new ObjString(Utils::String::to_wstr(input));
         }},
