@@ -501,10 +501,6 @@ TypeInfo Sema::check(AST::Base* _ast)
             scope_emu.variables.emplace_back(ast->name, type);
 
         var.index = scope_emu.variables.size() - 1;
-
-        if (auto func = this->get_cur_func(); func) {
-          func->var_count++;
-        }
       }
 
       break;
@@ -620,13 +616,19 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
+      if (ast->list.empty())
+        break;
+
       auto& e = this->scope_list.emplace_front(ast);
 
       auto voffs = this->variable_stack_offs;
 
-      for (auto&& item : ast->list) {
-        auto ww = this->check(item);
-      }
+      auto it = ast->list.begin();
+
+      while (*it != *ast->list.rbegin())
+        this->check(*it++);
+
+      _ret = this->check(*it);
 
       ast->var_count = e.variables.size();
 
@@ -657,8 +659,6 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       // スコープ追加
       auto& S = this->scope_list.emplace_front(fn_scope);
-
-      ast->var_count = ast->args.size();
 
       // 引数追加
       for (size_t ww = 0; auto&& x : ast->args) {

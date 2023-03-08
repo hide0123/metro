@@ -25,8 +25,6 @@ struct Function : Base {
   Type* result_type;  // 戻り値の型
   Scope* code;  // 処理
 
-  size_t var_count = 0;
-
   /**
    * @brief 引数を追加する
    *
@@ -48,8 +46,7 @@ struct Function : Base {
   explicit Function(Token const& token, Token const& name)
       : Base(AST_Function, token),
         name(name),
-        result_type(nullptr),
-        code(nullptr)
+        result_type(nullptr)
   {
   }
 

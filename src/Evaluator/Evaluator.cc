@@ -203,10 +203,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       // 引数
       auto& vst = this->push_vst();
-      for (auto&& obj : args) {
-        vst.append_lvar(obj);
 
-        obj->ref_count++;
+      for (auto&& obj : args) {
+        vst.append_lvar(obj)->ref_count++;
       }
 
       // 関数実行
@@ -386,9 +385,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto ast = (AST::If*)_ast;
 
       if (((ObjBool*)this->evaluate(ast->condition))->value)
-        this->evaluate(ast->if_true);
+        return this->evaluate(ast->if_true);
       else if (ast->if_false)
-        this->evaluate(ast->if_false);
+        return this->evaluate(ast->if_false);
 
       break;
     }
@@ -410,6 +409,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       if (ast->iter->kind == AST_Variable) {
         p_iter = &v.append_lvar(nullptr);
       }
+      else {
+        p_iter = &this->eval_left(ast->iter);
+      }
 
       switch (_obj->type.kind) {
         case TYPE_Range: {
@@ -420,10 +422,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           iter->ref_count = 1;
 
           while (iter->value < obj->end) {
-            alert;
-
-            alertmsg(iter->value);
-
             v.is_skipped = 0;
 
             this->evaluate(ast->code);
