@@ -25,6 +25,23 @@ class Evaluator {
     }
   };
 
+  struct var_storage {
+    std::map<std::string_view, Object*> vmap;
+
+    bool is_skipped = 0;
+  };
+
+  struct LoopStack {
+    var_storage& vs;
+    bool is_breaked;
+
+    LoopStack(var_storage& vs)
+        : vs(vs),
+          is_breaked(false)
+    {
+    }
+  };
+
 public:
   Evaluator();
   ~Evaluator();
@@ -139,6 +156,25 @@ private:
 
   void delete_object(Object* p);
 
+  void clean_obj();
+
+  LoopStack* get_cur_loop()
+  {
+    if (this->loop_stack.empty())
+      return nullptr;
+
+    return &*this->loop_stack.begin();
+  }
+
+  Object*& get_var(std::string_view const& sv)
+  {
+    for (auto&& st : this->vst_list)
+      if (st.vmap.contains(sv))
+        return st.vmap[sv];
+
+    std::exit(-111);
+  }
+
   //
   // オブジェクトスタック
   // 変数・引数で使う
@@ -154,47 +190,8 @@ private:
   std::map<AST::Value*, Object*> immediate_objects;
 
   std::map<Object*, AST::Return*> return_binds;
-
-  struct var_storage {
-    std::map<std::string_view, Object*> vmap;
-
-    bool is_skipped = 0;
-  };
-
-  struct LoopStack {
-    var_storage& vs;
-    bool is_breaked;
-
-    LoopStack(var_storage& vs)
-        : vs(vs),
-          is_breaked(false)
-    {
-    }
-  };
-
-  LoopStack* get_cur_loop()
-  {
-    if (this->loop_stack.empty())
-      return nullptr;
-
-    return &*this->loop_stack.begin();
-  }
-
   std::list<var_storage> vst_list;
   std::list<LoopStack> loop_stack;
 
   static std::map<Object*, bool> allocated_objects;
-
-  void clean_obj();
-
-  static Object* none;
-
-  Object*& get_var(std::string_view const& sv)
-  {
-    for (auto&& st : this->vst_list)
-      if (st.vmap.contains(sv))
-        return st.vmap[sv];
-
-    std::exit(-111);
-  }
 };

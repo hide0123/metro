@@ -15,7 +15,6 @@
 
 #define astdef(T) auto ast = (AST::T*)_ast
 
-Object* Evaluator::none;
 std::map<Object*, bool> Evaluator::allocated_objects;
 
 static bool _gc_stopped;
