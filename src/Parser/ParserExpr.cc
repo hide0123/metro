@@ -7,6 +7,12 @@
 
 AST::Base* Parser::factor()
 {
+  if (this->eat("(")) {
+    auto x = this->expr();
+    this->expect(")");
+    return x;
+  }
+
   if (this->eat("none"))
     return new AST::ConstKeyword(AST_None, *this->ate);
 
@@ -15,6 +21,9 @@ AST::Base* Parser::factor()
 
   if (this->eat("false"))
     return new AST::ConstKeyword(AST_False, *this->ate);
+
+  if (auto x = this->stmt(); x)
+    return x;
 
   //
   // トークンの種類ごとの処理

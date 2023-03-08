@@ -40,7 +40,7 @@ struct LoopController : Base {
 
 struct Scope : Base {
   std::vector<Base*> list;
-  size_t var_count;
+  bool return_last_expr;
 
   Base*& append(Base* item)
   {
@@ -49,7 +49,7 @@ struct Scope : Base {
 
   explicit Scope(Token const& token)
       : Base(AST_Scope, token),
-        var_count(0)
+        return_last_expr(false)
   {
   }
 

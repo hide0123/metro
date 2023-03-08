@@ -290,10 +290,15 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
+      if (ast->list.empty())
+        break;
+
       auto& vst = this->push_vst();
 
+      Object* ret{};
+
       for (auto&& item : ast->list) {
-        this->evaluate(item);
+        ret = this->evaluate(item);
 
         if (vst.is_skipped)
           break;
@@ -317,6 +322,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       this->pop_vst();
       this->clean_obj();
+
+      if (ast->return_last_expr)
+        return ret;
 
       break;
     }

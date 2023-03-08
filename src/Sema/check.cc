@@ -311,43 +311,29 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Dict: {
       astdef(Dict);
 
-      alert;
-
       TypeInfo ret = TYPE_Dict;
 
-      auto const key_type = ret.type_params.emplace_back(
-          this->check(ast->key_type));
+      if (ast->elements.empty())
+        break;
 
-      auto const value_type = ret.type_params.emplace_back(
-          this->check(ast->value_type));
+      TypeInfo key_type;
+      TypeInfo value_type;
 
-      for (auto&& item : ast->elements) {
-        if (auto x = this->check(item.key);
-            !key_type.equals(x)) {
-          Error(item.key, "expected '" + key_type.to_string() +
-                              "' but found '" + x.to_string() +
-                              "'")
-              .emit();
+      auto item_iter = ast->elements.begin();
 
-          Error(ast->key_type, "specified here")
-              .emit(Error::EL_Warning)
-              .exit();
-        }
-
-        if (auto x = this->check(item.value);
-            !value_type.equals(x)) {
-          Error(item.value,
-                "expected '" + value_type.to_string() +
-                    "' but found '" + x.to_string() + "'")
-              .emit();
-
-          Error(ast->value_type, "specified here")
-              .emit(Error::EL_Warning)
-              .exit();
-        }
+      if (ast->key_type) {
+        key_type = this->check(ast->key_type);
+        value_type = this->check(ast->value_type);
+      }
+      else {
+        key_type = this->check(item_iter->key);
+        value_type = this->check(item_iter->value);
       }
 
-      // Sema::value_type_cache[_ast] = ret;
+      for (; item_iter != ast->elements.end(); item_iter++) {
+        this->expect(key_type, item_iter->key);
+        this->expect(value_type, item_iter->value);
+      }
 
       _ret = ret;
       break;
@@ -560,10 +546,13 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto xx = this->check(ast->if_true);
 
-      if (!xx.equals(this->check(ast->if_false)))
-        Error(ast, "type mismatch").emit().exit();
+      if (ast->if_false) {
+        if (!xx.equals(this->check(ast->if_false)))
+          Error(ast, "type mismatch").emit().exit();
 
-      _ret = xx;
+        return xx;
+      }
+
       break;
     }
 
@@ -625,12 +614,16 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto it = ast->list.begin();
 
-      while (*it != *ast->list.rbegin())
-        this->check(*it++);
+      if (ast->return_last_expr) {
+        while (*it != *ast->list.rbegin())
+          this->check(*it++);
 
-      _ret = this->check(*it);
-
-      ast->var_count = e.variables.size();
+        _ret = this->check(*it);
+      }
+      else {
+        for (auto&& e : ast->list)
+          this->check(e);
+      }
 
       this->variable_stack_offs = voffs;
 
@@ -687,6 +680,25 @@ TypeInfo Sema::check(AST::Base* _ast)
       // }
 
       this->check(ast->code);
+
+      if (!ast->code->list.empty() &&
+          ast->code->return_last_expr) {
+        auto last = *ast->code->list.rbegin();
+
+        switch (last->kind) {
+          case AST_If: {
+            auto x = ((AST::If*)last)->if_false;
+
+            while (x && x->kind == AST_If)
+              x = ((AST::If*)x)->if_false;
+
+            if (x->kind == AST_If) {
+            }
+
+            break;
+          }
+        }
+      }
 
       if (!res_type.equals(TYPE_None) && return_types.empty()) {
         Error(ast,

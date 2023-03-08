@@ -15,13 +15,19 @@
  */
 AST::Scope* Parser::parse_scope()
 {
-  auto ast = new AST::Scope(*this->expect("{"));
-
-  while (this->check() && !this->eat("}")) {
-    ast->append(this->stmt());
+  if (this->cur->str != "{") {
+    Error(*--this->cur, "expected '{' after this token")
+        .emit()
+        .exit();
   }
 
-  return ast;
+  auto x = this->stmt();
+
+  if (x->kind != AST_Scope) {
+    Error(x->token, "expected scope").emit().exit();
+  }
+
+  return (AST::Scope*)x;
 }
 
 /**

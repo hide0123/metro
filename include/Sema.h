@@ -165,6 +165,8 @@ private:
   // 関数の中にいなければ nullptr を返す
   AST::Function* get_cur_func();
 
+  TypeInfo expect(TypeInfo const& type, AST::Base* ast);
+
   AST::Scope* root;
 
   std::list<ScopeEmu> scope_list;
