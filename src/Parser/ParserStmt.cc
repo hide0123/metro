@@ -145,9 +145,12 @@ AST::Base* Parser::stmt()
     auto ast = new AST::DoWhile(*this->ate);
 
     ast->code = this->expect_scope();
+
+    this->expect("while");
     ast->cond = this->expr();
 
     this->expect_semi();
+
     return ast;
   }
 
