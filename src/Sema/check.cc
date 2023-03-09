@@ -311,7 +311,7 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Dict: {
       astdef(Dict);
 
-      TypeInfo ret = TYPE_Dict;
+      _ret = TYPE_Dict;
 
       if (ast->elements.empty())
         break;
@@ -335,7 +335,9 @@ TypeInfo Sema::check(AST::Base* _ast)
         this->expect(value_type, item_iter->value);
       }
 
-      _ret = ret;
+      _ret.type_params.emplace_back(std::move(key_type));
+      _ret.type_params.emplace_back(std::move(value_type));
+
       break;
     }
 
@@ -546,12 +548,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto xx = this->check(ast->if_true);
 
-      if (ast->if_false) {
-        if (!xx.equals(this->check(ast->if_false)))
-          Error(ast, "type mismatch").emit().exit();
-
-        return xx;
-      }
+      if (ast->if_false)
+        return this->expect(xx, ast->if_false);
 
       break;
     }
@@ -605,16 +603,20 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
+      // debug(Error(ast->token,
+      //             Utils::format("return_last_expr = %d",
+      //                           ast->return_last_expr))
+      //           .emit(Error::EL_Note););
+
+      // empty scope
       if (ast->list.empty())
         break;
 
-      auto& e = this->scope_list.emplace_front(ast);
-
-      auto voffs = this->variable_stack_offs;
-
-      auto it = ast->list.begin();
+      this->scope_list.emplace_front(ast);
 
       if (ast->return_last_expr) {
+        auto it = ast->list.begin();
+
         while (*it != *ast->list.rbegin())
           this->check(*it++);
 
@@ -625,9 +627,8 @@ TypeInfo Sema::check(AST::Base* _ast)
           this->check(e);
       }
 
-      this->variable_stack_offs = voffs;
-
       this->scope_list.pop_front();
+
       break;
     }
 
@@ -679,28 +680,12 @@ TypeInfo Sema::check(AST::Base* _ast)
       //   this->check(x);
       // }
 
-      this->check(ast->code);
+      auto code_type = this->check(ast->code);
 
-      if (!ast->code->list.empty() &&
-          ast->code->return_last_expr) {
-        auto last = *ast->code->list.rbegin();
-
-        switch (last->kind) {
-          case AST_If: {
-            auto x = ((AST::If*)last)->if_false;
-
-            while (x && x->kind == AST_If)
-              x = ((AST::If*)x)->if_false;
-
-            if (x->kind == AST_If) {
-            }
-
-            break;
-          }
-        }
+      if (ast->code->return_last_expr) {
+        this->expect(res_type, ast->code);
       }
-
-      if (!res_type.equals(TYPE_None) && return_types.empty()) {
+      else if (ast->result_type && return_types.empty()) {
         Error(ast,
               "return type is not none, "
               "but function return nothing")

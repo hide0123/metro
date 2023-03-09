@@ -19,6 +19,16 @@ std::map<Object*, bool> Evaluator::allocated_objects;
 
 static bool _gc_stopped;
 
+void Evaluator::gc_stop()
+{
+  _gc_stopped = false;
+}
+
+void Evaluator::gc_resume()
+{
+  _gc_stopped = true;
+}
+
 Object::Object(TypeInfo type)
     : type(type),
       ref_count(0),
@@ -199,7 +209,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto func = ast->callee;
 
       // コールスタック作成
-      this->enter_function(func);
+      auto& cf = this->enter_function(func);
 
       // 引数
       auto& vst = this->push_vst();
@@ -209,13 +219,15 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       }
 
       // 関数実行
-      this->evaluate(func->code);
+      auto ret = this->evaluate(func->code);
 
       // 戻り値を取得
-      auto result = this->get_current_func_stack().result;
+      auto result = cf.result;
 
-      if (!result) {
-        result = new ObjNone();
+      if (!cf.is_returned) {
+        assert(func->code->return_last_expr);
+
+        result = ret;
       }
 
       assert(result != nullptr);
@@ -242,10 +254,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto ret = this->evaluate(x->first)->clone();
 
+      ret->no_delete = true;
+
       for (auto&& elem : x->elements) {
-        ret = Evaluator::compute_expr_operator(
-            elem.kind, elem.op, ret, this->evaluate(elem.ast));
+        this->eval_expr_elem(elem, ret);
       }
+
+      ret->no_delete = false;
 
       return ret;
     }
@@ -270,20 +285,22 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Compare: {
       auto x = (AST::Compare*)_ast;
 
-      auto ret = this->evaluate(x->first);
-      Object* xxx{};
+      auto ret = new ObjBool(false);
+      auto obj = this->evaluate(x->first);
 
       for (auto&& elem : x->elements) {
-        if (!Evaluator::compute_compare(
-                elem.kind, ret,
-                xxx = this->evaluate(elem.ast))) {
-          return new ObjBool(false);
+        if (auto tmp = this->evaluate(elem.ast);
+            !Evaluator::compute_compare(elem.kind, obj, tmp)) {
+          return ret;
         }
-
-        ret = xxx;
+        else {
+          obj = tmp;
+        }
       }
 
-      return new ObjBool(true);
+      ret->value = true;
+
+      return ret;
     }
 
     // スコープ
@@ -295,10 +312,20 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto& vst = this->push_vst();
 
-      Object* ret{};
+      auto iter = ast->list.begin();
+      auto const& last = *ast->list.rbegin();
+
+      Object* obj{};
 
       for (auto&& item : ast->list) {
-        ret = this->evaluate(item);
+        if (item == last) {
+          obj = this->evaluate(*iter++);
+          this->return_binds[obj] = ast;
+          break;
+        }
+        else {
+          this->evaluate(*iter++);
+        }
 
         if (vst.is_skipped)
           break;
@@ -315,16 +342,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       for (auto&& obj : vst.lvar_list) {
         obj->ref_count--;
 
-        if (obj->ref_count == 0) {
-          this->delete_object(obj);
-        }
+        this->delete_object(obj);
       }
 
       this->pop_vst();
       this->clean_obj();
 
-      if (ast->return_last_expr)
-        return ret;
+      if (obj)
+        return obj;
 
       break;
     }

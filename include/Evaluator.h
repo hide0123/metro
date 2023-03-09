@@ -15,6 +15,8 @@ class Evaluator {
 
     Object* result;
 
+    // if "result" was returned by return-statement,
+    // this is true
     bool is_returned;
 
     explicit FunctionStack(AST::Function const* ast)
@@ -89,10 +91,8 @@ public:
    * @param right
    * @return Object*
    */
-  static Object* compute_expr_operator(AST::ExprKind kind,
-                                       Token const& token,
-                                       Object* left,
-                                       Object* right);
+  void eval_expr_elem(AST::Expr::Element const& elem,
+                      Object* dest);
 
   /**
    * @brief 比較する
@@ -181,6 +181,9 @@ private:
     return it->get_lvar(ast->index);
   }
 
+  static void gc_stop();
+  static void gc_resume();
+
   //
   // オブジェクトスタック
   // 変数・引数で使う
@@ -197,7 +200,7 @@ private:
 
   std::list<var_storage> vst_list;
   std::list<LoopStack> loop_stack;
-  std::map<Object*, AST::Return*> return_binds;
+  std::map<Object*, AST::Base*> return_binds;
 
   static std::map<Object*, bool> allocated_objects;
 };

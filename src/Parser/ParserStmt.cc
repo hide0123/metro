@@ -65,15 +65,17 @@ AST::Base* Parser::stmt()
       }
 
       if (this->ate->str == "}") {
-        if (this->eat("}"))
+        if (this->eat("}")) {
+          ast->return_last_expr = true;
           break;
+        }
 
         ast->append(this->expr());
         continue;
       }
 
       if (auto bval = this->eat_semi(); this->eat("}")) {
-        ast->return_last_expr = bval;
+        ast->return_last_expr = !bval;
         break;
       }
       else if (bval) {
@@ -81,6 +83,7 @@ AST::Base* Parser::stmt()
       }
       else {
         this->expect("}");
+        break;
       }
     }
 
