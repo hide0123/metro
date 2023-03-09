@@ -15,12 +15,41 @@ class Evaluator {
 
     Object* result;
 
+    // if "result" was returned by return-statement,
+    // this is true
     bool is_returned;
 
     explicit FunctionStack(AST::Function const* ast)
         : ast(ast),
           result(nullptr),
           is_returned(false)
+    {
+    }
+  };
+
+  struct var_storage {
+    std::vector<Object*> lvar_list;
+
+    bool is_skipped = 0;
+
+    Object*& get_lvar(size_t index)
+    {
+      return this->lvar_list[index];
+    }
+
+    Object*& append_lvar(Object* obj = nullptr)
+    {
+      return this->lvar_list.emplace_back(obj);
+    }
+  };
+
+  struct LoopStack {
+    var_storage& vs;
+    bool is_breaked;
+
+    LoopStack(var_storage& vs)
+        : vs(vs),
+          is_breaked(false)
     {
     }
   };
@@ -62,10 +91,8 @@ public:
    * @param right
    * @return Object*
    */
-  static Object* compute_expr_operator(AST::ExprKind kind,
-                                       Token const& token,
-                                       Object* left,
-                                       Object* right);
+  void eval_expr_elem(AST::Expr::Element const& elem,
+                      Object* dest);
 
   /**
    * @brief 比較する
@@ -117,27 +144,45 @@ private:
    */
   FunctionStack& get_current_func_stack();
 
-  /**
-   * @brief オブジェクトをスタックに追加する
-   *
-   * @param obj
-   * @return Object*& (追加されたオブジェクトへの参照)
-   */
-  Object*& push_object(Object* obj);
-
-  /**
-   * @brief スタックからオブジェクトを１個削除
-   *
-   * @return Object* (スタックから削除されたオブジェクト)
-   */
-  Object* pop_object();
-
-  /**
-   * @brief スタックから指定された数だけオブジェクトを削除する
-   */
-  void pop_object_with_count(size_t count);
-
   void delete_object(Object* p);
+
+  void clean_obj();
+
+  var_storage& push_vst()
+  {
+    return this->vst_list.emplace_back();
+  }
+
+  void pop_vst()
+  {
+    this->vst_list.pop_back();
+  }
+
+  var_storage& get_vst()
+  {
+    return *this->vst_list.rbegin();
+  }
+
+  LoopStack* get_cur_loop()
+  {
+    if (this->loop_stack.empty())
+      return nullptr;
+
+    return &*this->loop_stack.begin();
+  }
+
+  Object*& get_var(AST::Variable* ast)
+  {
+    auto it = this->vst_list.rbegin();
+
+    for (size_t i = 0; i < ast->step; i++)
+      it++;
+
+    return it->get_lvar(ast->index);
+  }
+
+  static void gc_stop();
+  static void gc_resume();
 
   //
   // オブジェクトスタック
@@ -153,48 +198,9 @@ private:
   // 即値・リテラル
   std::map<AST::Value*, Object*> immediate_objects;
 
-  std::map<Object*, AST::Return*> return_binds;
-
-  struct var_storage {
-    std::map<std::string_view, Object*> vmap;
-
-    bool is_skipped = 0;
-  };
-
-  struct LoopStack {
-    var_storage& vs;
-    bool is_breaked;
-
-    LoopStack(var_storage& vs)
-        : vs(vs),
-          is_breaked(false)
-    {
-    }
-  };
-
-  LoopStack* get_cur_loop()
-  {
-    if (this->loop_stack.empty())
-      return nullptr;
-
-    return &*this->loop_stack.begin();
-  }
-
   std::list<var_storage> vst_list;
   std::list<LoopStack> loop_stack;
+  std::map<Object*, AST::Base*> return_binds;
 
   static std::map<Object*, bool> allocated_objects;
-
-  void clean_obj();
-
-  static Object* none;
-
-  Object*& get_var(std::string_view const& sv)
-  {
-    for (auto&& st : this->vst_list)
-      if (st.vmap.contains(sv))
-        return st.vmap[sv];
-
-    std::exit(-111);
-  }
 };

@@ -20,9 +20,75 @@ AST::Base* Parser::stmt()
   */
 
   //
-  // スコープ
-  if (this->cur->str == "{")
-    return this->parse_scope();
+  // Dict or Scope
+  if (this->eat("{")) {
+    auto token = this->ate;
+
+    if (this->eat("}"))
+      return new AST::Scope(*token);
+
+    auto x = this->expr();
+
+    // Dictionary
+    if (this->eat(":")) {
+      auto ast = new AST::Dict(*token);
+
+      ast->elements.emplace_back(*this->ate, x, this->expr());
+
+      while (this->eat(",")) {
+        auto key = this->expr();
+        auto colon = this->expect(":");
+
+        auto value = this->expr();
+
+        ast->elements.emplace_back(*colon, key, value);
+      }
+
+      this->expect("}");
+
+      return ast;
+    }
+
+    // Scope
+    auto ast = new AST::Scope(*token);
+
+    ast->append(x);
+
+    while (this->check()) {
+      if (this->ate->str == ";") {
+        if (this->eat("}")) {
+          break;
+        }
+
+        ast->append(this->expr());
+        continue;
+      }
+
+      if (this->ate->str == "}") {
+        if (this->eat("}")) {
+          ast->return_last_expr = true;
+          break;
+        }
+
+        ast->append(this->expr());
+        continue;
+      }
+
+      if (auto bval = this->eat_semi(); this->eat("}")) {
+        ast->return_last_expr = !bval;
+        break;
+      }
+      else if (bval) {
+        ast->append(this->expr());
+      }
+      else {
+        this->expect("}");
+        break;
+      }
+    }
+
+    return ast;
+  }
 
   //
   // if 文
@@ -34,7 +100,10 @@ AST::Base* Parser::stmt()
     ast->if_true = this->expect_scope();
 
     if (this->eat("else")) {
-      ast->if_false = this->stmt();
+      if (this->cur->str == "if")
+        ast->if_false = this->stmt();
+      else
+        ast->if_false = this->expect_scope();
     }
 
     return ast;
@@ -133,18 +202,5 @@ AST::Base* Parser::stmt()
     return ret;
   }
 
-  auto ast = this->expr();
-
-  this->expect_semi();
-
-  return ast;
-}
-
-AST::Base* Parser::top()
-{
-  if (this->cur->str == "fn") {
-    return this->parse_function();
-  }
-
-  return this->stmt();
+  return nullptr;
 }

@@ -170,9 +170,15 @@ struct ObjString : Object {
     return x->value == this->value;
   }
 
-  explicit ObjString(std::wstring value = L"")
+  ObjString(std::wstring const& value = L"")
       : Object(TYPE_String),
         value(value)
+  {
+  }
+
+  ObjString(std::wstring&& value)
+      : Object(TYPE_String),
+        value(std::move(value))
   {
   }
 };

@@ -311,45 +311,33 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Dict: {
       astdef(Dict);
 
-      alert;
+      _ret = TYPE_Dict;
 
-      TypeInfo ret = TYPE_Dict;
+      if (ast->elements.empty())
+        break;
 
-      auto const key_type = ret.type_params.emplace_back(
-          this->check(ast->key_type));
+      TypeInfo key_type;
+      TypeInfo value_type;
 
-      auto const value_type = ret.type_params.emplace_back(
-          this->check(ast->value_type));
+      auto item_iter = ast->elements.begin();
 
-      for (auto&& item : ast->elements) {
-        if (auto x = this->check(item.key);
-            !key_type.equals(x)) {
-          Error(item.key, "expected '" + key_type.to_string() +
-                              "' but found '" + x.to_string() +
-                              "'")
-              .emit();
-
-          Error(ast->key_type, "specified here")
-              .emit(Error::EL_Warning)
-              .exit();
-        }
-
-        if (auto x = this->check(item.value);
-            !value_type.equals(x)) {
-          Error(item.value,
-                "expected '" + value_type.to_string() +
-                    "' but found '" + x.to_string() + "'")
-              .emit();
-
-          Error(ast->value_type, "specified here")
-              .emit(Error::EL_Warning)
-              .exit();
-        }
+      if (ast->key_type) {
+        key_type = this->check(ast->key_type);
+        value_type = this->check(ast->value_type);
+      }
+      else {
+        key_type = this->check(item_iter->key);
+        value_type = this->check(item_iter->value);
       }
 
-      // Sema::value_type_cache[_ast] = ret;
+      for (; item_iter != ast->elements.end(); item_iter++) {
+        this->expect(key_type, item_iter->key);
+        this->expect(value_type, item_iter->value);
+      }
 
-      _ret = ret;
+      _ret.type_params.emplace_back(std::move(key_type));
+      _ret.type_params.emplace_back(std::move(value_type));
+
       break;
     }
 
@@ -500,11 +488,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         auto& var =
             scope_emu.variables.emplace_back(ast->name, type);
 
-        var.offs = this->variable_stack_offs++;
-
-        if (auto func = this->get_cur_func(); func) {
-          func->var_count++;
-        }
+        var.index = scope_emu.variables.size() - 1;
       }
 
       break;
@@ -535,7 +519,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         Error(ast->expr, "type mismatch").emit();
 
         if (resp == nullptr) {
-          Error(cur_func, "resultl type is not specified")
+          Error(cur_func->code, "return type is not specified")
               .emit(Error::EL_Note);
         }
         else {
@@ -564,10 +548,9 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto xx = this->check(ast->if_true);
 
-      if (!xx.equals(this->check(ast->if_false)))
-        Error(ast, "type mismatch").emit().exit();
+      if (ast->if_false)
+        return this->expect(xx, ast->if_false);
 
-      _ret = xx;
       break;
     }
 
@@ -620,19 +603,32 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
-      auto& e = this->scope_list.emplace_front(ast);
+      // debug(Error(ast->token,
+      //             Utils::format("return_last_expr = %d",
+      //                           ast->return_last_expr))
+      //           .emit(Error::EL_Note););
 
-      auto voffs = this->variable_stack_offs;
+      // empty scope
+      if (ast->list.empty())
+        break;
 
-      for (auto&& item : ast->list) {
-        auto ww = this->check(item);
+      this->scope_list.emplace_front(ast);
+
+      if (ast->return_last_expr) {
+        auto it = ast->list.begin();
+
+        while (*it != *ast->list.rbegin())
+          this->check(*it++);
+
+        _ret = this->check(*it);
+      }
+      else {
+        for (auto&& e : ast->list)
+          this->check(e);
       }
 
-      ast->var_count = e.variables.size();
-
-      this->variable_stack_offs = voffs;
-
       this->scope_list.pop_front();
+
       break;
     }
 
@@ -658,14 +654,12 @@ TypeInfo Sema::check(AST::Base* _ast)
       // スコープ追加
       auto& S = this->scope_list.emplace_front(fn_scope);
 
-      ast->var_count = ast->args.size();
-
       // 引数追加
       for (size_t ww = 0; auto&& x : ast->args) {
         auto& V = S.variables.emplace_back(x.name.str,
                                            this->check(x.type));
 
-        V.offs = ww++;
+        V.index = ww++;
       }
 
       auto res_type = this->check(ast->result_type);
@@ -682,11 +676,16 @@ TypeInfo Sema::check(AST::Base* _ast)
             }
           });
 
-      for (auto&& x : ast->code->list) {
-        this->check(x);
-      }
+      // for (auto&& x : ast->code->list) {
+      //   this->check(x);
+      // }
 
-      if (!res_type.equals(TYPE_None) && return_types.empty()) {
+      auto code_type = this->check(ast->code);
+
+      if (ast->code->return_last_expr) {
+        this->expect(res_type, *ast->code->list.rbegin());
+      }
+      else if (ast->result_type && return_types.empty()) {
         Error(ast,
               "return type is not none, "
               "but function return nothing")
@@ -780,15 +779,18 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
     case AST_Variable: {
       astdef(Variable);
 
-      for (auto&& S : this->scope_list) {
+      for (size_t step = 0; auto&& S : this->scope_list) {
         for (auto it = S.variables.rbegin();
              it != S.variables.rend(); it++) {
           if (it->name == ast->token.str) {
-            ast->index = it->offs;
+            ast->step = step;
+            ast->index = it->index;
 
             return it->type;
           }
         }
+
+        step++;
       }
 
       Error(ast->token, "undefined variable name").emit().exit();

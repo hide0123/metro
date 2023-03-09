@@ -45,7 +45,19 @@ AST::Scope* Parser::parse()
     }
 
     root_scope->append(this->top());
+
+    if (this->ate->str != ";" && this->ate->str != "}")
+      this->expect_semi();
   }
 
   return root_scope;
+}
+
+AST::Base* Parser::top()
+{
+  if (this->cur->str == "fn") {
+    return this->parse_function();
+  }
+
+  return this->expr();
 }

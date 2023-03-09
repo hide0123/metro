@@ -70,9 +70,10 @@ bool ScriptFileContext::import(std::string const& path,
   ctx._owner = this;
   ctx._importer_token = &token;
 
-  if (auto find = Application::get_instance()->get_context(
-          ctx._file_path);
-      find && find != &ctx) {
+  auto found =
+      Application::get_instance()->get_context(ctx._file_path);
+
+  if (found && found != &ctx) {
     for (auto p = this->_owner; p; p = p->_owner) {
       if (p->_file_path == ctx._file_path) {
         Error(token, "cannot import recursively").emit();

@@ -57,3 +57,45 @@ void Sema::end_return_capture()
 {
   this->return_captures.pop_back();
 }
+
+TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
+{
+  auto type = this->check(ast);
+
+  if (type.equals(expected))
+    return expected;
+
+  switch (type.kind) {
+    case TYPE_Vector: {
+      auto x = (AST::Vector*)ast;
+
+      if (x->elements.empty())
+        return expected;
+
+      break;
+    }
+
+    case TYPE_Dict: {
+      if (ast->kind == AST_Scope &&
+          ((AST::Scope*)ast)->list.empty())
+        return expected;
+
+      auto x = (AST::Dict*)ast;
+
+      if (!!x->key_type && x->elements.empty())
+        return expected;
+
+      break;
+    }
+  }
+
+  if (ast->kind == AST_Scope) {
+    if (auto x = (AST::Scope*)ast; x->return_last_expr)
+      ast = *x->list.rbegin();
+  }
+
+  Error(ast, "expected '" + expected.to_string() +
+                 "' but found '" + type.to_string() + "'")
+      .emit()
+      .exit();
+}

@@ -38,14 +38,16 @@ class Sema {
 
     TypeInfo type;
 
-    size_t offs;
+    size_t step;
+    size_t index;
 
     bool is_global = 0;
 
     explicit VariableEmu(std::string_view name, TypeInfo type)
         : name(name),
           type(type),
-          offs(0)
+          step(0),
+          index(0)
     {
     }
   };
@@ -162,6 +164,8 @@ private:
   // 今いる関数を返す
   // 関数の中にいなければ nullptr を返す
   AST::Function* get_cur_func();
+
+  TypeInfo expect(TypeInfo const& type, AST::Base* ast);
 
   AST::Scope* root;
 
