@@ -683,7 +683,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto code_type = this->check(ast->code);
 
       if (ast->code->return_last_expr) {
-        this->expect(res_type, ast->code);
+        this->expect(res_type, *ast->code->list.rbegin());
       }
       else if (ast->result_type && return_types.empty()) {
         Error(ast,

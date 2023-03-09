@@ -232,11 +232,18 @@ Object* Evaluator::create_object(AST::Value* ast)
       obj = new ObjUSize(std::stoi(ast->token.str.data()));
       break;
 
-    case TYPE_String:
-      obj = new ObjString(
-          Utils::String::to_wstr(std::string(ast->token.str)));
+    case TYPE_String: {
+      auto ws =
+          Utils::String::to_wstr(std::string(ast->token.str));
+
+      // remove double quotation
+      ws.erase(ws.begin());
+      ws.pop_back();
+
+      obj = new ObjString(std::move(ws));
 
       break;
+    }
 
     default:
       debug(std::cout << type.to_string() << std::endl);

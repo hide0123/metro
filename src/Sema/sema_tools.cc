@@ -76,7 +76,8 @@ TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
     }
 
     case TYPE_Dict: {
-      if (ast->kind == AST_Scope)
+      if (ast->kind == AST_Scope &&
+          ((AST::Scope*)ast)->list.empty())
         return expected;
 
       auto x = (AST::Dict*)ast;
