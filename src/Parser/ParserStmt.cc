@@ -55,7 +55,10 @@ AST::Base* Parser::stmt()
     ast->append(x);
 
     while (this->check()) {
-      if (this->ate->str == ";") {
+      auto prev = this->cur;
+      prev--;
+
+      if (prev->str == ";") {
         if (this->eat("}")) {
           break;
         }
@@ -64,7 +67,7 @@ AST::Base* Parser::stmt()
         continue;
       }
 
-      if (this->ate->str == "}") {
+      if (prev->str == "}") {
         if (this->eat("}")) {
           ast->return_last_expr = true;
           break;
@@ -145,9 +148,12 @@ AST::Base* Parser::stmt()
     auto ast = new AST::DoWhile(*this->ate);
 
     ast->code = this->expect_scope();
+
+    this->expect("while");
     ast->cond = this->expr();
 
     this->expect_semi();
+
     return ast;
   }
 
