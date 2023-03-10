@@ -16,6 +16,9 @@ AST::Base* Parser::factor()
   if (this->eat("false"))
     return new AST::ConstKeyword(AST_False, *this->ate);
 
+  if (auto x = this->stmt(); x)
+    return x;
+
   //
   // トークンの種類ごとの処理
   switch (this->cur->kind) {

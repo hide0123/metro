@@ -24,25 +24,26 @@ Error::ErrLoc::ErrLoc(AST::Base const* ast)
 
 Error& Error::emit(ErrorLevel level)
 {
-  typedef int64_t i64;
-
-  // auto& app = Application::get_current_instance();
-
-  // auto const& source = app.get_source_code();
-
-  i64 errpos = 0;
   Token const* ptoken = nullptr;
+
+  size_t errpos = 0;
+  size_t errpos_end = 0;
+  size_t line_count = 1;
 
   // ソースコード上の位置を取得
   switch (this->loc.type) {
-    case ErrLoc::LOC_AST:
+    case ErrLoc::LOC_AST: {
       ptoken = &this->loc.ast->token;
       errpos = this->loc.ast->token.src_loc.position;
+      errpos_end =
+          this->loc.ast->end_token->src_loc.get_end_pos();
       break;
+    }
 
     case ErrLoc::LOC_Token:
       ptoken = this->loc.token;
       errpos = this->loc.token->src_loc.position;
+      errpos_end = this->loc.token->src_loc.get_end_pos();
       break;
   }
 
@@ -51,12 +52,12 @@ Error& Error::emit(ErrorLevel level)
   std::string const& source = ptoken->src_loc.get_source();
 
   /// 行を切り取る
-  i64 line_num = 1;
-  i64 line_begin = 0;
-  i64 line_end = source.length();
+  size_t line_num = 1;
+  size_t line_begin = 0;
+  size_t line_end = source.length();
 
   // 開始位置
-  for (i64 xx = 0; xx < errpos; xx++) {
+  for (size_t xx = 0; xx < errpos; xx++) {
     if (source[xx] == '\n') {
       line_num++;
       line_begin = xx + 1;
@@ -64,14 +65,14 @@ Error& Error::emit(ErrorLevel level)
   }
 
   // 終了位置
-  for (i64 xx = errpos; xx < (signed)source.length(); xx++) {
+  for (size_t xx = errpos; xx < source.length(); xx++) {
     if (source[xx] == '\n') {
       line_end = xx;
       break;
     }
   }
 
-  i64 err_ptr_char_pos = errpos - line_begin;
+  size_t err_ptr_char_pos = errpos - line_begin;
 
   auto const err_line =
       source.substr(line_begin, line_end - line_begin);

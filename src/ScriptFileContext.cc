@@ -20,14 +20,19 @@
 
 using SFContext = ScriptFileContext;
 
+SFContext::SourceData::SourceData(std::string const& path)
+    : _path(path)
+{
+}
+
 SFContext::ScriptFileContext(std::string const& path)
     : _is_open(false),
-      _data(std::filesystem::canonical(path)),
+      _srcdata(std::filesystem::canonical(path)),
       _ast(nullptr),
       _owner(nullptr),
       _importer_token(nullptr)
 {
-  debug(std::cout << this->_data._path << std::endl);
+  debug(std::cout << this->_srcdata._path << std::endl);
 }
 
 SFContext::~ScriptFileContext()
@@ -48,7 +53,7 @@ bool SFContext::open_file()
   if (this->_is_open)
     return false;
 
-  std::ifstream ifs{this->_data._path};
+  std::ifstream ifs{this->_srcdata._path};
 
   if (ifs.fail()) {
     return false;
@@ -59,12 +64,13 @@ bool SFContext::open_file()
 
   for (std::string line; std::getline(ifs, line);) {
     line += '\n';
-    this->_data._data += line;
+    this->_srcdata._data += line;
 
-    line_pos += this->_data._lines
-                    .emplace_back(index++, line_pos,
-                                  line_pos + line.length())
-                    .end;
+    line_pos +=
+        this->_srcdata._lines
+            .emplace_back(LineRange{index++, line_pos,
+                                    line_pos + line.length()})
+            .end;
   }
 
   return true;
@@ -189,12 +195,12 @@ void SFContext::execute_full()
 
 std::string const& SFContext::get_path() const
 {
-  return this->_data._path;
+  return this->_srcdata._path;
 }
 
 std::string const& SFContext::get_source_code() const
 {
-  return this->_data._data;
+  return this->_srcdata._data;
 }
 
 std::vector<ScriptFileContext> const&

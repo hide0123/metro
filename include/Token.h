@@ -89,6 +89,11 @@ struct SourceLoc {
 
   std::string const& get_source() const;
 
+  size_t get_end_pos() const
+  {
+    return this->position + this->length;
+  }
+
   SourceLoc()
       : context(nullptr),
         line_num(0),
