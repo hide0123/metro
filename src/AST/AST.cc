@@ -64,6 +64,44 @@ ExprBase<Kind, _self>::~ExprBase()
 template struct ExprBase<ExprKind, AST_Expr>;
 template struct ExprBase<CmpKind, AST_Compare>;
 
+Argument::Argument(std::string_view const& name,
+                   Token const& colon, AST::Type* type)
+    : Base(AST_Argument, colon),
+      name(name),
+      type(type)
+{
+}
+
+Argument::~Argument()
+{
+  delete this->type;
+}
+
+Function::Function(Token const& token, Token const& name)
+    : Base(AST_Function, token),
+      name(name),
+      result_type(nullptr)
+{
+}
+
+Function::~Function()
+{
+  for (auto&& arg : this->args) {
+    delete arg;
+  }
+
+  if (this->result_type)
+    delete this->result_type;
+
+  delete this->code;
+}
+
+Type::Type(Token const& token)
+    : Base(AST_Type, token),
+      is_const(false)
+{
+}
+
 Type::~Type()
 {
   for (auto&& p : this->parameters)
@@ -189,14 +227,6 @@ DoWhile::~DoWhile()
 
 Loop::~Loop()
 {
-  delete this->code;
-}
-
-Function::~Function()
-{
-  if (this->result_type)
-    delete this->result_type;
-
   delete this->code;
 }
 

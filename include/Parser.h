@@ -46,7 +46,7 @@ public:
 
 private:
   bool check();
-  void next();
+  token_iter next();
 
   bool eat(char const* s);
   token_iter expect(char const* s);
@@ -64,8 +64,17 @@ private:
 
   AST::Function* parse_function();
 
-  // 引数 ast を、return 文でラップする
+  // ast を return 文でラップする
   AST::Return* new_return_stmt(AST::Base* ast);
+
+  AST::Base* set_last_token(AST::Base* ast)
+  {
+    auto it = this->cur;
+
+    ast->end_token = &*(--it);
+
+    return ast;
+  }
 
   auto& to_return_stmt(AST::Base*& ast)
   {

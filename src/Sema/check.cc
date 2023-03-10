@@ -655,9 +655,9 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto& S = this->scope_list.emplace_front(fn_scope);
 
       // 引数追加
-      for (size_t ww = 0; auto&& x : ast->args) {
-        auto& V = S.variables.emplace_back(x.name.str,
-                                           this->check(x.type));
+      for (size_t ww = 0; auto&& arg : ast->args) {
+        auto& V = S.variables.emplace_back(
+            arg->name, this->check(arg->type));
 
         V.index = ww++;
       }
@@ -685,7 +685,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       if (ast->code->return_last_expr) {
         this->expect(res_type, *ast->code->list.rbegin());
       }
-      else if (ast->result_type && return_types.empty()) {
+      else if (!res_type.equals(TYPE_None)) {
         Error(ast,
               "return type is not none, "
               "but function return nothing")
@@ -913,7 +913,7 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
 
         auto arg = *act_arg_it;
 
-        auto aa = this->check(formal_arg_it->type);
+        auto aa = this->check((*formal_arg_it)->type);
         auto bb = this->check(*act_arg_it);
 
         if (!aa.equals(bb)) {

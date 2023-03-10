@@ -2,25 +2,18 @@
 
 namespace AST {
 
+struct Argument : Base {
+  std::string_view name;
+  AST::Type* type;
+
+  Argument(std::string_view const& name, Token const& colon,
+           AST::Type* type);
+  ~Argument();
+};
+
 struct Function : Base {
-  struct Argument {
-    Token const& name;
-    AST::Type* type;
-
-    explicit Argument(Token const& name, AST::Type* type)
-        : name(name),
-          type(type)
-    {
-    }
-
-    ~Argument()
-    {
-      delete this->type;
-    }
-  };
-
   Token const& name;  // 名前
-  std::vector<Argument> args;  // 引数
+  std::vector<Argument*> args;  // 引数
 
   Type* result_type;  // 戻り値の型
   Scope* code;  // 処理
@@ -32,9 +25,11 @@ struct Function : Base {
    * @param type
    * @return Argument&
    */
-  Argument& append_argument(Token const& name, AST::Type* type)
+  Argument*& append_argument(std::string_view const& name,
+                             Token const& colon, AST::Type* type)
   {
-    return this->args.emplace_back(name, type);
+    return this->args.emplace_back(
+        new Argument(name, colon, type));
   }
 
   /**
@@ -43,13 +38,11 @@ struct Function : Base {
    * @param token
    * @param name
    */
-  explicit Function(Token const& token, Token const& name)
-      : Base(AST_Function, token),
-        name(name),
-        result_type(nullptr)
-  {
-  }
+  explicit Function(Token const& token, Token const& name);
 
+  /**
+   * @brief Destruct
+   */
   ~Function();
 };
 
