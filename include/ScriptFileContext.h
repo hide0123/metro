@@ -5,18 +5,12 @@
 #include <vector>
 #include "ASTfwd.h"
 
-class Lexer;
-class Parser;
-class Sema;
-class Evaluator;
 class Application;
+class Error;
 
 class ScriptFileContext {
-  friend class Lexer;
-  friend class Parser;
-  friend class Sema;
-  friend class Evaluator;
   friend class Application;
+  friend class Error;
 
 public:
   struct LineRange {
@@ -56,15 +50,10 @@ private:
     std::string _data;
     std::vector<LineRange> _lines;
 
-    LineRange const* find_line_range(size_t srcpos) const
-    {
-      for (auto&& range : this->_lines) {
-        if (range.begin <= srcpos && srcpos <= range.end)
-          return &range;
-      }
+    LineRange const* find_line_range(size_t srcpos) const;
 
-      return nullptr;
-    }
+    std::string_view get_line(LineRange const& line) const;
+    std::string_view get_line(Token const& token) const;
 
     SourceData(std::string const& path);
   };

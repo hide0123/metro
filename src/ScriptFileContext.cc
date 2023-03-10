@@ -25,6 +25,31 @@ SFContext::SourceData::SourceData(std::string const& path)
 {
 }
 
+SFContext::LineRange const*
+SFContext::SourceData::find_line_range(size_t srcpos) const
+{
+  for (auto&& range : this->_lines) {
+    if (range.begin <= srcpos && srcpos <= range.end)
+      return &range;
+  }
+
+  return nullptr;
+}
+
+std::string_view SFContext::SourceData::get_line(
+    SFContext::LineRange const& line) const
+{
+  return {this->_data.data() + line.begin,
+          line.end - line.begin};
+}
+
+std::string_view SFContext::SourceData::get_line(
+    Token const& token) const
+{
+  return this->_data.substr(token.src_loc.position,
+                            token.src_loc.length);
+}
+
 SFContext::ScriptFileContext(std::string const& path)
     : _is_open(false),
       _srcdata(std::filesystem::canonical(path)),

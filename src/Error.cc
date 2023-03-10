@@ -24,7 +24,8 @@ Error::ErrLoc::ErrLoc(AST::Base const* ast)
 
 Error& Error::emit(ErrorLevel level)
 {
-  Token const* ptoken = nullptr;
+  Token const* p_token = nullptr;
+  Token const* p_end_token = nullptr;
 
   size_t errpos = 0;
   size_t errpos_end = 0;
@@ -33,7 +34,8 @@ Error& Error::emit(ErrorLevel level)
   // ソースコード上の位置を取得
   switch (this->loc.type) {
     case ErrLoc::LOC_AST: {
-      ptoken = &this->loc.ast->token;
+      p_token = &this->loc.ast->token;
+      p_end_token = this->loc.ast->end_token;
       errpos = this->loc.ast->token.src_loc.position;
       errpos_end =
           this->loc.ast->end_token->src_loc.get_end_pos();
@@ -41,15 +43,15 @@ Error& Error::emit(ErrorLevel level)
     }
 
     case ErrLoc::LOC_Token:
-      ptoken = this->loc.token;
+      p_token = p_end_token = this->loc.token;
       errpos = this->loc.token->src_loc.position;
       errpos_end = this->loc.token->src_loc.get_end_pos();
       break;
   }
 
-  auto pcontext = ptoken->src_loc.context;
+  auto pcontext = p_token->src_loc.context;
 
-  std::string const& source = ptoken->src_loc.get_source();
+  std::string const& source = p_token->src_loc.get_source();
 
   /// 行を切り取る
   size_t line_num = 1;
@@ -72,10 +74,10 @@ Error& Error::emit(ErrorLevel level)
     }
   }
 
-  size_t err_ptr_char_pos = errpos - line_begin;
-
   auto const err_line =
-      source.substr(line_begin, line_end - line_begin);
+      p_token->src_loc.context->_srcdata.get_line(*p_token);
+
+  size_t err_ptr_char_pos = errpos - line_begin;
 
   std::cout << std::endl;
 
@@ -101,20 +103,19 @@ Error& Error::emit(ErrorLevel level)
   }
 
   // エラーが起きたファイルと行番号
-  std::cout << std::endl
+  std::cerr << std::endl
             << COL_GREEN "    --> " << _RGB(0, 255, 255)
             << pcontext->get_path() << ":" << line_num
-            << std::endl
+            << std::endl;
 
-            // エラーが起きた行
-            << COL_DEFAULT COL_WHITE << "     |\n"
+  // エラーが起きた行
+  std::cerr << COL_DEFAULT COL_WHITE << "     |\n"
             << Utils::format("%4d |", line_num) << err_line
-            << std::endl
-            << COL_DEFAULT "     |"
+            << std::endl;
 
-            // 矢印
+  // 矢印
+  std::cerr << COL_DEFAULT "     |"
             << std::string(err_ptr_char_pos, ' ') << '^'
-
             << std::endl
             << std::endl;
 
