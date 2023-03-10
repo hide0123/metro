@@ -18,42 +18,53 @@
 
 #include "Error.h"
 
-ScriptFileContext::ScriptFileContext(std::string const& path)
+using SFContext = ScriptFileContext;
+
+SFContext::ScriptFileContext(std::string const& path)
     : _is_open(false),
-      _file_path(std::filesystem::canonical(path)),
+      _data(std::filesystem::canonical(path)),
       _ast(nullptr),
       _owner(nullptr),
       _importer_token(nullptr)
 {
-  debug(std::cout << this->_file_path << std::endl);
+  debug(std::cout << this->_data._path << std::endl);
 }
 
-ScriptFileContext::~ScriptFileContext()
+SFContext::~ScriptFileContext()
 {
   if (this->_ast)
     delete this->_ast;
 }
 
-bool ScriptFileContext::is_opened() const
+bool SFContext::is_opened() const
 {
   return this->_is_open;
 }
 
 //
 // open the file
-bool ScriptFileContext::open_file()
+bool SFContext::open_file()
 {
   if (this->_is_open)
     return false;
 
-  std::ifstream ifs{this->_file_path};
+  std::ifstream ifs{this->_data._path};
 
   if (ifs.fail()) {
     return false;
   }
 
+  size_t index = 0;
+  size_t line_pos = 0;
+
   for (std::string line; std::getline(ifs, line);) {
-    this->_source_code += line + '\n';
+    line += '\n';
+    this->_data._data += line;
+
+    line_pos += this->_data._lines
+                    .emplace_back(index++, line_pos,
+                                  line_pos + line.length())
+                    .end;
   }
 
   return true;
@@ -61,9 +72,8 @@ bool ScriptFileContext::open_file()
 
 //
 // import a script file
-bool ScriptFileContext::import(std::string const& path,
-                               Token const& token,
-                               AST::Scope* add_to)
+bool SFContext::import(std::string const& path,
+                       Token const& token, AST::Scope* add_to)
 {
   auto& ctx = this->_imported.emplace_back(path);
 
@@ -71,11 +81,11 @@ bool ScriptFileContext::import(std::string const& path,
   ctx._importer_token = &token;
 
   auto found =
-      Application::get_instance()->get_context(ctx._file_path);
+      Application::get_instance()->get_context(ctx.get_path());
 
   if (found && found != &ctx) {
     for (auto p = this->_owner; p; p = p->_owner) {
-      if (p->_file_path == ctx._file_path) {
+      if (p->get_path() == ctx.get_path()) {
         Error(token, "cannot import recursively").emit();
 
         if (p->_importer_token) {
@@ -116,7 +126,7 @@ bool ScriptFileContext::import(std::string const& path,
   return true;
 }
 
-bool ScriptFileContext::lex()
+bool SFContext::lex()
 {
   Lexer lexer{*this};
 
@@ -125,7 +135,7 @@ bool ScriptFileContext::lex()
   return !Error::was_emitted();
 }
 
-bool ScriptFileContext::parse()
+bool SFContext::parse()
 {
   Parser parser{*this, this->_token_list};
 
@@ -136,7 +146,7 @@ bool ScriptFileContext::parse()
   return !Error::was_emitted();
 }
 
-bool ScriptFileContext::check()
+bool SFContext::check()
 {
   Sema sema{this->_ast};
 
@@ -145,7 +155,7 @@ bool ScriptFileContext::check()
   return !Error::was_emitted();
 }
 
-Object* ScriptFileContext::evaluate()
+Object* SFContext::evaluate()
 {
   Evaluator eval;
 
@@ -154,7 +164,7 @@ Object* ScriptFileContext::evaluate()
   return result;
 }
 
-void ScriptFileContext::execute_full()
+void SFContext::execute_full()
 {
   if (!this->open_file()) {
     std::cout << "metro: cannot open file '" << this->get_path()
@@ -177,27 +187,27 @@ void ScriptFileContext::execute_full()
   delete result;
 }
 
-std::string const& ScriptFileContext::get_path() const
+std::string const& SFContext::get_path() const
 {
-  return this->_file_path;
+  return this->_data._path;
 }
 
-std::string const& ScriptFileContext::get_source_code() const
+std::string const& SFContext::get_source_code() const
 {
-  return this->_source_code;
+  return this->_data._data;
 }
 
 std::vector<ScriptFileContext> const&
-ScriptFileContext::get_imported_list() const
+SFContext::get_imported_list() const
 {
   return this->_imported;
 }
 
-ScriptFileContext const* ScriptFileContext::is_imported(
+ScriptFileContext const* SFContext::is_imported(
     std::string const& path) const
 {
   for (auto&& ctx : this->_imported) {
-    if (ctx._file_path == path)
+    if (ctx.get_path() == path)
       return &ctx;
 
     if (auto p = ctx.is_imported(path); p)

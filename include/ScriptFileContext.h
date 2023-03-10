@@ -8,6 +8,12 @@
 class Application;
 class ScriptFileContext {
 public:
+  struct LineRange {
+    size_t index;
+    size_t begin;
+    size_t end;
+  };
+
   explicit ScriptFileContext(std::string const& path);
   ~ScriptFileContext();
 
@@ -34,10 +40,17 @@ public:
       std::string const& path) const;
 
 private:
+  struct SourceData {
+    std::string _path;
+    std::string _data;
+    std::vector<LineRange> _lines;
+
+    SourceData(std::string const& path);
+  };
+
   bool _is_open;
 
-  std::string _file_path;
-  std::string _source_code;
+  SourceData _data;
 
   std::list<Token> _token_list;
   AST::Scope* _ast;
