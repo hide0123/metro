@@ -688,14 +688,16 @@ TypeInfo Sema::check(AST::Base* _ast)
         auto semi = last->end_token;
         semi++;
 
-        if (last->kind != AST_Return)
-          Error(last,
-                "if you want to use this expression as return "
-                "value, semicolon isn't needed on last of "
-                "expression")
+        if (last->kind != AST_Return) {
+          Error(*semi, "expected '" + res_type.to_string() +
+                           "' type expression after this token")
               .emit();
 
-        Error(*semi, "remove this token").emit(EL_Note).exit();
+          Error(last,
+                "semicolon ignores the evaluated result of this")
+              .emit(EL_Note)
+              .exit();
+        }
       }
 
       this->end_return_capture();

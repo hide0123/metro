@@ -103,14 +103,13 @@ bool SFContext::open_file()
     line += '\n';
     this->_srcdata._data += line;
 
-    auto& range = this->_srcdata._lines.emplace_back(
-        index, line_pos, line_pos + line.length() - 1);
-
-    debug(printf("%zu %zu %zu\n", range.index, range.begin,
-                 range.end));
+    line_pos = this->_srcdata._lines
+                   .emplace_back(index, line_pos,
+                                 line_pos + line.length() - 1)
+                   .end +
+               1;
 
     index++;
-    line_pos = range.end + 1;
   }
 
   for (auto&& lview : this->_srcdata._lines) {
