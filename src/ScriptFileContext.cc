@@ -25,7 +25,19 @@ SFContext::SourceData::SourceData(std::string const& path)
 {
 }
 
-SFContext::LineRange const*
+SFContext::SourceData::~SourceData()
+{
+}
+
+SFContext::LineView::LineView(size_t index, size_t begin,
+                              size_t end)
+    : index(index),
+      begin(begin),
+      end(end)
+{
+}
+
+SFContext::LineView const*
 SFContext::SourceData::find_line_range(size_t srcpos) const
 {
   for (auto&& range : this->_lines) {
@@ -37,7 +49,7 @@ SFContext::SourceData::find_line_range(size_t srcpos) const
 }
 
 std::string_view SFContext::SourceData::get_line(
-    SFContext::LineRange const& line) const
+    SFContext::LineView const& line) const
 {
   return {this->_data.data() + line.begin,
           line.end - line.begin + 1};
@@ -91,14 +103,19 @@ bool SFContext::open_file()
     line += '\n';
     this->_srcdata._data += line;
 
-    auto& range = this->_srcdata._lines.emplace_back(LineRange{
-        index, line_pos, line_pos + line.length() - 1});
+    auto& range = this->_srcdata._lines.emplace_back(
+        index, line_pos, line_pos + line.length() - 1);
 
     debug(printf("%zu %zu %zu\n", range.index, range.begin,
                  range.end));
 
     index++;
     line_pos = range.end + 1;
+  }
+
+  for (auto&& lview : this->_srcdata._lines) {
+    lview.str_view = {this->_srcdata._data.data() + lview.begin,
+                      lview.end - lview.begin};
   }
 
   return true;

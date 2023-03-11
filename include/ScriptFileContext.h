@@ -15,10 +15,14 @@ class ScriptFileContext {
   friend class Error;
 
 public:
-  struct LineRange {
+  struct LineView {
     size_t index;
     size_t begin;
     size_t end;
+
+    std::string_view str_view;
+
+    LineView(size_t index, size_t begin, size_t end);
   };
 
   explicit ScriptFileContext(std::string const& path);
@@ -50,14 +54,15 @@ private:
   struct SourceData {
     std::string _path;
     std::string _data;
-    std::vector<LineRange> _lines;
+    std::vector<LineView> _lines;
 
-    LineRange const* find_line_range(size_t srcpos) const;
+    LineView const* find_line_range(size_t srcpos) const;
 
-    std::string_view get_line(LineRange const& line) const;
+    std::string_view get_line(LineView const& line) const;
     std::string_view get_line(Token const& token) const;
 
     SourceData(std::string const& path);
+    ~SourceData();
   };
 
   bool _is_open;

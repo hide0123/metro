@@ -44,9 +44,6 @@ struct ErrorLocation {
   AST::Base const* ast;
   Token const* token;
 
-  // show all of error occurred codes
-  bool is_single_line;
-
   ErrorLocation(AST::Base const* ast);
   ErrorLocation(Token const& token);
 
@@ -57,6 +54,7 @@ private:
   friend class Error;
 };
 
+class ScriptFileContext;
 class Error {
 public:
   Error(Error&&) = delete;
@@ -78,10 +76,16 @@ public:
 
 private:
   std::pair<Token const*, Token const*> get_token_range() const;
+  void trim_error_lines();
 
   ErrorKind _kind;
   std::string const _msg;
   ErrorLocation _loc;
+
+  ScriptFileContext const* _pContext;
+
+  bool _is_single_line;
+  std::vector<std::string> _error_lines;
 
   static size_t _count;
 };
