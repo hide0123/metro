@@ -13,13 +13,25 @@ static bool __was_emitted;
 
 Error::ErrLoc::ErrLoc(Token const& token)
     : type(LOC_Token),
+      ast(nullptr),
       token(&token)
 {
 }
 
 Error::ErrLoc::ErrLoc(AST::Base const* ast)
     : type(LOC_AST),
-      ast(ast)
+      ast(ast),
+      token(nullptr)
+{
+}
+
+Error::Error(ErrLoc loc, std::string const& msg)
+    : _loc(loc),
+      _msg(msg)
+{
+}
+
+static std::tuple<Token*, Token*> get_ast_token()
 {
 }
 
@@ -34,20 +46,20 @@ Error& Error::emit(ErrorLevel level)
   size_t errpos_end = 0;
 
   // ソースコード上の位置を取得
-  switch (this->loc.type) {
+  switch (this->_loc.type) {
     case ErrLoc::LOC_AST: {
-      p_token = &this->loc.ast->token;
-      p_end_token = &*this->loc.ast->end_token;
-      errpos = this->loc.ast->token.src_loc.position;
+      p_token = &this->_loc.ast->token;
+      p_end_token = &*this->_loc.ast->end_token;
+      errpos = this->_loc.ast->token.src_loc.position;
       errpos_end =
-          this->loc.ast->end_token->src_loc.get_end_pos();
+          this->_loc.ast->end_token->src_loc.get_end_pos();
       break;
     }
 
     case ErrLoc::LOC_Token:
-      p_token = p_end_token = this->loc.token;
-      errpos = this->loc.token->src_loc.position;
-      errpos_end = this->loc.token->src_loc.get_end_pos();
+      p_token = p_end_token = this->_loc.token;
+      errpos = this->_loc.token->src_loc.position;
+      errpos_end = this->_loc.token->src_loc.get_end_pos();
       break;
   }
 
@@ -62,31 +74,21 @@ Error& Error::emit(ErrorLevel level)
       pcontext->_srcdata
           ._lines[p_end_token->src_loc.line_num - 1];
 
-  std::string const& source = pcontext->get_source_code();
+  // SourceData
+  auto const& src_data = pcontext->_srcdata;
 
-  /// 行を切り取る
-  size_t line_num = 1;
-  size_t line_begin_pos = 0;
-  size_t line_end_pos = source.length();
+  // LineRange
+  auto const& line_range =
+      src_data._lines[p_token->src_loc.line_num - 1];
 
-  // 開始位置
-  for (size_t xx = 0; xx < errpos; xx++) {
-    if (source[xx] == '\n') {
-      line_num++;
-      line_begin_pos = xx + 1;
-    }
-  }
+  // source string
+  auto const& source = pcontext->get_source_code();
 
-  // 終了位置
-  for (size_t xx = errpos; xx < source.length(); xx++) {
-    if (source[xx] == '\n') {
-      line_end_pos = xx;
-      break;
-    }
-  }
+  // line of error
+  auto const err_line = src_data.get_line(*p_token);
 
-  auto const err_line =
-      p_token->src_loc.context->_srcdata.get_line(*p_token);
+  auto const line_num = line_range.index + 1;
+  auto const line_begin_pos = line_range.begin;
 
   size_t err_ptr_char_pos = errpos - line_begin_pos;
 
@@ -97,19 +99,19 @@ Error& Error::emit(ErrorLevel level)
       // エラー
     case EL_Error:
       std::cout << COL_BOLD COL_RED "error: " << COL_WHITE
-                << this->msg;
+                << this->_msg;
       break;
 
       // 警告
     case EL_Warning:
       std::cout << COL_BOLD COL_MAGENTA "warning: " << COL_WHITE
-                << this->msg;
+                << this->_msg;
       break;
 
       // ヒント、ヘルプなど
     case EL_Note:
       std::cout << COL_BOLD COL_CYAN "note: " << COL_WHITE
-                << this->msg;
+                << this->_msg;
       break;
   }
 
@@ -133,6 +135,10 @@ Error& Error::emit(ErrorLevel level)
     __was_emitted = true;
 
   return *this;
+}
+
+Error& Error::emit2(ErrorLevel level)
+{
 }
 
 void Error::exit(int code)

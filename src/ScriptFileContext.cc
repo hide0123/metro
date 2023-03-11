@@ -94,7 +94,8 @@ bool SFContext::open_file()
     auto& range = this->_srcdata._lines.emplace_back(LineRange{
         index++, line_pos, line_pos + line.length() - 1});
 
-    debug(printf("%zu %zu\n", range.begin, range.end));
+    debug(printf("%zu %zu %zu\n", range.index, range.begin,
+                 range.end));
 
     line_pos = range.end + 1;
   }
