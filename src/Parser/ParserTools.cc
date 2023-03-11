@@ -70,13 +70,8 @@ AST::Function* Parser::parse_function()
   // 閉じかっこがなければ、引数を読み取っていく
   if (!this->eat(")")) {
     do {
-      auto arg_name_token =
-          this->expect_identifier();  // 引数名のトークン
-
-      this->expect(":");  // コロン
-
-      // 型
-      func->append_argument(*arg_name_token,
+      func->append_argument(this->expect_identifier()->str,
+                            *this->expect(":"),
                             this->expect_typename());
     } while (this->eat(","));  // カンマがあれば続ける
 
@@ -89,6 +84,8 @@ AST::Function* Parser::parse_function()
   }
 
   func->code = this->expect_scope();  // 処理 (スコープ)
+
+  this->set_last_token(func);
 
   return func;
 }
@@ -117,6 +114,8 @@ AST::Type* Parser::parse_typename()
   if (this->eat("const")) {
     ast->is_const = true;
   }
+
+  this->set_last_token(ast);
 
   return ast;
 }
@@ -152,11 +151,12 @@ bool Parser::check()
 
 /**
  * @brief トークンをひとつ先に進める
+ * @return 進める前のトークン
  *
  */
-void Parser::next()
+Parser::token_iter Parser::next()
 {
-  this->cur++;
+  return this->cur++;
 }
 
 /**

@@ -5,9 +5,26 @@
 #include <vector>
 #include "ASTfwd.h"
 
+class Lexer;
 class Application;
+class Error;
+
 class ScriptFileContext {
+  friend class Lexer;
+  friend class Application;
+  friend class Error;
+
 public:
+  struct LineView {
+    size_t index;
+    size_t begin;
+    size_t end;
+
+    std::string_view str_view;
+
+    LineView(size_t index, size_t begin, size_t end);
+  };
+
   explicit ScriptFileContext(std::string const& path);
   ~ScriptFileContext();
 
@@ -34,10 +51,23 @@ public:
       std::string const& path) const;
 
 private:
+  struct SourceData {
+    std::string _path;
+    std::string _data;
+    std::vector<LineView> _lines;
+
+    LineView const* find_line_range(size_t srcpos) const;
+
+    std::string_view get_line(LineView const& line) const;
+    std::string_view get_line(Token const& token) const;
+
+    SourceData(std::string const& path);
+    ~SourceData();
+  };
+
   bool _is_open;
 
-  std::string _file_path;
-  std::string _source_code;
+  SourceData _srcdata;
 
   std::list<Token> _token_list;
   AST::Scope* _ast;

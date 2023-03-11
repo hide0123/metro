@@ -1,10 +1,13 @@
 #pragma once
 
+#include <list>
+
 namespace AST {
 
 struct Base {
   ASTKind kind;
   Token const& token;
+  std::list<Token>::const_iterator end_token;
 
   virtual ~Base()
   {
@@ -15,7 +18,8 @@ struct Base {
 protected:
   explicit Base(ASTKind kind, Token const& token)
       : kind(kind),
-        token(token)
+        token(token),
+        end_token(nullptr)
   {
   }
 };

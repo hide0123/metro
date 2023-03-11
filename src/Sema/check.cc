@@ -507,31 +507,19 @@ TypeInfo Sema::check(AST::Base* _ast)
             .emit()
             .exit();
       }
-      // 式がない
-      else if (!ast->expr) {
-        break;
+
+      if (ast->expr) {
+        _ret = this->expect(this->check(cur_func->result_type),
+                            ast->expr);
+      }
+      else if (auto t = this->check(cur_func->result_type);
+               !t.equals(TYPE_None)) {
+        Error(ast, "expected '" + t.to_string() +
+                       "' type expression after this token")
+            .emit()
+            .exit();
       }
 
-      auto type = this->check(ast->expr);
-      auto resp = cur_func->result_type;
-
-      if (!type.equals(this->check(resp))) {
-        Error(ast->expr, "type mismatch").emit();
-
-        if (resp == nullptr) {
-          Error(cur_func->code, "return type is not specified")
-              .emit(Error::EL_Note);
-        }
-        else {
-          Error(resp, "specified '" + resp->to_string() +
-                          "' as result type, "
-                          "but statement return '" +
-                          type.to_string() + "'")
-              .emit(Error::EL_Note);
-        }
-      }
-
-      _ret = type;
       break;
     }
 
@@ -655,9 +643,9 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto& S = this->scope_list.emplace_front(fn_scope);
 
       // 引数追加
-      for (size_t ww = 0; auto&& x : ast->args) {
-        auto& V = S.variables.emplace_back(x.name.str,
-                                           this->check(x.type));
+      for (size_t ww = 0; auto&& arg : ast->args) {
+        auto& V = S.variables.emplace_back(
+            arg->name, this->check(arg->type));
 
         V.index = ww++;
       }
@@ -676,24 +664,45 @@ TypeInfo Sema::check(AST::Base* _ast)
             }
           });
 
-      // for (auto&& x : ast->code->list) {
-      //   this->check(x);
-      // }
-
       auto code_type = this->check(ast->code);
 
       if (ast->code->return_last_expr) {
-        this->expect(res_type, *ast->code->list.rbegin());
+        if (!code_type.equals(res_type)) {
+          Error(ERR_TypeMismatch, *ast->code->list.rbegin(),
+                "type mismatch")
+              .emit()
+              .exit();
+        }
       }
-      else if (ast->result_type && return_types.empty()) {
-        Error(ast,
-              "return type is not none, "
-              "but function return nothing")
-            .emit();
+      else if (!res_type.equals(TYPE_None)) {
+        if (ast->code->list.empty() || return_types.empty()) {
+          Error(ast->token,
+                "return type is not none, "
+                "but function return nothing")
+              .emit();
 
-        Error(ast->result_type, "return type specified here")
-            .emit(Error::EL_Note)
-            .exit();
+          Error(ast->result_type,
+                "return type specified with '" +
+                    res_type.to_string() + "' here")
+              .emit(EL_Note)
+              .exit();
+        }
+
+        auto last = *ast->code->list.rbegin();
+
+        auto semi = last->end_token;
+        semi++;
+
+        if (last->kind != AST_Return) {
+          Error(*semi, "expected '" + res_type.to_string() +
+                           "' type expression after this token")
+              .emit();
+
+          Error(last,
+                "semicolon ignores the evaluated result of this")
+              .emit(EL_Note)
+              .exit();
+        }
       }
 
       this->end_return_capture();
@@ -913,7 +922,7 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
 
         auto arg = *act_arg_it;
 
-        auto aa = this->check(formal_arg_it->type);
+        auto aa = this->check((*formal_arg_it)->type);
         auto bb = this->check(*act_arg_it);
 
         if (!aa.equals(bb)) {

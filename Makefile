@@ -12,6 +12,7 @@ BUILD	= build
 INCLUDE	= include
 SOURCES	= src \
 	src/AST \
+	src/Error \
 	src/Evaluator \
 	src/GC \
 	src/Lexer \

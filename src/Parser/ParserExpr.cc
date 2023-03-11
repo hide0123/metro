@@ -7,12 +7,6 @@
 
 AST::Base* Parser::factor()
 {
-  if (this->eat("(")) {
-    auto x = this->expr();
-    this->expect(")");
-    return x;
-  }
-
   if (this->eat("none"))
     return new AST::ConstKeyword(AST_None, *this->ate);
 
@@ -36,7 +30,7 @@ AST::Base* Parser::factor()
     case TOK_String: {
       auto ast = new AST::Value(*this->cur);
 
-      this->next();
+      ast->end_token = this->next();
 
       return ast;
     }
@@ -53,24 +47,31 @@ AST::Base* Parser::factor()
       // かっこ があれば 関数呼び出し
       if (this->eat("(")) {
         // AST 作成
-        auto callFunc = new AST::CallFunc(*ident);
+        auto ast = new AST::CallFunc(*ident);
 
         // 引数をパースする
         if (!this->eat(")")) {
           do {
             // 式を追加
-            callFunc->args.emplace_back(this->expr());
+            ast->args.emplace_back(this->expr());
           } while (this->eat(","));  // カンマがある限り続く
 
           // 閉じかっこ
-          this->expect(")");
+          ast->end_token = this->expect(")");
+        }
+        else {
+          ast->end_token = this->ate;
         }
 
-        return callFunc;
+        return ast;
       }
 
       // 開きかっこがなければ 変数
-      return new AST::Variable(*ident);
+      auto ast = new AST::Variable(*ident);
+
+      ast->end_token = ident;
+
+      return ast;
     }
   }
 
@@ -90,7 +91,10 @@ AST::Base* Parser::primary()
         ast->append(this->expr());
       } while (this->eat(","));
 
-      this->expect("]");
+      ast->end_token = this->expect("]");
+    }
+    else {
+      ast->end_token = this->ate;
     }
 
     return ast;
@@ -120,7 +124,10 @@ AST::Base* Parser::primary()
         ast->elements.emplace_back(*colon, key, value);
       } while (this->eat(","));
 
-      this->expect("}");
+      ast->end_token = this->expect("}");
+    }
+    else {
+      ast->end_token = this->ate;
     }
 
     return ast;
@@ -137,7 +144,7 @@ AST::Base* Parser::primary()
 
     this->expect("(");
     ast->expr = this->expr();
-    this->expect(")");
+    ast->end_token = this->expect(")");
 
     return ast;
   }
@@ -175,7 +182,7 @@ AST::Base* Parser::indexref()
     x = y;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::member_access()
@@ -220,7 +227,7 @@ AST::Base* Parser::member_access()
     x = y;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::mul()
@@ -241,7 +248,7 @@ AST::Base* Parser::mul()
       break;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::add()
@@ -259,7 +266,7 @@ AST::Base* Parser::add()
       break;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::shift()
@@ -277,7 +284,7 @@ AST::Base* Parser::shift()
       break;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::compare()
@@ -307,7 +314,7 @@ AST::Base* Parser::compare()
       break;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::bit_op()
@@ -328,7 +335,7 @@ AST::Base* Parser::bit_op()
       break;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::log_and_or()
@@ -346,7 +353,7 @@ AST::Base* Parser::log_and_or()
       break;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::range()
@@ -362,7 +369,7 @@ AST::Base* Parser::range()
     x = y;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::assign()
@@ -376,7 +383,7 @@ AST::Base* Parser::assign()
     x = y;
   }
 
-  return x;
+  return this->set_last_token(x);
 }
 
 AST::Base* Parser::expr()
