@@ -507,32 +507,19 @@ TypeInfo Sema::check(AST::Base* _ast)
             .emit()
             .exit();
       }
-      // 式がない
-      else if (!ast->expr) {
-        break;
+
+      if (ast->expr) {
+        _ret = this->expect(this->check(cur_func->result_type),
+                            ast->expr);
+      }
+      else if (auto t = this->check(cur_func->result_type);
+               !t.equals(TYPE_None)) {
+        Error(ast, "expected '" + t.to_string() +
+                       "' type expression after this token")
+            .emit()
+            .exit();
       }
 
-      auto type = this->check(ast->expr);
-      auto resp = cur_func->result_type;
-      auto resp_c = this->check(resp);
-
-      if (!type.equals(this->check(resp))) {
-        Error(ast->expr, "type mismatch").emit();
-
-        if (resp == nullptr) {
-          Error(cur_func->code, "return type is not specified")
-              .emit(Error::EL_Note);
-        }
-        else {
-          Error(resp, "specified '" + resp_c.to_string() +
-                          "' as result type, "
-                          "but statement return '" +
-                          type.to_string() + "'")
-              .emit(Error::EL_Note);
-        }
-      }
-
-      _ret = type;
       break;
     }
 
@@ -688,17 +675,27 @@ TypeInfo Sema::check(AST::Base* _ast)
                 "return type is not none, "
                 "but function return nothing")
               .emit();
-        }
-        else {
-          auto semi = (*ast->code->list.rbegin())->end_token;
-          semi++;
 
-          Error(*semi, "semicolon is not needed").emit();
+          Error(ast->result_type,
+                "return type specified with '" +
+                    res_type.to_string() + "' here")
+              .emit(Error::EL_Note)
+              .exit();
         }
 
-        Error(ast->result_type, "return type specified with '" +
-                                    res_type.to_string() +
-                                    "' here")
+        auto last = *ast->code->list.rbegin();
+
+        auto semi = last->end_token;
+        semi++;
+
+        if (last->kind != AST_Return)
+          Error(last,
+                "if you want to use this expression as return "
+                "value, semicolon isn't needed on last of "
+                "expression")
+              .emit();
+
+        Error(*semi, "remove this token")
             .emit(Error::EL_Note)
             .exit();
       }
