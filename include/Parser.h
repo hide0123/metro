@@ -69,9 +69,8 @@ private:
 
   AST::Base* set_last_token(AST::Base* ast)
   {
-    auto it = this->cur;
-
-    ast->end_token = &*(--it);
+    ast->end_token = this->cur;
+    ast->end_token--;
 
     return ast;
   }

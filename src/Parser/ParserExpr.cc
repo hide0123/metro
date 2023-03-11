@@ -30,7 +30,7 @@ AST::Base* Parser::factor()
     case TOK_String: {
       auto ast = new AST::Value(*this->cur);
 
-      ast->end_token = &*this->next();
+      ast->end_token = this->next();
 
       return ast;
     }
@@ -57,10 +57,10 @@ AST::Base* Parser::factor()
           } while (this->eat(","));  // カンマがある限り続く
 
           // 閉じかっこ
-          ast->end_token = &*this->expect(")");
+          ast->end_token = this->expect(")");
         }
         else {
-          ast->end_token = &*this->ate;
+          ast->end_token = this->ate;
         }
 
         return ast;
@@ -69,7 +69,7 @@ AST::Base* Parser::factor()
       // 開きかっこがなければ 変数
       auto ast = new AST::Variable(*ident);
 
-      ast->end_token = &*ident;
+      ast->end_token = ident;
 
       return ast;
     }
@@ -91,10 +91,10 @@ AST::Base* Parser::primary()
         ast->append(this->expr());
       } while (this->eat(","));
 
-      ast->end_token = &*this->expect("]");
+      ast->end_token = this->expect("]");
     }
     else {
-      ast->end_token = &*this->ate;
+      ast->end_token = this->ate;
     }
 
     return ast;
@@ -124,10 +124,10 @@ AST::Base* Parser::primary()
         ast->elements.emplace_back(*colon, key, value);
       } while (this->eat(","));
 
-      ast->end_token = &*this->expect("}");
+      ast->end_token = this->expect("}");
     }
     else {
-      ast->end_token = &*this->ate;
+      ast->end_token = this->ate;
     }
 
     return ast;
@@ -144,7 +144,7 @@ AST::Base* Parser::primary()
 
     this->expect("(");
     ast->expr = this->expr();
-    ast->end_token = &*this->expect(")");
+    ast->end_token = this->expect(")");
 
     return ast;
   }

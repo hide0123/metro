@@ -5,10 +5,12 @@
 #include <vector>
 #include "ASTfwd.h"
 
+class Lexer;
 class Application;
 class Error;
 
 class ScriptFileContext {
+  friend class Lexer;
   friend class Application;
   friend class Error;
 

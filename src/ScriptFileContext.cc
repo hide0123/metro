@@ -40,14 +40,14 @@ std::string_view SFContext::SourceData::get_line(
     SFContext::LineRange const& line) const
 {
   return {this->_data.data() + line.begin,
-          line.end - line.begin};
+          line.end - line.begin + 1};
 }
 
 std::string_view SFContext::SourceData::get_line(
     Token const& token) const
 {
-  return this->_data.substr(token.src_loc.position,
-                            token.src_loc.length);
+  return this->get_line(
+      this->_lines[token.src_loc.line_num - 1]);
 }
 
 SFContext::ScriptFileContext(std::string const& path)
@@ -91,11 +91,12 @@ bool SFContext::open_file()
     line += '\n';
     this->_srcdata._data += line;
 
-    line_pos +=
-        this->_srcdata._lines
-            .emplace_back(LineRange{index++, line_pos,
-                                    line_pos + line.length()})
-            .end;
+    auto& range = this->_srcdata._lines.emplace_back(LineRange{
+        index++, line_pos, line_pos + line.length() - 1});
+
+    debug(printf("%zu %zu\n", range.begin, range.end));
+
+    line_pos = range.end + 1;
   }
 
   return true;

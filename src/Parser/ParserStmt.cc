@@ -44,7 +44,7 @@ AST::Base* Parser::stmt()
         ast->elements.emplace_back(*colon, key, value);
       }
 
-      this->expect("}");
+      ast->end_token = this->expect("}");
 
       return ast;
     }
@@ -109,7 +109,7 @@ AST::Base* Parser::stmt()
         ast->if_false = this->expect_scope();
     }
 
-    return ast;
+    return this->set_last_token(ast);
   }
 
   //
@@ -124,22 +124,25 @@ AST::Base* Parser::stmt()
 
     ast->code = this->expect_scope();
 
-    return ast;
+    return this->set_last_token(ast);
   }
 
   //
   // while
   if (this->eat("while")) {
     auto ast = new AST::While(*this->ate);
+
     ast->cond = this->expr();
     ast->code = this->expect_scope();
-    return ast;
+
+    return this->set_last_token(ast);
   }
 
   //
   // loop
   if (this->eat("loop")) {
-    return new AST::Loop(this->expect_scope());
+    return this->set_last_token(
+        new AST::Loop(this->expect_scope()));
   }
 
   //
@@ -154,7 +157,7 @@ AST::Base* Parser::stmt()
 
     this->expect_semi();
 
-    return ast;
+    return this->set_last_token(ast);
   }
 
   //
@@ -172,7 +175,8 @@ AST::Base* Parser::stmt()
       ast->init = this->expr();
     }
 
-    this->expect_semi();
+    ast->end_token = this->expect_semi();
+
     return ast;
   }
 
@@ -185,27 +189,27 @@ AST::Base* Parser::stmt()
       return ast;
 
     ast->expr = this->expr();
-    this->expect_semi();
+    ast->end_token = this->expect_semi();
 
     return ast;
   }
 
   // break
   if (this->eat("break")) {
-    auto ret = new AST::LoopController(*this->ate, AST_Break);
+    auto ast = new AST::LoopController(*this->ate, AST_Break);
 
-    this->expect_semi();
+    ast->end_token = this->expect_semi();
 
-    return ret;
+    return ast;
   }
 
   // continue
   if (this->eat("continue")) {
-    auto ret = new AST::LoopController(*this->ate, AST_Continue);
+    auto ast = new AST::LoopController(*this->ate, AST_Continue);
 
-    this->expect_semi();
+    ast->end_token = this->expect_semi();
 
-    return ret;
+    return ast;
   }
 
   return nullptr;

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 
 #include "Utils.h"
 #include "debug/alert.h"
@@ -24,18 +25,19 @@ Error::ErrLoc::ErrLoc(AST::Base const* ast)
 
 Error& Error::emit(ErrorLevel level)
 {
+  using LineRange = ScriptFileContext::LineRange;
+
   Token const* p_token = nullptr;
   Token const* p_end_token = nullptr;
 
   size_t errpos = 0;
   size_t errpos_end = 0;
-  size_t line_count = 1;
 
   // ソースコード上の位置を取得
   switch (this->loc.type) {
     case ErrLoc::LOC_AST: {
       p_token = &this->loc.ast->token;
-      p_end_token = this->loc.ast->end_token;
+      p_end_token = &*this->loc.ast->end_token;
       errpos = this->loc.ast->token.src_loc.position;
       errpos_end =
           this->loc.ast->end_token->src_loc.get_end_pos();
@@ -49,27 +51,36 @@ Error& Error::emit(ErrorLevel level)
       break;
   }
 
+  assert(p_end_token);
+
   auto pcontext = p_token->src_loc.context;
 
-  std::string const& source = p_token->src_loc.get_source();
+  auto const& linerange_begin =
+      pcontext->_srcdata._lines[p_token->src_loc.line_num - 1];
+
+  auto const& linerange_end =
+      pcontext->_srcdata
+          ._lines[p_end_token->src_loc.line_num - 1];
+
+  std::string const& source = pcontext->get_source_code();
 
   /// 行を切り取る
   size_t line_num = 1;
-  size_t line_begin = 0;
-  size_t line_end = source.length();
+  size_t line_begin_pos = 0;
+  size_t line_end_pos = source.length();
 
   // 開始位置
   for (size_t xx = 0; xx < errpos; xx++) {
     if (source[xx] == '\n') {
       line_num++;
-      line_begin = xx + 1;
+      line_begin_pos = xx + 1;
     }
   }
 
   // 終了位置
   for (size_t xx = errpos; xx < source.length(); xx++) {
     if (source[xx] == '\n') {
-      line_end = xx;
+      line_end_pos = xx;
       break;
     }
   }
@@ -77,7 +88,7 @@ Error& Error::emit(ErrorLevel level)
   auto const err_line =
       p_token->src_loc.context->_srcdata.get_line(*p_token);
 
-  size_t err_ptr_char_pos = errpos - line_begin;
+  size_t err_ptr_char_pos = errpos - line_begin_pos;
 
   std::cout << std::endl;
 
@@ -110,8 +121,7 @@ Error& Error::emit(ErrorLevel level)
 
   // エラーが起きた行
   std::cerr << COL_DEFAULT COL_WHITE << "     |\n"
-            << Utils::format("%4d |", line_num) << err_line
-            << std::endl;
+            << Utils::format("%4d |", line_num) << err_line;
 
   // 矢印
   std::cerr << COL_DEFAULT "     |"

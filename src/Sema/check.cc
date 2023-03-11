@@ -514,6 +514,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto type = this->check(ast->expr);
       auto resp = cur_func->result_type;
+      auto resp_c = this->check(resp);
 
       if (!type.equals(this->check(resp))) {
         Error(ast->expr, "type mismatch").emit();
@@ -523,7 +524,7 @@ TypeInfo Sema::check(AST::Base* _ast)
               .emit(Error::EL_Note);
         }
         else {
-          Error(resp, "specified '" + resp->to_string() +
+          Error(resp, "specified '" + resp_c.to_string() +
                           "' as result type, "
                           "but statement return '" +
                           type.to_string() + "'")
@@ -676,22 +677,28 @@ TypeInfo Sema::check(AST::Base* _ast)
             }
           });
 
-      // for (auto&& x : ast->code->list) {
-      //   this->check(x);
-      // }
-
       auto code_type = this->check(ast->code);
 
       if (ast->code->return_last_expr) {
         this->expect(res_type, *ast->code->list.rbegin());
       }
       else if (!res_type.equals(TYPE_None)) {
-        Error(ast,
-              "return type is not none, "
-              "but function return nothing")
-            .emit();
+        if (ast->code->list.empty() || return_types.empty()) {
+          Error(ast->token,
+                "return type is not none, "
+                "but function return nothing")
+              .emit();
+        }
+        else {
+          auto semi = (*ast->code->list.rbegin())->end_token;
+          semi++;
 
-        Error(ast->result_type, "return type specified here")
+          Error(*semi, "semicolon is not needed").emit();
+        }
+
+        Error(ast->result_type, "return type specified with '" +
+                                    res_type.to_string() +
+                                    "' here")
             .emit(Error::EL_Note)
             .exit();
       }

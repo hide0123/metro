@@ -1,11 +1,13 @@
 #pragma once
 
+#include <list>
+
 namespace AST {
 
 struct Base {
   ASTKind kind;
   Token const& token;
-  Token const* end_token;
+  std::list<Token>::const_iterator end_token;
 
   virtual ~Base()
   {

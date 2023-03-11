@@ -85,6 +85,8 @@ AST::Function* Parser::parse_function()
 
   func->code = this->expect_scope();  // 処理 (スコープ)
 
+  this->set_last_token(func);
+
   return func;
 }
 
@@ -112,6 +114,8 @@ AST::Type* Parser::parse_typename()
   if (this->eat("const")) {
     ast->is_const = true;
   }
+
+  this->set_last_token(ast);
 
   return ast;
 }
