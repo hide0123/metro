@@ -92,11 +92,12 @@ bool SFContext::open_file()
     this->_srcdata._data += line;
 
     auto& range = this->_srcdata._lines.emplace_back(LineRange{
-        index++, line_pos, line_pos + line.length() - 1});
+        index, line_pos, line_pos + line.length() - 1});
 
     debug(printf("%zu %zu %zu\n", range.index, range.begin,
                  range.end));
 
+    index++;
     line_pos = range.end + 1;
   }
 
@@ -123,14 +124,14 @@ bool SFContext::import(std::string const& path,
 
         if (p->_importer_token) {
           Error(*p->_importer_token, "first imported here")
-              .emit(Error::EL_Note)
+              .emit(EL_Note)
               .exit();
         }
         else {
           Error(token, "'" + path +
                            "' is already opened by argument in "
                            "command line")
-              .emit(Error::EL_Note)
+              .emit(EL_Note)
               .exit();
         }
       }

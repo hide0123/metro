@@ -679,7 +679,7 @@ TypeInfo Sema::check(AST::Base* _ast)
           Error(ast->result_type,
                 "return type specified with '" +
                     res_type.to_string() + "' here")
-              .emit(Error::EL_Note)
+              .emit(EL_Note)
               .exit();
         }
 
@@ -695,9 +695,7 @@ TypeInfo Sema::check(AST::Base* _ast)
                 "expression")
               .emit();
 
-        Error(*semi, "remove this token")
-            .emit(Error::EL_Note)
-            .exit();
+        Error(*semi, "remove this token").emit(EL_Note).exit();
       }
 
       this->end_return_capture();

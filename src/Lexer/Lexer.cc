@@ -23,6 +23,7 @@ Lexer::~Lexer()
 std::list<Token> Lexer::lex()
 {
   std::list<Token> ret;
+
   auto line_range = this->_context._srcdata._lines.begin();
 
   this->pass_space();
@@ -33,9 +34,8 @@ std::list<Token> Lexer::lex()
     auto ch = this->peek();
     auto str = this->source.data() + this->position;
 
-    if (line_range->end < this->position) {
+    while (line_range->end <= this->position)
       line_range++;
-    }
 
     token.src_loc.context = &this->_context;
     token.src_loc.position = this->position;

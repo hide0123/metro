@@ -3,53 +3,85 @@
 // ---------------------------------------------
 #pragma once
 
-#include <utility>
-#include <tuple>
+#include <memory>
 #include "AST.h"
 
 enum ErrorKind {
+  ERR_None,
+
+  // Lexer
+  ERR_InvalidToken,
+  ERR_UnclosedStrignLiteral,
+
+  // Parser
+  ERR_InvalidSyntax,
+  ERR_UnexpectedToken,
+
+  // Sema
+  ERR_TypeMismatch,
+  ERR_UnexpectedType,
+  ERR_ReturrnOutSideFunction,
+
+  // run-time
+  ERR_IndexOutOfRange,
 };
 
-struct ErrorLocation {
-  enum LocationType {
-    LOC_AST,
-    LOC_Token
-  };
+enum ErrorLocationKind {
+  ERRLOC_AST,
+  ERRLOC_Token,
+};
 
-  LocationType type;
+enum ErrorLevel {
+  EL_Error,
+  EL_Warning,
+  EL_Note
+};
+
+class Error;
+struct ErrorLocation {
+  ErrorLocationKind loc_kind;
 
   AST::Base const* ast;
   Token const* token;
+
+  // show all of error occurred codes
+  bool is_single_line;
 
   ErrorLocation(AST::Base const* ast);
   ErrorLocation(Token const& token);
 
 private:
-  size_t _pos_begin;
-  size_t _pos_end;
+  size_t const _pos_begin;
+  size_t const _pos_end;
+
+  friend class Error;
 };
 
 class Error {
 public:
-  enum ErrorLevel {
-    EL_Error,
-    EL_Warning,
-    EL_Note
-  };
+  Error(Error&&) = delete;
+  Error(Error const&) = delete;
 
-  Error(ErrLoc loc, std::string const& msg);
+  Error(ErrorLocation&& loc, std::string const& msg);
+  Error(ErrorKind kind, ErrorLocation&& loc,
+        std::string const& msg);
+
+  Error& single_line();
 
   Error& emit(ErrorLevel level = EL_Error);
 
-  Error& emit2(ErrorLevel level = EL_Error);
+  [[noreturn]] void except();
 
   [[noreturn]] void exit(int code = 1);
 
   static bool was_emitted();
 
 private:
-  static std::pair<size_t, size_t> get_error_range_on_source();
+  std::pair<Token const*, Token const*> get_token_range() const;
 
-  ErrLoc const _loc;
+  ErrorKind _kind;
   std::string const _msg;
+  ErrorLocation _loc;
+
+  static size_t _count;
 };
