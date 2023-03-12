@@ -591,11 +591,6 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
-      // debug(Error(ast->token,
-      //             Utils::format("return_last_expr = %d",
-      //                           ast->return_last_expr))
-      //           .emit(Error::EL_Note););
-
       // empty scope
       if (ast->list.empty())
         break;
