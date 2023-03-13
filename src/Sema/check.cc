@@ -543,6 +543,16 @@ TypeInfo Sema::check(AST::Base* _ast)
     }
 
     //
+    // loop
+    case AST_Loop: {
+      astdef(Loop);
+
+      this->check(ast->code);
+      
+      break;
+    }
+
+    //
     // for
     case AST_For: {
       astdef(For);
@@ -582,6 +592,17 @@ TypeInfo Sema::check(AST::Base* _ast)
       this->check(ast->code);
 
       this->scope_list.pop_front();
+
+      break;
+    }
+
+    //
+    // while
+    case AST_While: {
+      astdef(While);
+
+      this->expect(TYPE_Bool, ast->cond);
+      this->check(ast->code);
 
       break;
     }

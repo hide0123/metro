@@ -113,6 +113,13 @@ AST::Base* Parser::stmt()
   }
 
   //
+  // loop
+  if (this->eat("loop")) {
+    return this->set_last_token(
+        new AST::Loop(this->expect_scope()));
+  }
+
+  //
   // for
   if (this->eat("for")) {
     auto ast = new AST::For(*this->ate);
@@ -136,13 +143,6 @@ AST::Base* Parser::stmt()
     ast->code = this->expect_scope();
 
     return this->set_last_token(ast);
-  }
-
-  //
-  // loop
-  if (this->eat("loop")) {
-    return this->set_last_token(
-        new AST::Loop(this->expect_scope()));
   }
 
   //

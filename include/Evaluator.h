@@ -46,10 +46,12 @@ class Evaluator {
   struct LoopStack {
     var_storage& vs;
     bool is_breaked;
+    bool is_continued;
 
     LoopStack(var_storage& vs)
         : vs(vs),
-          is_breaked(false)
+          is_breaked(false),
+          is_continued(false)
     {
     }
   };
