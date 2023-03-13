@@ -13,11 +13,12 @@ enum ErrorKind {
   ERR_InvalidToken,
   ERR_UnclosedStrignLiteral,
 
-  // Parser
+  // Syntaxes
   ERR_InvalidSyntax,
   ERR_UnexpectedToken,
+  ERR_EmptySwitch,
 
-  // Sema
+  // Semantics
   ERR_TypeMismatch,
   ERR_UnexpectedType,
   ERR_ReturrnOutSideFunction,

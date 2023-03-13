@@ -428,6 +428,29 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     }
 
     //
+    // switch
+    case AST_Switch: {
+      astdef(Switch);
+
+      auto item = this->evaluate(ast->expr);
+
+      for (auto&& c : ast->cases) {
+        auto cond = this->evaluate(c);
+
+        if (cond->type.equals(TYPE_Bool) &&
+            !((ObjBool*)cond)->value)
+          continue;
+
+        if (!cond->equals(item))
+          continue;
+
+        this->evaluate(c->scope);
+      }
+
+      break;
+    }
+
+    //
     // loop
     case AST_Loop: {
       auto& vst = this->get_vst();

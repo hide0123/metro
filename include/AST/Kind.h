@@ -34,6 +34,7 @@ enum ASTKind : uint8_t {
   // control-statements
   AST_If,
   AST_Switch,
+  AST_Case,
   AST_Return,
   AST_Break,
   AST_Continue,

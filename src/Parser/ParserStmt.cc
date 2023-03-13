@@ -113,6 +113,40 @@ AST::Base* Parser::stmt()
   }
 
   //
+  // switch
+  if (this->eat("switch")) {
+    auto ast = new AST::Switch(*this->ate);
+
+    ast->expr = this->expr();
+
+    this->expect("{");
+
+    while (this->eat("case")) {
+      auto x = new AST::Case(*this->ate);
+
+      x->cond = this->expr();
+
+      this->expect(":");
+      x->scope = this->expect_scope();
+
+      x->end_token = x->scope->end_token;
+
+      ast->cases.emplace_back(x);
+    }
+
+    ast->end_token = this->expect("}");
+
+    if (ast->cases.empty()) {
+      Error(ERR_EmptySwitch, ast->token,
+            "empty switch-statement is not valid")
+          .emit()
+          .exit();
+    }
+
+    return ast;
+  }
+
+  //
   // loop
   if (this->eat("loop")) {
     return this->set_last_token(

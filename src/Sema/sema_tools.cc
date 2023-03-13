@@ -27,11 +27,6 @@ BuiltinFunc const* Sema::find_builtin_func(std::string_view name)
   return nullptr;
 }
 
-Sema::ScopeEmu& Sema::get_cur_scope()
-{
-  return *this->scope_list.begin();
-}
-
 AST::Function* Sema::get_cur_func()
 {
   return *this->function_history.begin();
