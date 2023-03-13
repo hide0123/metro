@@ -484,6 +484,18 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       break;
     }
 
+    //
+    // do-while
+    case AST_DoWhile: {
+      astdef(DoWhile);
+
+      do {
+        this->evaluate(ast->code);
+      } while (((ObjBool*)this->evaluate(ast->cond))->value);
+
+      break;
+    }
+
     default:
       alertmsg("evaluation is not implemented yet (kind="
                << _ast->kind << ")");

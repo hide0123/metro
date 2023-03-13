@@ -587,6 +587,17 @@ TypeInfo Sema::check(AST::Base* _ast)
     }
 
     //
+    // do-while
+    case AST_DoWhile: {
+      astdef(DoWhile);
+
+      this->check(ast->code);
+      this->expect(TYPE_Bool, ast->cond);
+
+      break;
+    }
+
+    //
     // スコープ
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
