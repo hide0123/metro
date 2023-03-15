@@ -1,11 +1,6 @@
-/* ------------------------------------------------------------
-
-Sema
-
-意味解析を行う
-型推論、型チェック、など
-
-  ------------------------------------------------------------ */
+// ------------------------------------------ //
+//  semantics analyzer
+// ------------------------------------------ //
 
 #pragma once
 
@@ -18,9 +13,6 @@ Sema
 #include "AST.h"
 #include "TypeInfo.h"
 
-// ---------------------------------------------
-//  Sema
-// ---------------------------------------------
 class Evaluator;
 class Sema {
   friend class Evaluator;
@@ -34,7 +26,8 @@ class Sema {
 
     bool is_global = 0;
 
-    explicit LocalVar(TypeInfo type, std::string_view name)
+    explicit LocalVar(TypeInfo const& type,
+                      std::string_view name)
         : type(type),
           name(name),
           step(0),
@@ -65,13 +58,15 @@ class Sema {
     AST::Base* ast;
     LocalVarList lvar;
 
-    bool is_breakable;
     bool is_loop;
+    bool is_breakable;
+    bool is_continueable;
 
     SemaScope(AST::Base* ast)
         : ast(ast),
+          is_loop(false),
           is_breakable(false),
-          is_loop(false)
+          is_continueable(false)
     {
     }
   };

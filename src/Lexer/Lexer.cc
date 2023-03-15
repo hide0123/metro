@@ -76,7 +76,7 @@ std::list<Token> Lexer::lex()
 
       token.str = {str, this->pass_while([](char c) {
                      return c != '"';
-                   }) + 1};
+                   }) + 2};
 
       this->position++;
     }

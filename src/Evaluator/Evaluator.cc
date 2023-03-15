@@ -289,13 +289,12 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto obj = this->evaluate(x->first);
 
       for (auto&& elem : x->elements) {
-        if (auto tmp = this->evaluate(elem.ast);
-            !Evaluator::compute_compare(elem.kind, obj, tmp)) {
-          return ret;
-        }
-        else {
+        auto tmp = this->evaluate(elem.ast);
+
+        if (Evaluator::compute_compare(elem.kind, obj, tmp))
           obj = tmp;
-        }
+        else
+          return ret;
       }
 
       ret->value = true;
@@ -435,16 +434,20 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto item = this->evaluate(ast->expr);
 
       for (auto&& c : ast->cases) {
-        auto cond = this->evaluate(c);
+        alert;
 
-        if (cond->type.equals(TYPE_Bool) &&
-            !((ObjBool*)cond)->value)
-          continue;
+        auto cond = this->evaluate(c->cond);
+
+        if (cond->type.equals(TYPE_Bool)) {
+          if (!((ObjBool*)cond)->value)
+            continue;
+        }
 
         if (!cond->equals(item))
           continue;
 
         this->evaluate(c->scope);
+        break;
       }
 
       break;
@@ -573,7 +576,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
     default:
       alertmsg("evaluation is not implemented yet (kind="
-               << _ast->kind << ")");
+               << (int)_ast->kind << ")");
 
       todo_impl;
   }

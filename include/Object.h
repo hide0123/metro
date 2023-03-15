@@ -1,26 +1,17 @@
-#pragma once
-
-#include "TypeInfo.h"
-
 // ---------------------------------------------
 //  Object
 // ---------------------------------------------
+#pragma once
 
-class Application;
-struct ObjNone;
+#include "TypeInfo.h"
 
 struct Object {
   TypeInfo type;
   size_t ref_count;
   bool no_delete;
 
-  static ObjNone* obj_none;
-
-  static void initialize();
-
-  virtual std::string to_string() const = 0;
-
   virtual Object* clone() const = 0;
+  virtual std::string to_string() const = 0;
 
   virtual bool is_numeric() const
   {
@@ -33,8 +24,6 @@ struct Object {
 
 protected:
   Object(TypeInfo type);
-
-  friend class Application;
 };
 
 struct ObjNone : Object {
@@ -53,14 +42,14 @@ struct ObjLong : Object {
   std::string to_string() const;
   ObjLong* clone() const;
 
-  bool equals(ObjLong* x) const
-  {
-    return x->value == this->value;
-  }
-
   bool is_numeric() const
   {
     return true;
+  }
+
+  bool equals(ObjLong* x) const
+  {
+    return this->value == x->value;
   }
 
   explicit ObjLong(int64_t value = 0)
@@ -76,14 +65,14 @@ struct ObjUSize : Object {
   std::string to_string() const;
   ObjUSize* clone() const;
 
-  bool equals(ObjUSize* x) const
-  {
-    return x->value == this->value;
-  }
-
   bool is_numeric() const
   {
     return true;
+  }
+
+  bool equals(ObjUSize* x) const
+  {
+    return this->value == x->value;
   }
 
   ObjUSize(size_t value = 0)
@@ -99,14 +88,14 @@ struct ObjFloat : Object {
   std::string to_string() const;
   ObjFloat* clone() const;
 
-  bool equals(ObjFloat* x) const
-  {
-    return x->value == this->value;
-  }
-
   bool is_numeric() const
   {
     return true;
+  }
+
+  bool equals(ObjFloat* x) const
+  {
+    return this->value == x->value;
   }
 
   explicit ObjFloat(float value = 0)
@@ -131,7 +120,7 @@ struct ObjBool : Object {
 
   bool equals(ObjBool* x) const
   {
-    return x->value == this->value;
+    return this->value == x->value;
   }
 
   explicit ObjBool(bool value = 0)
@@ -149,7 +138,7 @@ struct ObjChar : Object {
 
   bool equals(ObjChar* x) const
   {
-    return x->value == this->value;
+    return this->value == x->value;
   }
 
   explicit ObjChar(wchar_t ch = 0)
@@ -167,7 +156,7 @@ struct ObjString : Object {
 
   bool equals(ObjString* x) const
   {
-    return x->value == this->value;
+    return this->value == x->value;
   }
 
   ObjString(std::wstring const& value = L"")

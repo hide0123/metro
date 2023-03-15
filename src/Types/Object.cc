@@ -14,17 +14,11 @@
 
 static bool nested = 0;
 
-ObjNone* Object::obj_none;
-
-void Object::initialize()
-{
-}
-
 bool Object::equals(Object* object) const
 {
 #define eeeee(A, B) \
   case TYPE_##A:    \
-    return ((Obj##B*)this)->equals((Obj##B*)object);
+    return ((Obj##B*)this)->equals((Obj##B*)object)
 
 #define ajjja(A) eeeee(A, A)
 
@@ -34,11 +28,17 @@ bool Object::equals(Object* object) const
   // なんなのこれ
   // めんどくさすぎ
   switch (this->type.kind) {
-  eeeee(Int, Long) ajjja(Float) ajjja(Bool) ajjja(Char)
-      ajjja(String) ajjja(Dict) ajjja(Vector)
+    eeeee(Int, Long);
 
-          case TYPE_None:
-    return 1;
+    ajjja(Float);
+    ajjja(Bool);
+    ajjja(Char);
+    ajjja(String);
+    ajjja(Dict);
+    ajjja(Vector);
+
+    case TYPE_None:
+      return true;
   }
 
   todo_impl;
