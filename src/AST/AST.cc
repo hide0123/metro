@@ -206,6 +206,33 @@ If::~If()
     delete this->if_false;
 }
 
+Case::Case(Token const& token)
+    : Base(AST_Case, token),
+      cond(nullptr),
+      scope(nullptr)
+{
+}
+
+Case::~Case()
+{
+  delete this->cond;
+  delete this->scope;
+}
+
+Switch::Switch(Token const& token)
+    : Base(AST_Switch, token),
+      expr(nullptr)
+{
+}
+
+Switch::~Switch()
+{
+  delete this->expr;
+
+  for(auto&&x:this->cases)
+    delete x;
+}
+
 For::~For()
 {
   delete this->iter;

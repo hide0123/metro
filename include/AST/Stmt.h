@@ -72,6 +72,22 @@ struct If : Base {
   ~If();
 };
 
+struct Case : Base {
+  Base* cond;
+  Scope* scope;
+
+  Case(Token const& token);
+  ~Case();
+};
+
+struct Switch : Base {
+  Base* expr;
+  std::vector<Case*> cases;
+
+  Switch(Token const& token);
+  ~Switch();
+};
+
 struct For : Base {
   Base* iter;
   Base* iterable;

@@ -476,7 +476,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
 
       // 同スコープ内で同じ名前の変数を探す
-      auto pvar = scope_emu.find_var(ast->name);
+      auto pvar = scope_emu.lvar.find_var(ast->name);
 
       // すでに定義済みの同じ名前があって、違う型
       //  => シャドウイングする
@@ -485,10 +485,9 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
       // そうでなければ新規追加
       else {
-        auto& var =
-            scope_emu.variables.emplace_back(ast->name, type);
+        auto& var = scope_emu.lvar.append(type, ast->name);
 
-        var.index = scope_emu.variables.size() - 1;
+        var.index = scope_emu.lvar.variables.size() - 1;
       }
 
       break;
@@ -543,12 +542,45 @@ TypeInfo Sema::check(AST::Base* _ast)
     }
 
     //
+    // switch
+    case AST_Switch: {
+      astdef(Switch);
+
+      auto item = this->check(ast->expr);
+
+      for (auto&& case_ast : ast->cases) {
+        auto x = this->check(case_ast->cond);
+
+        if (!x.equals(item) && !x.equals(TYPE_Bool)) {
+          Error(case_ast->cond,
+                "expected boolean or '" + item.to_string() +
+                    "', but found '" + x.to_string() + "'")
+              .emit()
+              .exit();
+        }
+
+        this->check(case_ast->scope);
+      }
+
+      break;
+    }
+
+    //
+    // loop
+    case AST_Loop: {
+      astdef(Loop);
+
+      this->check(ast->code);
+
+      break;
+    }
+
+    //
     // for
     case AST_For: {
       astdef(For);
 
-      auto& e =
-          this->scope_list.emplace_front((AST::Scope*)ast->code);
+      auto& e = this->enter_scope((AST::Scope*)ast->code);
 
       auto iterable = this->check(ast->iterable);
 
@@ -572,7 +604,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
 
       if (ast->iter->kind == AST_Variable) {
-        e.variables.emplace_back(ast->iter->token.str, iter);
+        e.lvar.append(iter, ast->iter->token.str);
       }
       else if (auto x = this->check_as_left(ast->iter);
                !x.equals(iter)) {
@@ -581,7 +613,29 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       this->check(ast->code);
 
-      this->scope_list.pop_front();
+      this->leave_scope();
+
+      break;
+    }
+
+    //
+    // while
+    case AST_While: {
+      astdef(While);
+
+      this->expect(TYPE_Bool, ast->cond);
+      this->check(ast->code);
+
+      break;
+    }
+
+    //
+    // do-while
+    case AST_DoWhile: {
+      astdef(DoWhile);
+
+      this->check(ast->code);
+      this->expect(TYPE_Bool, ast->cond);
 
       break;
     }
@@ -591,16 +645,11 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Scope: {
       auto ast = (AST::Scope*)_ast;
 
-      // debug(Error(ast->token,
-      //             Utils::format("return_last_expr = %d",
-      //                           ast->return_last_expr))
-      //           .emit(Error::EL_Note););
-
       // empty scope
       if (ast->list.empty())
         break;
 
-      this->scope_list.emplace_front(ast);
+      this->enter_scope(ast);
 
       if (ast->return_last_expr) {
         auto it = ast->list.begin();
@@ -615,7 +664,7 @@ TypeInfo Sema::check(AST::Base* _ast)
           this->check(e);
       }
 
-      this->scope_list.pop_front();
+      this->leave_scope();
 
       break;
     }
@@ -640,12 +689,12 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto fn_scope = ast->code;
 
       // スコープ追加
-      auto& S = this->scope_list.emplace_front(fn_scope);
+      auto& S = this->enter_scope(fn_scope);
 
       // 引数追加
       for (size_t ww = 0; auto&& arg : ast->args) {
-        auto& V = S.variables.emplace_back(
-            arg->name, this->check(arg->type));
+        auto& V =
+            S.lvar.append(this->check(arg->type), arg->name);
 
         V.index = ww++;
       }
@@ -708,7 +757,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       this->end_return_capture();
 
       // スコープ削除
-      this->scope_list.pop_front();
+      this->leave_scope();
 
       this->function_history.pop_front();
 
@@ -789,8 +838,8 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
       astdef(Variable);
 
       for (size_t step = 0; auto&& S : this->scope_list) {
-        for (auto it = S.variables.rbegin();
-             it != S.variables.rend(); it++) {
+        for (auto it = S.lvar.variables.rbegin();
+             it != S.lvar.variables.rend(); it++) {
           if (it->name == ast->token.str) {
             ast->step = step;
             ast->index = it->index;

@@ -1,11 +1,6 @@
-/* ------------------------------------------------------------
-
-Sema
-
-意味解析を行う
-型推論、型チェック、など
-
-  ------------------------------------------------------------ */
+// ------------------------------------------ //
+//  semantics analyzer
+// ------------------------------------------ //
 
 #pragma once
 
@@ -18,46 +13,33 @@ Sema
 #include "AST.h"
 #include "TypeInfo.h"
 
-// ---------------------------------------------
-//  Sema
-// ---------------------------------------------
 class Evaluator;
 class Sema {
   friend class Evaluator;
 
-  struct FunctionContext {
-    AST::Function* func;
-
-    TypeInfo result_type;
-
-    std::map<AST::Return*, TypeInfo> return_stmt_types;
-  };
-
-  struct VariableEmu {
-    std::string_view name;
-
+  struct LocalVar {
     TypeInfo type;
+    std::string_view name;
 
     size_t step;
     size_t index;
 
     bool is_global = 0;
 
-    explicit VariableEmu(std::string_view name, TypeInfo type)
-        : name(name),
-          type(type),
+    explicit LocalVar(TypeInfo const& type,
+                      std::string_view name)
+        : type(type),
+          name(name),
           step(0),
           index(0)
     {
     }
   };
 
-  struct ScopeEmu {
-    AST::Scope* ast;
+  struct LocalVarList {
+    std::vector<LocalVar> variables;
 
-    std::vector<VariableEmu> variables;
-
-    VariableEmu* find_var(std::string_view name)
+    LocalVar* find_var(std::string_view name)
     {
       for (auto&& var : this->variables)
         if (var.name == name)
@@ -66,10 +48,35 @@ class Sema {
       return nullptr;
     }
 
-    explicit ScopeEmu(AST::Scope* ast)
-        : ast(ast)
+    LocalVar& append(TypeInfo const& type, std::string_view name)
+    {
+      return this->variables.emplace_back(type, name);
+    }
+  };
+
+  struct SemaScope {
+    AST::Base* ast;
+    LocalVarList lvar;
+
+    bool is_loop;
+    bool is_breakable;
+    bool is_continueable;
+
+    SemaScope(AST::Base* ast)
+        : ast(ast),
+          is_loop(false),
+          is_breakable(false),
+          is_continueable(false)
     {
     }
+  };
+
+  struct FunctionContext {
+    AST::Function* ast;
+
+    TypeInfo result_type;
+
+    std::map<AST::Return*, TypeInfo> return_stmt_types;
   };
 
 public:
@@ -159,7 +166,20 @@ private:
   void begin_return_capture(ReturnCaptureFunction func);
   void end_return_capture();
 
-  ScopeEmu& get_cur_scope();
+  SemaScope& get_cur_scope()
+  {
+    return *this->scope_list.begin();
+  }
+
+  SemaScope& enter_scope(AST::Scope* ast)
+  {
+    return this->scope_list.emplace_front(ast);
+  }
+
+  void leave_scope()
+  {
+    this->scope_list.pop_front();
+  }
 
   // 今いる関数を返す
   // 関数の中にいなければ nullptr を返す
@@ -169,7 +189,7 @@ private:
 
   AST::Scope* root;
 
-  std::list<ScopeEmu> scope_list;
+  std::list<SemaScope> scope_list;
   std::list<AST::Function*> function_history;
 
   size_t variable_stack_offs = 0;

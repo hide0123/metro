@@ -68,6 +68,7 @@
     "typeinfo": "cpp",
     "variant": "cpp",
     "*.inc": "cpp",
-    "cassert": "cpp"
+    "cassert": "cpp",
+    "ranges": "cpp"
   }
 }

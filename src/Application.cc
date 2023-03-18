@@ -38,7 +38,19 @@ int Application::main(int argc, char** argv)
       std::cout << "usage: metro <input file>\n";
     }
     else if (arg.ends_with(".metro")) {
+      if (!std::ifstream(arg).good()) {
+        std::cerr << "fatal: cannot open file '" << arg << "'"
+                  << std::endl;
+        return -1;
+      }
+
       this->_contexts.emplace_back(arg);
+    }
+    else {
+      std::cerr << "fatal: unknown argument: " << arg
+                << std::endl;
+
+      return -1;
     }
   }
 
@@ -80,7 +92,6 @@ ScriptFileContext const* Application::get_current_context() const
 // 初期化
 void Application::initialize()
 {
-  Object::initialize();
 }
 
 Application* Application::get_instance()

@@ -289,13 +289,12 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto obj = this->evaluate(x->first);
 
       for (auto&& elem : x->elements) {
-        if (auto tmp = this->evaluate(elem.ast);
-            !Evaluator::compute_compare(elem.kind, obj, tmp)) {
-          return ret;
-        }
-        else {
+        auto tmp = this->evaluate(elem.ast);
+
+        if (Evaluator::compute_compare(elem.kind, obj, tmp))
           obj = tmp;
-        }
+        else
+          return ret;
       }
 
       ret->value = true;
@@ -330,7 +329,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         if (vst.is_skipped)
           break;
 
-        if (auto L = this->get_cur_loop(); L && L->is_breaked)
+        if (auto L = this->get_cur_loop();
+            L && (L->is_breaked || L->is_continued))
           break;
 
         if (!this->call_stack.empty() &&
@@ -407,9 +407,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     // break / continue
     case AST_Break:
       this->get_cur_loop()->is_breaked = true;
+      break;
 
     case AST_Continue:
-      this->get_cur_loop()->vs.is_skipped = true;
+      this->get_cur_loop()->is_continued = true;
       break;
 
     //
@@ -422,6 +423,52 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       else if (ast->if_false)
         return this->evaluate(ast->if_false);
 
+      break;
+    }
+
+    //
+    // switch
+    case AST_Switch: {
+      astdef(Switch);
+
+      auto item = this->evaluate(ast->expr);
+
+      for (auto&& c : ast->cases) {
+        alert;
+
+        auto cond = this->evaluate(c->cond);
+
+        if (cond->type.equals(TYPE_Bool)) {
+          if (!((ObjBool*)cond)->value)
+            continue;
+        }
+
+        if (!cond->equals(item))
+          continue;
+
+        this->evaluate(c->scope);
+        break;
+      }
+
+      break;
+    }
+
+    //
+    // loop
+    case AST_Loop: {
+      auto& vst = this->get_vst();
+      auto& loop = this->loop_stack.emplace_front(vst);
+
+      while (true) {
+        this->evaluate(((AST::Loop*)_ast)->code);
+
+        if (loop.is_breaked)
+          break;
+
+        loop.is_continued = false;
+      }
+
+      this->loop_stack.pop_front();
       break;
     }
 
@@ -455,8 +502,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           iter->ref_count = 1;
 
           while (iter->value < obj->end) {
-            v.is_skipped = 0;
-
             this->evaluate(ast->code);
 
             if (loop.is_breaked) {
@@ -464,6 +509,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
             }
 
             iter->value++;
+            loop.is_continued = false;
           }
 
           // delete iter;
@@ -484,9 +530,53 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       break;
     }
 
+    //
+    // while
+    case AST_While: {
+      astdef(While);
+
+      auto& vst = this->get_vst();
+      auto& loop = this->loop_stack.emplace_front(vst);
+
+      while (((ObjBool*)this->evaluate(ast->cond))->value) {
+        this->evaluate(ast->code);
+
+        if (loop.is_breaked)
+          break;
+
+        loop.is_continued = false;
+      }
+
+      this->loop_stack.pop_front();
+
+      break;
+    }
+
+    //
+    // do-while
+    case AST_DoWhile: {
+      astdef(DoWhile);
+
+      auto& vst = this->get_vst();
+      auto& loop = this->loop_stack.emplace_front(vst);
+
+      do {
+        this->evaluate(ast->code);
+
+        if (loop.is_breaked)
+          break;
+
+        loop.is_continued = false;
+      } while (((ObjBool*)this->evaluate(ast->cond))->value);
+
+      this->loop_stack.pop_front();
+
+      break;
+    }
+
     default:
       alertmsg("evaluation is not implemented yet (kind="
-               << _ast->kind << ")");
+               << (int)_ast->kind << ")");
 
       todo_impl;
   }
