@@ -1,7 +1,6 @@
-自作スクリプト言語
+# Metro: A Typed Script Language
 
-静的型付け
-
+Documentations: https://github.com/bomkei/metro-docs
 
 サンプル:
 ```
