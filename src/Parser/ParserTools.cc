@@ -14,6 +14,7 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
     case AST_For:
     case AST_While:
     case AST_Scope:
+    case AST_Struct:
       return true;
   }
 
@@ -158,7 +159,20 @@ AST::Struct* Parser::parse_struct()
   return ast;
 }
 
-AST::Impl* parse_impl();
+AST::Impl* Parser::parse_impl()
+{
+  auto ast = new AST::Impl(*this->expect("impl"));
+
+  ast->name = this->expect_identifier()->str;
+
+  this->expect("{");
+
+  do {
+    ast->append(top());
+  } while (!this->eat("}"));
+
+  return (AST::Impl*)this->set_last_token(ast);
+}
 
 /**
  * @brief 型名をパースする

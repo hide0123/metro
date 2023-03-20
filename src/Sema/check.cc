@@ -309,7 +309,9 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
-    case AST_Dict: {
+    case AST_
+
+        case AST_Dict: {
       astdef(Dict);
 
       _ret = TYPE_Dict;
@@ -824,18 +826,6 @@ TypeInfo Sema::check(AST::Base* _ast)
     //
     // 型
     case AST_Type: {
-      static struct {
-        TypeKind a;
-        char const* b;
-      } const names[]{
-          {TYPE_None, "none"},     {TYPE_Int, "int"},
-          {TYPE_USize, "usize"},   {TYPE_Float, "float"},
-          {TYPE_Bool, "bool"},     {TYPE_Char, "char"},
-          {TYPE_String, "string"}, {TYPE_Range, "range"},
-          {TYPE_Vector, "vector"}, {TYPE_Dict, "dict"},
-          {TYPE_Args, "args"},
-      };
-
       auto ast = (AST::Type*)_ast;
 
       TypeInfo ret;
@@ -855,16 +845,21 @@ TypeInfo Sema::check(AST::Base* _ast)
                 Error(ast, "missing parameters")
                     .emit()
                     .exit();
-
-              // todo: case user-def struct
           }
 
           goto skiperror009;
         }
       }
 
-      // todo: find userdef struct
-      Error(ast, "unknown type name").emit().exit();
+      if (auto user_struct =
+              this->find_struct(ast->token.str);
+          user_struct) {
+        ret = TYPE_UserDef;
+        ret.userdef_struct = user_struct;
+      }
+      else {
+        Error(ast, "unknown type name").emit().exit();
+      }
 
     skiperror009:;
       for (auto&& sub : ast->parameters) {

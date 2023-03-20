@@ -61,5 +61,8 @@ AST::Base* Parser::top()
   if (this->found("struct"))
     return this->parse_struct();
 
+  if (this->found("impl"))
+    return this->parse_impl();
+
   return this->expr();
 }

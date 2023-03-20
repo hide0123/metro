@@ -3,6 +3,7 @@
 namespace AST {
 
 struct Impl : ListBase {
+  std::string_view name;
   ASTVector impls;
 
   bool is_empty() const override

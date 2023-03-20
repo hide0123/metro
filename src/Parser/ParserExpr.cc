@@ -30,7 +30,8 @@ AST::Base* Parser::factor()
     if (this->eat(":")) {
       auto ast = new AST::Dict(*token);
 
-      ast->elements.emplace_back(*this->ate, x, this->expr());
+      ast->elements.emplace_back(*this->ate, x,
+                                 this->expr());
 
       while (this->eat(",")) {
         x = this->expr();
@@ -92,6 +93,27 @@ AST::Base* Parser::factor()
         else {
           ast->end_token = this->ate;
         }
+
+        return ast;
+      }
+
+      //
+      // type constructor
+      if (this->eat("{")) {
+        auto ast = new AST::TypeConstructor(*ident);
+
+        ast->name = ident->str;
+
+        do {
+          auto& elem = ast->elements.emplace_back(
+              this->expect_identifier()->str, nullptr);
+
+          this->expect(":");
+
+          elem.expr = this->expr();
+        } while (this->eat(","));
+
+        ast->end_token = this->expect("}");
 
         return ast;
       }
@@ -305,11 +327,11 @@ AST::Base* Parser::shift()
 
   while (this->check()) {
     if (this->eat("<<"))
-      AST::Expr::create(x)->append(AST::EX_LShift, *this->ate,
-                                   this->add());
+      AST::Expr::create(x)->append(AST::EX_LShift,
+                                   *this->ate, this->add());
     else if (this->eat(">>"))
-      AST::Expr::create(x)->append(AST::EX_RShift, *this->ate,
-                                   this->add());
+      AST::Expr::create(x)->append(AST::EX_RShift,
+                                   *this->ate, this->add());
     else
       break;
   }
@@ -323,23 +345,25 @@ AST::Base* Parser::compare()
 
   while (this->check()) {
     if (this->eat("=="))
-      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
-                                      this->shift());
+      AST::Compare::create(x)->append(
+          AST::CMP_Equal, *this->ate, this->shift());
     else if (this->eat("!="))
-      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
-                                      this->shift());
+      AST::Compare::create(x)->append(
+          AST::CMP_Equal, *this->ate, this->shift());
     else if (this->eat(">="))
-      AST::Compare::create(x)->append(AST::CMP_LeftBigOrEqual,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(
+          AST::CMP_LeftBigOrEqual, *this->ate,
+          this->shift());
     else if (this->eat("<="))
-      AST::Compare::create(x)->append(AST::CMP_RightBigOrEqual,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(
+          AST::CMP_RightBigOrEqual, *this->ate,
+          this->shift());
     else if (this->eat(">"))
-      AST::Compare::create(x)->append(AST::CMP_LeftBigger,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(
+          AST::CMP_LeftBigger, *this->ate, this->shift());
     else if (this->eat("<"))
-      AST::Compare::create(x)->append(AST::CMP_RightBigger,
-                                      *this->ate, this->shift());
+      AST::Compare::create(x)->append(
+          AST::CMP_RightBigger, *this->ate, this->shift());
     else
       break;
   }
@@ -353,14 +377,14 @@ AST::Base* Parser::bit_op()
 
   while (this->check()) {
     if (this->eat("&"))
-      AST::Expr::create(x)->append(AST::EX_BitAND, *this->ate,
-                                   this->compare());
+      AST::Expr::create(x)->append(
+          AST::EX_BitAND, *this->ate, this->compare());
     else if (this->eat("^"))
-      AST::Expr::create(x)->append(AST::EX_BitXOR, *this->ate,
-                                   this->compare());
+      AST::Expr::create(x)->append(
+          AST::EX_BitXOR, *this->ate, this->compare());
     else if (this->eat("|"))
-      AST::Expr::create(x)->append(AST::EX_BitOR, *this->ate,
-                                   this->compare());
+      AST::Expr::create(x)->append(
+          AST::EX_BitOR, *this->ate, this->compare());
     else
       break;
   }

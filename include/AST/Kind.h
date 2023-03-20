@@ -14,11 +14,11 @@ enum ASTKind : uint8_t {
   AST_Dict,
 
   AST_Variable,
+  AST_CallFunc,
+  AST_TypeConstructor,
 
   AST_IndexRef,
   AST_MemberAccess,
-
-  AST_CallFunc,
 
   AST_UnaryPlus,
   AST_UnaryMinus,

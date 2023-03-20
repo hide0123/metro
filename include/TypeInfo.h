@@ -38,6 +38,10 @@ struct TypeInfo {
   std::vector<TypeInfo> type_params;
 
   //
+  // member variables
+  std::vector<TypeInfo> members;
+
+  //
   // if type is struct, this is a pointer to it.
   AST::Struct* userdef_struct;
 
