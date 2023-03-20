@@ -54,12 +54,15 @@ private:
   bool eat_semi();
   token_iter expect_semi();
 
+  bool is_ended_with_scope(AST::Base* ast);
+
   token_iter expect_identifier();
 
   AST::Type* parse_typename();
   AST::Type* expect_typename();
 
-  AST::Scope* parse_scope();
+  AST::Scope* parse_scope(token_iter tok = {},
+                          AST::Base* first = nullptr);
   AST::Scope* expect_scope();
 
   AST::Function* parse_function();

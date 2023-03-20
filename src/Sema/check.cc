@@ -421,7 +421,12 @@ TypeInfo Sema::check(AST::Base* _ast)
       for (auto&& elem : ast->elements) {
         auto right = this->check(elem.ast);
 
-        if (!left.is_numeric() || !right.is_numeric()) {
+        if (elem.kind == AST::CMP_Equal ||
+            elem.kind == AST::CMP_NotEqual) {
+          if (!left.equals(right))
+            Error(elem.op, "type mismatch").emit().exit();
+        }
+        else if (!left.is_numeric() || !right.is_numeric()) {
           Error(elem.op, "invalid operator").emit().exit();
         }
 
@@ -548,6 +553,9 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto item = this->check(ast->expr);
 
+      bool detected = false;
+      TypeInfo type;
+
       for (auto&& case_ast : ast->cases) {
         auto x = this->check(case_ast->cond);
 
@@ -559,7 +567,16 @@ TypeInfo Sema::check(AST::Base* _ast)
               .exit();
         }
 
-        this->check(case_ast->scope);
+        auto tmp = this->check(case_ast->scope);
+
+        if (detected && !type.equals(tmp)) {
+          Error(ERR_TypeMismatch, case_ast->token,
+                "expected '" + type.to_string() + "'")
+              .emit()
+              .exit();
+        }
+        else
+          type = tmp;
       }
 
       break;

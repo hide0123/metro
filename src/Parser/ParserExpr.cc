@@ -7,6 +7,12 @@
 
 AST::Base* Parser::factor()
 {
+  if (this->eat("(")) {
+    auto x = this->expr();
+    this->expect(")");
+    return x;
+  }
+
   if (this->eat("none"))
     return new AST::ConstKeyword(AST_None, *this->ate);
 
@@ -15,6 +21,30 @@ AST::Base* Parser::factor()
 
   if (this->eat("false"))
     return new AST::ConstKeyword(AST_False, *this->ate);
+
+  if (this->eat("{")) {
+    auto token = this->cur;
+
+    auto x = this->expr();
+
+    if (this->eat(":")) {
+      auto ast = new AST::Dict(*token);
+
+      ast->elements.emplace_back(*this->ate, x, this->expr());
+
+      while (this->eat(",")) {
+        x = this->expr();
+        ast->elements.emplace_back(*this->expect(":"), x,
+                                   this->expr());
+      }
+
+      ast->end_token = this->expect("}");
+
+      return ast;
+    }
+
+    return this->parse_scope(token, x);
+  }
 
   if (auto x = this->stmt(); x)
     return x;
