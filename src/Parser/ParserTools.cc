@@ -39,25 +39,34 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok,
 
   auto ast = new AST::Scope(first ? *tok : *this->ate);
 
+  if (first) {
+    ast->append(first);
+
+    if (!this->eat("}")) {
+      if (this->is_ended_with_scope(first))
+        this->expect_semi();
+    }
+    else {
+      ast->return_last_expr = true;
+      return ast;
+    }
+  }
+
   while (!this->eat("}")) {
     AST::Base* x = nullptr;
 
-    if (first) {
-      x = ast->append(first);
-      first = nullptr;
-    }
-    else
-      x = ast->append(this->expr());
+    x = ast->append(this->expr());
 
-    if (this->is_ended_with_scope(x))
-      ast->return_last_expr = !this->eat_semi();
-    else if (this->cur->str != "}")
-      this->expect_semi();
-    else
-      ast->return_last_expr = true;
+    if ((ast->return_last_expr = !this->eat_semi())) {
+      if (!(ast->return_last_expr =
+                this->cur->str == "}") &&
+          !this->is_ended_with_scope(x)) {
+        this->expect_semi();
+      }
+    }
   }
 
-  return ast;
+  return (AST::Scope*)this->set_last_token(ast);
 }
 
 /**
@@ -91,9 +100,9 @@ AST::Scope* Parser::expect_scope()
  */
 AST::Function* Parser::parse_function()
 {
-  auto func =
-      new AST::Function(*this->expect("fn"),
-                        *this->expect_identifier());  // AST 作成
+  auto func = new AST::Function(
+      *this->expect("fn"),
+      *this->expect_identifier());  // AST 作成
 
   this->expect("(");  // 引数リストの開きカッコ
 
@@ -216,8 +225,8 @@ bool Parser::eat(char const* s)
 Parser::token_iter Parser::expect(char const* s)
 {
   if (!this->eat(s)) {
-    Error(*(--this->cur),
-          "expected '" + std::string(s) + "' after this token")
+    Error(*(--this->cur), "expected '" + std::string(s) +
+                              "' after this token")
         .emit()
         .exit();
   }
@@ -241,7 +250,8 @@ Parser::token_iter Parser::expect_semi()
 Parser::token_iter Parser::expect_identifier()
 {
   if (this->cur->kind != TOK_Ident) {
-    Error(*(--this->cur), "expected identifier after this token")
+    Error(*(--this->cur),
+          "expected identifier after this token")
         .emit()
         .exit();
   }

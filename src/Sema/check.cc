@@ -18,9 +18,9 @@
  * @param rhs
  * @return std::optional<TypeInfo>
  */
-std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
-                                            TypeInfo const& lhs,
-                                            TypeInfo const& rhs)
+std::optional<TypeInfo> Sema::is_valid_expr(
+    AST::ExprKind kind, TypeInfo const& lhs,
+    TypeInfo const& rhs)
 {
   if (lhs.equals(TYPE_None) || rhs.equals(TYPE_None))
     return std::nullopt;
@@ -137,8 +137,8 @@ TypeInfo& Sema::get_subscripted_type(
       }
 
       default:
-        Error(index,
-              "'" + type.to_string() + "' is not subscriptable")
+        Error(index, "'" + type.to_string() +
+                         "' is not subscriptable")
             .emit()
             .exit();
     }
@@ -196,8 +196,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
 
       if (x.equals(TYPE_None)) {
-        Error(ast,
-              "cannot cast 'none' to '" + _ret.to_string() + "'")
+        Error(ast, "cannot cast 'none' to '" +
+                       _ret.to_string() + "'")
             .emit()
             .exit();
       }
@@ -229,8 +229,8 @@ TypeInfo Sema::check(AST::Base* _ast)
           break;
       }
 
-      Error(ast, "cannot cast '" + _ret.to_string() + "' to '" +
-                     x.to_string() + "'")
+      Error(ast, "cannot cast '" + _ret.to_string() +
+                     "' to '" + x.to_string() + "'")
           .emit()
           .exit();
 
@@ -304,7 +304,8 @@ TypeInfo Sema::check(AST::Base* _ast)
     //
     // 関数呼び出し
     case AST_CallFunc: {
-      _ret = this->check_function_call((AST::CallFunc*)_ast);
+      _ret =
+          this->check_function_call((AST::CallFunc*)_ast);
       break;
     }
 
@@ -330,7 +331,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         value_type = this->check(item_iter->value);
       }
 
-      for (; item_iter != ast->elements.end(); item_iter++) {
+      for (; item_iter != ast->elements.end();
+           item_iter++) {
         this->expect(key_type, item_iter->key);
         this->expect(value_type, item_iter->value);
       }
@@ -400,7 +402,9 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto dest = this->check_as_left(ast->dest);
 
       if (dest.is_const) {
-        Error(ast, "destination is not mutable").emit().exit();
+        Error(ast, "destination is not mutable")
+            .emit()
+            .exit();
       }
 
       if (!dest.equals(this->check(ast->expr))) {
@@ -426,7 +430,8 @@ TypeInfo Sema::check(AST::Base* _ast)
           if (!left.equals(right))
             Error(elem.op, "type mismatch").emit().exit();
         }
-        else if (!left.is_numeric() || !right.is_numeric()) {
+        else if (!left.is_numeric() ||
+                 !right.is_numeric()) {
           Error(elem.op, "invalid operator").emit().exit();
         }
 
@@ -513,8 +518,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
 
       if (ast->expr) {
-        _ret = this->expect(this->check(cur_func->result_type),
-                            ast->expr);
+        _ret = this->expect(
+            this->check(cur_func->result_type), ast->expr);
       }
       else if (auto t = this->check(cur_func->result_type);
                !t.equals(TYPE_None)) {
@@ -570,13 +575,25 @@ TypeInfo Sema::check(AST::Base* _ast)
         auto tmp = this->check(case_ast->scope);
 
         if (detected && !type.equals(tmp)) {
-          Error(ERR_TypeMismatch, case_ast->token,
-                "expected '" + type.to_string() + "'")
+          if (type.equals(TYPE_None)) {
+            Error(ERR_TypeMismatch,
+                  *case_ast->scope->end_token,
+                  "expected semicolon before this token")
+                .emit()
+                .exit();
+          }
+
+          Error(ERR_TypeMismatch,
+                *case_ast->scope->end_token,
+                "expected '" + type.to_string() +
+                    "' expression before this token")
               .emit()
               .exit();
         }
-        else
+        else {
           type = tmp;
+          detected = true;
+        }
       }
 
       break;
@@ -710,8 +727,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       // 引数追加
       for (size_t ww = 0; auto&& arg : ast->args) {
-        auto& V =
-            S.lvar.append(this->check(arg->type), arg->name);
+        auto& V = S.lvar.append(this->check(arg->type),
+                                arg->name);
 
         V.index = ww++;
       }
@@ -741,7 +758,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         }
       }
       else if (!res_type.equals(TYPE_None)) {
-        if (ast->code->list.empty() || return_types.empty()) {
+        if (ast->code->list.empty() ||
+            return_types.empty()) {
           Error(ast->token,
                 "return type is not none, "
                 "but function return nothing")
@@ -760,12 +778,14 @@ TypeInfo Sema::check(AST::Base* _ast)
         semi++;
 
         if (last->kind != AST_Return) {
-          Error(*semi, "expected '" + res_type.to_string() +
-                           "' type expression after this token")
+          Error(*semi,
+                "expected '" + res_type.to_string() +
+                    "' type expression after this token")
               .emit();
 
           Error(last,
-                "semicolon ignores the evaluated result of this")
+                "semicolon ignores the evaluated result of "
+                "this")
               .emit(EL_Note)
               .exit();
         }
@@ -809,7 +829,9 @@ TypeInfo Sema::check(AST::Base* _ast)
             case TYPE_Vector:
             case TYPE_Dict:
               if (ast->parameters.empty())
-                Error(ast, "missing parameters").emit().exit();
+                Error(ast, "missing parameters")
+                    .emit()
+                    .exit();
 
               // todo: case user-def struct
           }
@@ -868,7 +890,9 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
         step++;
       }
 
-      Error(ast->token, "undefined variable name").emit().exit();
+      Error(ast->token, "undefined variable name")
+          .emit()
+          .exit();
     }
 
     case AST_IndexRef: {
@@ -895,7 +919,8 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
   }
 
   // 同じ名前のビルトインを探す
-  auto builtin_func_found = this->find_builtin_func(ast->name);
+  auto builtin_func_found =
+      this->find_builtin_func(ast->name);
 
   if (builtin_func_found) {
     ast->is_builtin = true;
@@ -935,8 +960,8 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
       // 型が不一致の場合エラー
       if (!formal->equals(*actual)) {
         Error(*arg, "expected '" + formal->to_string() +
-                        "' but found '" + actual->to_string() +
-                        "'")
+                        "' but found '" +
+                        actual->to_string() + "'")
             .emit()
             .exit();
       }

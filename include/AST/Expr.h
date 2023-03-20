@@ -52,6 +52,11 @@ struct Value : Base {
 struct Vector : ListBase {
   ASTVector elements;
 
+  bool is_empty() const override
+  {
+    return this->elements.empty();
+  }
+
   Base*& append(Base* ast) override
   {
     return this->elements.emplace_back(ast);
@@ -124,6 +129,11 @@ struct IndexRef : ListBase {
   Base* expr;
   ASTVector indexes;
 
+  bool is_empty() const override
+  {
+    return this->indexes.empty();
+  }
+
   Base*& append(Base* x) override
   {
     return this->indexes.emplace_back(x);
@@ -168,6 +178,11 @@ struct CallFunc : ListBase {
   Function* callee;
 
   std::string to_string() const override;
+
+  bool is_empty() const override
+  {
+    return this->args.empty();
+  }
 
   Base*& append(Base* ast) override
   {

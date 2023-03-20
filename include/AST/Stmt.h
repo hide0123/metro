@@ -53,6 +53,11 @@ struct Scope : ListBase {
   ASTVector list;
   bool return_last_expr;
 
+  bool is_empty() const override
+  {
+    return this->list.empty();
+  }
+
   Base*& append(Base* item) override
   {
     return this->list.emplace_back(item);

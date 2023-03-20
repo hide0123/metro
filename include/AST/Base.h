@@ -41,6 +41,7 @@ struct ListBase : Base {
     }
   };
 
+  virtual bool is_empty() const = 0;
   virtual Base*& append(Base* ast) = 0;
 
 protected:
