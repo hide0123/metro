@@ -86,6 +86,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
   switch (_ast->kind) {
     case AST_None:
     case AST_Function:
+    case AST_Struct:
       break;
 
     case AST_True:
@@ -105,7 +106,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           break;
 
         case TYPE_Float:
-          ((ObjFloat*)obj)->value = -((ObjFloat*)obj)->value;
+          ((ObjFloat*)obj)->value =
+              -((ObjFloat*)obj)->value;
           break;
 
         default:
@@ -122,7 +124,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Cast: {
       astdef(Cast);
 
-      auto const& cast_to = Sema::value_type_cache[ast->cast_to];
+      auto const& cast_to =
+          Sema::value_type_cache[ast->cast_to];
 
       auto obj = this->evaluate(ast->expr);
 
@@ -130,7 +133,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         case TYPE_Int: {
           switch (obj->type.kind) {
             case TYPE_Float:
-              return new ObjLong((float)((ObjFloat*)obj)->value);
+              return new ObjLong(
+                  (float)((ObjFloat*)obj)->value);
           }
           break;
         }
@@ -567,7 +571,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           break;
 
         loop.is_continued = false;
-      } while (((ObjBool*)this->evaluate(ast->cond))->value);
+      } while (
+          ((ObjBool*)this->evaluate(ast->cond))->value);
 
       this->loop_stack.pop_front();
 
@@ -593,12 +598,13 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
     case AST_IndexRef: {
       astdef(IndexRef);
 
-      return this->eval_index_ref(this->eval_left(ast->expr),
-                                  ast);
+      return this->eval_index_ref(
+          this->eval_left(ast->expr), ast);
     }
   }
 
-  panic("fck, ain't left value. " << _ast << " " << _ast->kind);
+  panic("fck, ain't left value. " << _ast << " "
+                                  << _ast->kind);
   throw 10;
 }
 
@@ -630,7 +636,9 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
         }
 
         if (index >= obj_vec->elements.size()) {
-          Error(index_ast, "index out of range").emit().exit();
+          Error(index_ast, "index out of range")
+              .emit()
+              .exit();
         }
 
         ret = &obj_vec->elements[index];
@@ -649,8 +657,9 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
 
         {
           auto& item = obj_dict->append(
-              obj_index, this->default_constructer(
-                             obj_dict->type.type_params[1]));
+              obj_index,
+              this->default_constructer(
+                  obj_dict->type.type_params[1]));
 
           ret = &item.value;
         }

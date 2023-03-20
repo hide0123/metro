@@ -805,6 +805,19 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Struct: {
       astdef(Struct);
 
+      std::map<std::string_view, bool> map;
+
+      for (auto&& item : ast->items) {
+        if (!(map[item.name] ^= 1)) {
+          Error(ERR_MultipleDefined, item.token,
+                "multiple definition")
+              .emit()
+              .exit();
+        }
+
+        this->check(item.type);
+      }
+
       break;
     }
 

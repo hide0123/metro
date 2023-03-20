@@ -1,11 +1,12 @@
+// ---------------------------------------------
+//  TypeInfo
+// ---------------------------------------------
+
 #pragma once
 
 #include <string>
 #include <vector>
 
-// ---------------------------------------------
-//  TypeInfo
-// ---------------------------------------------
 enum TypeKind {
   TYPE_None,
   TYPE_Int,
@@ -33,7 +34,8 @@ struct TypeInfo {
   {
   }
 
-  TypeInfo(TypeKind kind, std::initializer_list<TypeInfo> list,
+  TypeInfo(TypeKind kind,
+           std::initializer_list<TypeInfo> list,
            bool is_const = false)
       : kind(kind),
         is_const(is_const),

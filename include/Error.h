@@ -23,6 +23,8 @@ enum ErrorKind {
   ERR_TypeMismatch,
   ERR_UnexpectedType,
   ERR_ReturrnOutSideFunction,
+  ERR_Undefined,
+  ERR_MultipleDefined,
 
   // run-time
   ERR_IndexOutOfRange,
