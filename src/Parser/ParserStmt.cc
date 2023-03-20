@@ -12,86 +12,10 @@
  */
 AST::Base* Parser::stmt()
 {
-  /*
-   最後がセミコロンで終わるやつは最後で
-     this->expect_semi();
-     　ってやってください
-     例えば変数定義とか
-  */
-
   //
   // Dict or Scope
-  if (this->eat("{")) {
-    auto token = this->ate;
-
-    if (this->eat("}"))
-      return new AST::Scope(*token);
-
-    auto x = this->expr();
-
-    // Dictionary
-    if (this->eat(":")) {
-      auto ast = new AST::Dict(*token);
-
-      ast->elements.emplace_back(*this->ate, x, this->expr());
-
-      while (this->eat(",")) {
-        auto key = this->expr();
-        auto colon = this->expect(":");
-
-        auto value = this->expr();
-
-        ast->elements.emplace_back(*colon, key, value);
-      }
-
-      ast->end_token = this->expect("}");
-
-      return ast;
-    }
-
-    // Scope
-    auto ast = new AST::Scope(*token);
-
-    ast->append(x);
-
-    while (this->check()) {
-      auto prev = this->cur;
-      prev--;
-
-      if (prev->str == ";") {
-        if (this->eat("}")) {
-          break;
-        }
-
-        ast->append(this->expr());
-        continue;
-      }
-
-      if (prev->str == "}") {
-        if (this->eat("}")) {
-          ast->return_last_expr = true;
-          break;
-        }
-
-        ast->append(this->expr());
-        continue;
-      }
-
-      if (auto bval = this->eat_semi(); this->eat("}")) {
-        ast->return_last_expr = !bval;
-        break;
-      }
-      else if (bval) {
-        ast->append(this->expr());
-      }
-      else {
-        this->expect("}");
-        break;
-      }
-    }
-
-    return ast;
-  }
+  if (this->cur->str == "{")
+    return this->parse_scope();
 
   //
   // if 文
@@ -209,9 +133,9 @@ AST::Base* Parser::stmt()
       ast->init = this->expr();
     }
 
-    ast->end_token = this->expect_semi();
+    // ast->end_token = this->expect_semi();
 
-    return ast;
+    return this->set_last_token(ast);
   }
 
   //
@@ -223,27 +147,27 @@ AST::Base* Parser::stmt()
       return ast;
 
     ast->expr = this->expr();
-    ast->end_token = this->expect_semi();
+    // ast->end_token = this->expect_semi();
 
-    return ast;
+    return this->set_last_token(ast);
   }
 
   // break
   if (this->eat("break")) {
     auto ast = new AST::LoopController(*this->ate, AST_Break);
 
-    ast->end_token = this->expect_semi();
+    // ast->end_token = this->expect_semi();
 
-    return ast;
+    return this->set_last_token(ast);
   }
 
   // continue
   if (this->eat("continue")) {
     auto ast = new AST::LoopController(*this->ate, AST_Continue);
 
-    ast->end_token = this->expect_semi();
+    // ast->end_token = this->expect_semi();
 
-    return ast;
+    return this->set_last_token(ast);
   }
 
   return nullptr;

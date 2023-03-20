@@ -44,9 +44,9 @@ AST::Scope* Parser::parse()
       continue;
     }
 
-    root_scope->append(this->top());
+    auto x = root_scope->append(this->top());
 
-    if (this->ate->str != ";" && this->ate->str != "}")
+    if (this->check() && !this->is_ended_with_scope(x))
       this->expect_semi();
   }
 

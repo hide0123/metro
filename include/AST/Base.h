@@ -1,6 +1,8 @@
 #pragma once
 
 #include <list>
+#include <string>
+#include <vector>
 
 namespace AST {
 
@@ -13,13 +15,37 @@ struct Base {
   {
   }
 
-  virtual std::string to_string() const;
+  virtual std::string to_string() const
+  {
+    return std::string(this->token.str);
+  }
 
 protected:
   explicit Base(ASTKind kind, Token const& token)
       : kind(kind),
         token(token),
         end_token(nullptr)
+  {
+  }
+};
+
+struct ListBase : Base {
+  class ASTVector : public std::vector<Base*> {
+  public:
+    using std::vector<Base*>::vector;
+
+    ~ASTVector()
+    {
+      for (auto&& x : *this)
+        delete x;
+    }
+  };
+
+  virtual Base*& append(Base* ast) = 0;
+
+protected:
+  ListBase(ASTKind kind, Token const& token)
+      : Base(kind, token)
   {
   }
 };
@@ -31,21 +57,60 @@ struct ExprBase : Base {
     Token const& op;
     Base* ast;
 
-    explicit Element(Kind kind, Token const& op, Base* ast);
-    ~Element();
+    explicit Element(Kind kind, Token const& op, Base* ast)
+        : kind(kind),
+          op(op),
+          ast(ast)
+    {
+    }
+
+    ~Element()
+    {
+    }
   };
 
   Base* first;
   std::vector<Element> elements;
 
-  ExprBase(Base* first);
-  ~ExprBase();
+  ExprBase(Base* first)
+      : Base(_self_kind, first->token),
+        first(first)
+  {
+  }
 
-  Element& append(Kind kind, Token const& op, Base* ast);
+  ~ExprBase()
+  {
+    delete this->first;
 
-  std::string to_string() const;
+    for (auto&& elem : this->elements) {
+      delete elem.ast;
+    }
+  }
 
-  static ExprBase* create(Base*& ast);
+  Element& append(Kind kind, Token const& op, Base* ast)
+  {
+    return this->elements.emplace_back(kind, op, ast);
+  }
+
+  std::string to_string() const
+  {
+    auto s = this->first->to_string();
+
+    for (auto&& elem : this->elements) {
+      s += " " + std::string(elem.op.str) + " " +
+           elem.ast->to_string();
+    }
+
+    return s;
+  }
+
+  static ExprBase* create(Base*& ast)
+  {
+    if (ast->kind != _self_kind)
+      ast = new ExprBase<Kind, _self_kind>(ast);
+
+    return (ExprBase*)ast;
+  }
 };
 
 }  // namespace AST

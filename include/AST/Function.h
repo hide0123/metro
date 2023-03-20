@@ -7,8 +7,17 @@ struct Argument : Base {
   AST::Type* type;
 
   Argument(std::string_view const& name, Token const& colon,
-           AST::Type* type);
-  ~Argument();
+           AST::Type* type)
+      : Base(AST_Argument, colon),
+        name(name),
+        type(type)
+  {
+  }
+
+  ~Argument()
+  {
+    delete this->type;
+  }
 };
 
 struct Function : Base {
@@ -38,12 +47,24 @@ struct Function : Base {
    * @param token
    * @param name
    */
-  explicit Function(Token const& token, Token const& name);
+  explicit Function(Token const& token, Token const& name)
+      : Base(AST_Function, token),
+        name(name),
+        result_type(nullptr)
+  {
+  }
 
-  /**
-   * @brief Destruct
-   */
-  ~Function();
+  ~Function()
+  {
+    for (auto&& arg : this->args) {
+      delete arg;
+    }
+
+    if (this->result_type)
+      delete this->result_type;
+
+    delete this->code;
+  }
 };
 
 }  // namespace AST

@@ -5,6 +5,21 @@
 #include "Parser.h"
 #include "Error.h"
 
+bool Parser::is_ended_with_scope(AST::Base* ast)
+{
+  switch (ast->kind) {
+    case AST_If:
+    case AST_Switch:
+    case AST_Loop:
+    case AST_For:
+    case AST_While:
+    case AST_Scope:
+      return true;
+  }
+
+  return false;
+}
+
 /**
  * @brief スコープをパースする
  *
@@ -13,21 +28,36 @@
  *
  * @return AST::Scope*
  */
-AST::Scope* Parser::parse_scope()
+AST::Scope* Parser::parse_scope(Parser::token_iter tok,
+                                AST::Base* first)
 {
-  if (this->cur->str != "{") {
+  if (!first && !this->eat("{")) {
     Error(*--this->cur, "expected '{' after this token")
         .emit()
         .exit();
   }
 
-  auto x = this->stmt();
+  auto ast = new AST::Scope(first ? *tok : *this->ate);
 
-  if (x->kind != AST_Scope) {
-    Error(x->token, "expected scope").emit().exit();
+  while (!this->eat("}")) {
+    AST::Base* x = nullptr;
+
+    if (first) {
+      x = ast->append(first);
+      first = nullptr;
+    }
+    else
+      x = ast->append(this->expr());
+
+    if (this->is_ended_with_scope(x))
+      ast->return_last_expr = !this->eat_semi();
+    else if (this->cur->str != "}")
+      this->expect_semi();
+    else
+      ast->return_last_expr = true;
   }
 
-  return (AST::Scope*)x;
+  return ast;
 }
 
 /**
