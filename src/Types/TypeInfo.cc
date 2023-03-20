@@ -7,27 +7,61 @@
 #include "Token.h"
 #include "TypeInfo.h"
 
-static std::vector<std::string> const all_type_names{
-    "none",   "int",   "usize",  "float", "bool", "char",
-    "string", "range", "vector", "dict",  "args", "any"};
+static std::vector<std::pair<TypeKind, char const*>> const
+    g_kind_and_names{
+        {TYPE_None, "none"},     {TYPE_Int, "int"},
+        {TYPE_USize, "usize"},   {TYPE_Float, "float"},
+        {TYPE_Bool, "bool"},     {TYPE_Char, "char"},
+        {TYPE_String, "string"}, {TYPE_Range, "range"},
+        {TYPE_Vector, "vector"}, {TYPE_Dict, "dict"},
+        {TYPE_Args, "args"},
+    };
 
-std::vector<std::string> const& TypeInfo::get_name_list()
+// static std::vector<std::string> const all_type_names{
+//     "none",   "int",   "usize",  "float", "bool", "char",
+//     "string", "range", "vector", "dict",  "args", "any"};
+
+//
+// ------------------------------------------------
+//  Get g_kind_and_names
+// ------------------------------------------------
+std::vector<std::pair<TypeKind, char const*>> const&
+TypeInfo::get_kind_and_names()
 {
-  return ::all_type_names;
+  return g_kind_and_names;
 }
 
 //
-// TypeInfo
-// 文字列に変換
+// ------------------------------------------------
+//  Create a name list of all types
+// ------------------------------------------------
+std::vector<std::string> TypeInfo::get_name_list()
+{
+  std::vector<std::string> ret;
+
+  for (auto&& [kind, name] : g_kind_and_names)
+    ret.emplace_back(name);
+
+  return ret;
+}
+
+//
+// ------------------------------------------------
+//  Convert TypeInfo to std::string
+// ------------------------------------------------
 std::string TypeInfo::to_string() const
 {
   alertmsg("this->kind = " << this->kind);
 
   assert(static_cast<int>(this->kind) <
-         (int)::all_type_names.size());
+         (int)std::size(g_kind_and_names));
 
-  std::string s = ::all_type_names[static_cast<int>(this->kind)];
+  std::string s =
+      ::g_kind_and_names[static_cast<int>(this->kind)]
+          .second;
 
+  //
+  // template-parameters
   if (!this->type_params.empty()) {
     s += "<";
 
@@ -40,6 +74,8 @@ std::string TypeInfo::to_string() const
     s += ">";
   }
 
+  //
+  // const
   if (this->is_const) {
     s += " const";
   }
@@ -52,12 +88,22 @@ std::string TypeInfo::to_string() const
 // 同じかどうか比較する
 bool TypeInfo::equals(TypeInfo const& type) const
 {
-  if (this->kind == TYPE_Template || type.kind == TYPE_Template)
+  if (this->kind == TYPE_Template ||
+      type.kind == TYPE_Template)
     return true;
 
   if (this->kind != type.kind)
     return false;
 
+  //
+  // user-defined
+  if (this->kind == TYPE_UserDef) {
+    if (this->userdef_struct != type.userdef_struct)
+      return false;
+  }
+
+  //
+  // size of parameters
   if (this->type_params.size() != type.type_params.size())
     return false;
 

@@ -55,7 +55,9 @@ enum ASTKind : uint8_t {
   AST_Argument,
 
   AST_Struct,
-  AST_Function
+  AST_Function,
+
+  AST_Impl,
 };
 
 namespace AST {

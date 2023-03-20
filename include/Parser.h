@@ -62,6 +62,7 @@ private:
 
   AST::Function* parse_function();
   AST::Struct* parse_struct();
+  AST::Impl* parse_impl();
 
   // ast を return 文でラップする
   AST::Return* new_return_stmt(AST::Base* ast);

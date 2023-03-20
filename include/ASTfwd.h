@@ -52,4 +52,6 @@ struct Scope;
 struct Struct;
 struct Function;
 
+struct Ipml;
+
 }  // namespace AST

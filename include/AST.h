@@ -18,3 +18,5 @@
 
 #include "AST/Struct.h"
 #include "AST/Function.h"
+
+#include "AST/Impl.h"

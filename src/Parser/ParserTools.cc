@@ -158,6 +158,8 @@ AST::Struct* Parser::parse_struct()
   return ast;
 }
 
+AST::Impl* parse_impl();
+
 /**
  * @brief 型名をパースする
  *

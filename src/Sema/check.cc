@@ -840,11 +840,14 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       TypeInfo ret;
 
-      for (auto&& x : names)
-        if (ast->token.str == x.b) {
-          ret = x.a;
+      auto const& builtin_names =
+          TypeInfo::get_kind_and_names();
 
-          switch (x.a) {
+      for (auto&& pair : builtin_names) {
+        if (ast->token.str == pair.second) {
+          ret = pair.first;
+
+          switch (ret.kind) {
             case TYPE_Range:
             case TYPE_Vector:
             case TYPE_Dict:
@@ -858,6 +861,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
           goto skiperror009;
         }
+      }
 
       // todo: find userdef struct
       Error(ast, "unknown type name").emit().exit();
