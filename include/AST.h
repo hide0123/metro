@@ -15,4 +15,6 @@
 #include "AST/Type.h"
 #include "AST/Expr.h"
 #include "AST/Stmt.h"
+
+#include "AST/Struct.h"
 #include "AST/Function.h"

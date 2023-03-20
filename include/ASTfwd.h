@@ -49,6 +49,7 @@ struct LoopController;
 
 struct Scope;
 
+struct Struct;
 struct Function;
 
 }  // namespace AST

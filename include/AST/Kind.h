@@ -54,6 +54,7 @@ enum ASTKind : uint8_t {
 
   AST_Argument,
 
+  AST_Struct,
   AST_Function
 };
 

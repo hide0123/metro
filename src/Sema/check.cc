@@ -801,6 +801,13 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
+    // struct
+    case AST_Struct: {
+      astdef(Struct);
+
+      break;
+    }
+
     //
     // 型
     case AST_Type: {

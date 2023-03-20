@@ -129,6 +129,35 @@ AST::Function* Parser::parse_function()
   return func;
 }
 
+AST::Struct* Parser::parse_struct()
+{
+  auto ast = new AST::Struct(*this->expect("struct"));
+
+  ast->name = this->expect_identifier()->str;
+
+  this->expect("{");
+
+  if (this->eat("}")) {
+    Error(ERR_EmptyStruct, *this->ate,
+          "empty struct is not valid")
+        .emit()
+        .exit();
+  }
+
+  do {
+    auto& item =
+        ast->append(*this->expect_identifier(), nullptr);
+
+    this->expect(":");
+
+    item.type = this->expect_typename();
+  } while (this->eat(","));
+
+  ast->end_token = this->expect("}");
+
+  return ast;
+}
+
 /**
  * @brief 型名をパースする
  *
@@ -206,12 +235,17 @@ Parser::token_iter Parser::next()
  */
 bool Parser::eat(char const* s)
 {
-  if (this->cur->str == s) {
+  if (this->found(s)) {
     this->ate = this->cur++;
     return true;
   }
 
   return false;
+}
+
+bool Parser::found(char const* s)
+{
+  return this->cur->str == s;
 }
 
 /**
