@@ -53,6 +53,8 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok,
       ast->return_last_expr = !this->eat_semi();
     else if (this->cur->str != "}")
       this->expect_semi();
+    else
+      ast->return_last_expr = true;
   }
 
   return ast;

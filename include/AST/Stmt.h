@@ -9,26 +9,37 @@ struct VariableDeclaration : Base {
   Type* type;
   Base* init;
 
-  explicit VariableDeclaration(Token const& token)
+  VariableDeclaration(Token const& token)
       : Base(AST_Let, token),
         type(nullptr),
         init(nullptr)
   {
   }
 
-  ~VariableDeclaration();
+  ~VariableDeclaration()
+  {
+    if (this->type)
+      delete this->type;
+
+    if (this->init)
+      delete this->init;
+  }
 };
 
 struct Return : Base {
   AST::Base* expr;
 
-  explicit Return(Token const& token)
+  Return(Token const& token)
       : Base(AST_Return, token),
         expr(nullptr)
   {
   }
 
-  ~Return();
+  ~Return()
+  {
+    if (this->expr)
+      delete this->expr;
+  }
 };
 
 struct LoopController : Base {
@@ -38,22 +49,24 @@ struct LoopController : Base {
   }
 };
 
-struct Scope : Base {
-  std::vector<Base*> list;
+struct Scope : ListBase {
+  ASTVector list;
   bool return_last_expr;
 
-  Base*& append(Base* item)
+  Base*& append(Base* item) override
   {
     return this->list.emplace_back(item);
   }
 
-  explicit Scope(Token const& token)
-      : Base(AST_Scope, token),
+  Scope(Token const& token)
+      : ListBase(AST_Scope, token),
         return_last_expr(false)
   {
   }
 
-  ~Scope();
+  ~Scope()
+  {
+  }
 };
 
 struct If : Base {
@@ -61,7 +74,7 @@ struct If : Base {
   Base* if_true;
   Base* if_false;
 
-  explicit If(Token const& token)
+  If(Token const& token)
       : Base(AST_If, token),
         condition(nullptr),
         if_true(nullptr),
@@ -69,23 +82,56 @@ struct If : Base {
   {
   }
 
-  ~If();
+  ~If()
+  {
+    delete this->condition;
+    delete this->if_true;
+
+    if (this->if_false)
+      delete this->if_false;
+  }
 };
 
 struct Case : Base {
   Base* cond;
   Scope* scope;
 
-  Case(Token const& token);
-  ~Case();
+  Case(Token const& token)
+      : Base(AST_Case, token),
+        cond(nullptr),
+        scope(nullptr)
+  {
+  }
+
+  ~Case()
+  {
+    delete this->cond;
+    delete this->scope;
+  }
 };
 
 struct Switch : Base {
   Base* expr;
   std::vector<Case*> cases;
 
-  Switch(Token const& token);
-  ~Switch();
+  Case*& append(Case* c)
+  {
+    return this->cases.emplace_back(c);
+  }
+
+  Switch(Token const& token)
+      : Base(AST_Switch, token),
+        expr(nullptr)
+  {
+  }
+
+  ~Switch()
+  {
+    delete this->expr;
+
+    for (auto&& c : this->cases)
+      delete c;
+  }
 };
 
 struct For : Base {
@@ -101,7 +147,12 @@ struct For : Base {
   {
   }
 
-  ~For();
+  ~For()
+  {
+    delete this->iter;
+    delete this->iterable;
+    delete this->code;
+  }
 };
 
 struct While : Base {
@@ -115,7 +166,11 @@ struct While : Base {
   {
   }
 
-  ~While();
+  ~While()
+  {
+    delete this->cond;
+    delete this->code;
+  }
 };
 
 struct DoWhile : Base {
@@ -129,7 +184,11 @@ struct DoWhile : Base {
   {
   }
 
-  ~DoWhile();
+  ~DoWhile()
+  {
+    delete this->code;
+    delete this->cond;
+  }
 };
 
 struct Loop : Base {
@@ -141,7 +200,10 @@ struct Loop : Base {
   {
   }
 
-  ~Loop();
+  ~Loop()
+  {
+    delete this->code;
+  }
 };
 
 }  // namespace AST

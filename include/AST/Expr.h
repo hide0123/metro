@@ -18,7 +18,10 @@ struct UnaryOp : Base {
   {
   }
 
-  ~UnaryOp();
+  ~UnaryOp()
+  {
+    delete this->expr;
+  }
 };
 
 struct Cast : Base {
@@ -30,7 +33,11 @@ struct Cast : Base {
   {
   }
 
-  ~Cast();
+  ~Cast()
+  {
+    delete this->cast_to;
+    delete this->expr;
+  }
 };
 
 struct Value : Base {
@@ -42,20 +49,18 @@ struct Value : Base {
   }
 };
 
-struct Vector : Base {
-  std::vector<Base*> elements;
+struct Vector : ListBase {
+  ASTVector elements;
 
-  Base*& append(Base* ast)
+  Base*& append(Base* ast) override
   {
     return this->elements.emplace_back(ast);
   }
 
   Vector(Token const& token)
-      : Base(AST_Vector, token)
+      : ListBase(AST_Vector, token)
   {
   }
-
-  ~Vector();
 };
 
 struct Dict : Base {
@@ -64,8 +69,16 @@ struct Dict : Base {
     Base* key;
     Base* value;
 
-    Item(Token const& colon, Base* k, Base* v);
-    ~Item();
+    Item(Token const& colon, Base* k, Base* v)
+        : colon(colon),
+          key(k),
+          value(v)
+    {
+    }
+
+    ~Item()
+    {
+    }
   };
 
   std::vector<Item> elements;
@@ -80,7 +93,19 @@ struct Dict : Base {
   {
   }
 
-  ~Dict();
+  ~Dict()
+  {
+    if (this->key_type)
+      delete this->key_type;
+
+    if (this->value_type)
+      delete this->value_type;
+
+    for (auto&& item : this->elements) {
+      delete item.key;
+      delete item.value;
+    }
+  }
 };
 
 struct Variable : Base {
@@ -95,17 +120,25 @@ struct Variable : Base {
   }
 };
 
-struct IndexRef : Base {
+struct IndexRef : ListBase {
   Base* expr;
-  std::vector<Base*> indexes;
+  ASTVector indexes;
+
+  Base*& append(Base* x) override
+  {
+    return this->indexes.emplace_back(x);
+  }
 
   IndexRef(Token const& t)
-      : Base(AST_IndexRef, t),
+      : ListBase(AST_IndexRef, t),
         expr(nullptr)
   {
   }
 
-  ~IndexRef();
+  ~IndexRef()
+  {
+    delete this->expr;
+  }
 };
 
 struct Range : Base {
@@ -119,21 +152,30 @@ struct Range : Base {
   {
   }
 
-  ~Range();
+  ~Range()
+  {
+    delete begin;
+    delete end;
+  }
 };
 
-struct CallFunc : Base {
+struct CallFunc : ListBase {
   std::string_view name;
-  std::vector<Base*> args;
+  ASTVector args;
 
   bool is_builtin;
   BuiltinFunc const* builtin_func;
   Function* callee;
 
-  std::string to_string() const;
+  std::string to_string() const override;
+
+  Base*& append(Base* ast) override
+  {
+    return this->args.emplace_back(ast);
+  }
 
   CallFunc(Token const& name)
-      : Base(AST_CallFunc, name),
+      : ListBase(AST_CallFunc, name),
         name(name.str),
         is_builtin(false),
         builtin_func(nullptr),
@@ -141,7 +183,9 @@ struct CallFunc : Base {
   {
   }
 
-  ~CallFunc();
+  ~CallFunc()
+  {
+  }
 };
 
 struct Assign : Base {
@@ -155,7 +199,11 @@ struct Assign : Base {
   {
   }
 
-  ~Assign();
+  ~Assign()
+  {
+    delete dest;
+    delete expr;
+  }
 };
 
 using Expr = ExprBase<ExprKind, AST_Expr>;
