@@ -309,9 +309,13 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
-    case AST_
+    case AST_TypeConstructor: {
+      astdef(TypeConstructor);
 
-        case AST_Dict: {
+      break;
+    }
+
+    case AST_Dict: {
       astdef(Dict);
 
       _ret = TYPE_Dict;
@@ -828,12 +832,16 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Type: {
       auto ast = (AST::Type*)_ast;
 
-      TypeInfo ret;
+      auto& ret = _ret;
 
       auto const& builtin_names =
           TypeInfo::get_kind_and_names();
 
+      //
+      // find a builtin-type
       for (auto&& pair : builtin_names) {
+        //
+        // if match
         if (ast->token.str == pair.second) {
           ret = pair.first;
 
@@ -847,25 +855,33 @@ TypeInfo Sema::check(AST::Base* _ast)
                     .exit();
           }
 
-          goto skiperror009;
+          goto foundBuiltinType;
         }
       }
 
+      //
+      // find an user-defined struct
       if (auto user_struct =
               this->find_struct(ast->token.str);
           user_struct) {
         ret = TYPE_UserDef;
         ret.userdef_struct = user_struct;
       }
+      //
+      // not found
       else {
         Error(ast, "unknown type name").emit().exit();
       }
 
-    skiperror009:;
+    foundBuiltinType:
+      //
+      // add parameters
       for (auto&& sub : ast->parameters) {
         ret.type_params.emplace_back(this->check(sub));
       }
 
+      //
+      // is_const
       ret.is_const = ast->is_const;
 
       _ret = ret;

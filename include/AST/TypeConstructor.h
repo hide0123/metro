@@ -1,3 +1,8 @@
+// Call a constructor of type
+
+// Syntax:
+//   ident "{" ident ":" expr ("," ident ":" expr)* "}"
+
 #pragma once
 
 namespace AST {
@@ -19,8 +24,7 @@ struct TypeConstructor : Base {
 
   TypeConstructor(Token const& token)
       : Base(AST_TypeConstructor, token),
-        name(token.str),
-        expr(nullptr)
+        name(token.str)
   {
   }
 
