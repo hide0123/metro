@@ -318,10 +318,9 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       type = this->check(ast->type);
 
-      debug(if (type.kind == TYPE_UserDef) {
-        for (auto&& elem : ast->elements) {
-          assert(elem.key->kind == AST_Variable);
-        }
+      debug(for (auto&& elem
+                 : ast->elements) {
+        assert(elem.key->kind == AST_Variable);
       });
 
       //
@@ -345,28 +344,52 @@ TypeInfo Sema::check(AST::Base* _ast)
               .exit();
         }
 
+        //
         // 要素を全部チェック
-        for (auto struct_member_iter =
-                 ast_struct->members.begin();
+        for (size_t ast_member_index = 0;
              auto&& elem : ast->elements) {
+          //
+          // 構造体のメンバへの参照
+          auto const& ast_member =
+              ast_struct->members[ast_member_index];
+
+          //
+          // 辞書と同じパース処理なので、
+          // メンバ名が変数になっていることを確認する
+          if (elem.key->kind != AST_Variable) {
+            // 変数じゃない場合はエラー
+            Error(ERR_InvalidSyntax, elem.key,
+                  "expected member name")
+                .emit()
+                .exit();
+          }
+          else {
+            // kind を メンバ変数にする
+            elem.key->kind = AST_MemberVariable;
+
+            ((AST::Variable*)elem.key)->index =
+                ast_member_index++;
+          }
+
           // member type
           auto const member_type =
-              this->check(struct_member_iter->type);
-
-          auto const& name = elem.key->token.str;
+              this->check(ast_member.type);
 
           // 名前が合わない
           //  => エラー
-          if ((struct_member_iter++)->name != name) {
+          if (ast_member.name != elem.key->token.str) {
             Error(ERR_Undefined, elem.key,
                   "unexpected member name")
                 .emit()
                 .exit();
           }
 
-          this->expect(member_type, elem.key);
+          this->expect(member_type, elem.value);
 
-          type.members.emplace_back(name, member_type);
+          type.members.emplace_back(ast_member.name,
+                                    member_type);
+
+          // ast_member_index++;
         }
       }
 
@@ -416,6 +439,18 @@ TypeInfo Sema::check(AST::Base* _ast)
       _ret = this->get_subscripted_type(x, ast->indexes);
 
       break;
+    }
+
+    case AST_MemberAccess: {
+      astdef(IndexRef);
+
+      auto type = this->check(ast->expr);
+      auto ptype = &type;
+
+      for (auto&& member : ast->indexes) {
+      }
+
+      return *ptype;
     }
 
     case AST_Range: {

@@ -124,7 +124,8 @@ AST::Base* Parser::factor()
 
       //
       // 変数
-      return this->new_variable();
+      return this->set_last_token(
+          new AST::Variable(*ident));
     }
   }
 
@@ -251,17 +252,26 @@ AST::Base* Parser::member_access()
     while (this->eat(".")) {
       auto tmp = this->indexref();
 
+      //
+      // 右辺に関数呼び出しがあった場合、
+      // 式を置き換えて、第一引数に左辺を移動させる
       if (tmp->kind == AST_CallFunc) {
-        alert;
+        // a.f()    -->  f(a)
+        // a.b.f()  -->  f(a.b)
+
         auto cf = (AST::CallFunc*)tmp;
 
-        if (y->indexes.empty())
+        // メンバ参照してなければ、最初の要素だけ追加
+        if (y->indexes.empty()) {
           cf->args.insert(cf->args.begin(), y->expr);
-        else
+
+          y->expr = nullptr;
+          delete y;
+        }
+        else  // あれば全体を追加
           cf->args.insert(cf->args.begin(), y);
 
-        if (this->cur->str == ".") {
-          alert;
+        if (this->found(".")) {
           y = new AST::IndexRef(*this->cur);
           y->kind = AST_MemberAccess;
           y->expr = cf;
@@ -270,11 +280,11 @@ AST::Base* Parser::member_access()
           alert;
           return cf;
         }
+
+        continue;
       }
-      else {
-        alert;
-        y->indexes.emplace_back(this->indexref());
-      }
+
+      y->indexes.emplace_back(this->indexref());
     }
 
     x = y;

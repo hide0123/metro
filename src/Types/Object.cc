@@ -8,6 +8,8 @@
 #include "Token.h"
 #include "Object.h"
 
+#include "AST.h"
+
 // --------------------------------------------------------
 //  Object
 // --------------------------------------------------------
@@ -42,6 +44,28 @@ bool Object::equals(Object* object) const
   }
 
   todo_impl;
+}
+
+std::string ObjUserType::to_string() const
+{
+  auto pStruct = this->type.userdef_struct;
+
+  auto ret = std::string(pStruct->name) + "{ ";
+
+  auto ns = nested;
+  nested = true;
+
+  for (auto pm = pStruct->members.begin();
+       auto&& member : this->members) {
+    ret += std::string((pm++)->name) + ": " +
+           member->to_string();
+
+    if (pm != pStruct->members.end())
+      ret += ", ";
+  }
+
+  nested = ns;
+  return ret + " }";
 }
 
 std::string ObjNone::to_string() const
@@ -119,6 +143,16 @@ std::string ObjVector::to_string() const
   nested = nss;
 
   return s + "]";
+}
+
+ObjUserType* ObjUserType::clone() const
+{
+  auto obj = new ObjUserType(this->type);
+
+  for (auto&& member : this->members)
+    obj->add_member(member->clone());
+
+  return obj;
 }
 
 ObjNone* ObjNone::clone() const

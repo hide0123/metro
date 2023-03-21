@@ -261,11 +261,16 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_TypeConstructor: {
       astdef(TypeConstructor);
 
-      auto ret = this->default_constructor(ast->typeinfo);
+      debug(assert(ast->typeinfo.kind == TYPE_UserDef));
 
-      for (auto&&)
+      auto ret = (ObjUserType*)this->default_constructor(
+          ast->typeinfo, false);
 
-        break;
+      for (auto&& elem : ast->elements) {
+        ret->add_member(this->evaluate(elem.value));
+      }
+
+      return ret;
     }
 
     //

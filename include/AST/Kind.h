@@ -14,6 +14,7 @@ enum ASTKind : uint8_t {
   AST_Dict,
 
   AST_Variable,
+  AST_MemberVariable,
   AST_CallFunc,
   AST_TypeConstructor,
 

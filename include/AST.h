@@ -13,11 +13,11 @@
 #include "AST/Kind.h"
 #include "AST/Base.h"
 
-#include "AST/Type.h"
-#include "AST/TypeConstructor.h"
-
 #include "AST/Expr.h"
 #include "AST/Stmt.h"
+
+#include "AST/Type.h"
+#include "AST/TypeConstructor.h"
 
 #include "AST/Struct.h"
 #include "AST/Function.h"

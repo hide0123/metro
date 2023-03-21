@@ -32,7 +32,7 @@ struct ObjUserType : Object {
   std::string to_string() const;
   ObjUserType* clone() const;
 
-  Object*& append(Object* obj)
+  Object*& add_member(Object* obj)
   {
     auto& ret = this->members.emplace_back(obj);
 

@@ -13,7 +13,8 @@
 #include "Sema.h"
 #include "Evaluator.h"
 
-Object* Evaluator::default_constructor(TypeInfo const& type)
+Object* Evaluator::default_constructor(
+    TypeInfo const& type, bool construct_member)
 {
   switch (type.kind) {
     case TYPE_Int:
@@ -44,8 +45,18 @@ Object* Evaluator::default_constructor(TypeInfo const& type)
       return ret;
     }
 
-    case TYPE_UserDef:
-      return new ObjUserType(type);
+    case TYPE_UserDef: {
+      auto ret = new ObjUserType(type);
+
+      if (construct_member) {
+        for (auto&& member : type.members) {
+          ret->add_member(
+              this->default_constructor(member.second));
+        }
+      }
+
+      return ret;
+    }
   }
 
   panic("u9r043290");

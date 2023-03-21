@@ -11,16 +11,8 @@ struct TypeConstructor : Dict {
   Type* type;
   TypeInfo typeinfo;
 
-  explicit TypeConstructor(Type* type)
-      : Dict(type->token),
-        type(type)
-  {
-    this->kind = AST_TypeConstructor;
-  }
-
-  ~TypeConstructor()
-  {
-  }
+  explicit TypeConstructor(Type* type);
+  ~TypeConstructor();
 };
 
 }  // namespace AST

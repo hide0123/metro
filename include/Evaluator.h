@@ -97,7 +97,8 @@ private:
    * @param type
    * @return Object*
    */
-  Object* default_constructor(TypeInfo const& type);
+  Object* default_constructor(TypeInfo const& type,
+                              bool construct_member = true);
 
   /**
    * @brief

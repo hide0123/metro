@@ -7,7 +7,7 @@
 
 AST::Variable* Parser::new_variable()
 {
-  return this->set_last_token(
+  return (AST::Variable*)this->set_last_token(
       new AST::Variable(*this->expect_identifier()));
 }
 
