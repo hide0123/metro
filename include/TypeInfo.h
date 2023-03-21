@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 
 namespace AST {
 
@@ -66,6 +67,9 @@ struct TypeInfo {
   get_kind_and_names();
 
   static std::vector<std::string> get_name_list();
+
+  static std::optional<TypeKind> get_kind_from_name(
+      std::string_view const& name);
 
   std::string to_string() const;
 

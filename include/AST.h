@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "Token.h"
+#include "TypeInfo.h"
 #include "ASTfwd.h"
 
 #include "AST/Kind.h"

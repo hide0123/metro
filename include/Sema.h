@@ -151,6 +151,9 @@ public:
   BuiltinFunc const* find_builtin_func(
       std::string_view name);
 
+  std::optional<TypeInfo> get_type_from_name(
+      std::string_view name);
+
 private:
   using CaptureFunction = std::function<void(AST::Base*)>;
   using ReturnCaptureFunction =

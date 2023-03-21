@@ -22,6 +22,8 @@ struct TypeConstructor : Base {
   std::string_view name;
   std::vector<Element> elements;
 
+  TypeInfo type;
+
   TypeConstructor(Token const& token)
       : Base(AST_TypeConstructor, token),
         name(token.str)

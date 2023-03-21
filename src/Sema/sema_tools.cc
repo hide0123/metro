@@ -8,6 +8,24 @@
 #include "Error.h"
 #include "Sema.h"
 
+std::optional<TypeInfo> Sema::get_type_from_name(
+    std::string_view name)
+{
+  if (auto builtin = TypeInfo::get_kind_from_name(name);
+      builtin)
+    return builtin.value();
+
+  if (auto usrdef = this->find_struct(name); usrdef) {
+    TypeInfo ret{TYPE_UserDef};
+
+    ret.userdef_struct = usrdef;
+
+    return ret;
+  }
+
+  return std::nullopt;
+}
+
 AST::Function* Sema::find_function(std::string_view name)
 {
   for (auto&& item : this->root->list)

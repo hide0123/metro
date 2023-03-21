@@ -45,6 +45,16 @@ std::vector<std::string> TypeInfo::get_name_list()
   return ret;
 }
 
+std::optional<TypeKind> TypeInfo::get_kind_from_name(
+    std::string_view const& name)
+{
+  for (auto&& [kind, n] : g_kind_and_names)
+    if (n == name)
+      return kind;
+
+  return std::nullopt;
+}
+
 //
 // ------------------------------------------------
 //  Convert TypeInfo to std::string
