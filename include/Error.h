@@ -17,11 +17,15 @@ enum ErrorKind {
   ERR_InvalidSyntax,
   ERR_UnexpectedToken,
   ERR_EmptySwitch,
+  ERR_EmptyStruct,
 
   // Semantics
   ERR_TypeMismatch,
+  ERR_InvalidInitializer,
   ERR_UnexpectedType,
   ERR_ReturrnOutSideFunction,
+  ERR_Undefined,
+  ERR_MultipleDefined,
 
   // run-time
   ERR_IndexOutOfRange,
@@ -76,7 +80,8 @@ public:
   static bool was_emitted();
 
 private:
-  std::pair<Token const*, Token const*> get_token_range() const;
+  std::pair<Token const*, Token const*> get_token_range()
+      const;
   void show_error_lines();
 
   ErrorKind _kind;

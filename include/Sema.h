@@ -48,7 +48,8 @@ class Sema {
       return nullptr;
     }
 
-    LocalVar& append(TypeInfo const& type, std::string_view name)
+    LocalVar& append(TypeInfo const& type,
+                     std::string_view name)
     {
       return this->variables.emplace_back(type, name);
     }
@@ -108,7 +109,8 @@ public:
    * @return TypeInfo&
    */
   TypeInfo& get_subscripted_type(
-      TypeInfo& type, std::vector<AST::Base*> const& indexes);
+      TypeInfo& type,
+      std::vector<AST::Base*> const& indexes);
 
   /**
    * @brief 関数呼び出しが正しいか検査する
@@ -126,9 +128,9 @@ public:
    * @param rhs
    * @return std::optional<TypeInfo>
    */
-  std::optional<TypeInfo> is_valid_expr(AST::ExprKind kind,
-                                        TypeInfo const& lhs,
-                                        TypeInfo const& rhs);
+  std::optional<TypeInfo> is_valid_expr(
+      AST::ExprKind kind, TypeInfo const& lhs,
+      TypeInfo const& rhs);
 
   /**
    * @brief ユーザー定義関数を探す
@@ -138,13 +140,19 @@ public:
    */
   AST::Function* find_function(std::string_view name);
 
+  AST::Struct* find_struct(std::string_view name);
+
   /**
    * @brief ビルトイン関数を探す
    *
    * @param name
    * @return BuiltinFunc const*
    */
-  BuiltinFunc const* find_builtin_func(std::string_view name);
+  BuiltinFunc const* find_builtin_func(
+      std::string_view name);
+
+  std::optional<TypeInfo> get_type_from_name(
+      std::string_view name);
 
 private:
   using CaptureFunction = std::function<void(AST::Base*)>;

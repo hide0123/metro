@@ -8,6 +8,29 @@
 #include "Error.h"
 #include "Sema.h"
 
+std::optional<TypeInfo> Sema::get_type_from_name(
+    std::string_view name)
+{
+  if (auto builtin = TypeInfo::get_kind_from_name(name);
+      builtin)
+    return builtin.value();
+
+  if (auto usrdef = this->find_struct(name); usrdef) {
+    TypeInfo ret{TYPE_UserDef};
+
+    ret.userdef_struct = usrdef;
+
+    for (auto&& member : usrdef->members) {
+      ret.members.emplace_back(member.name,
+                               this->check(member.type));
+    }
+
+    return ret;
+  }
+
+  return std::nullopt;
+}
+
 AST::Function* Sema::find_function(std::string_view name)
 {
   for (auto&& item : this->root->list)
@@ -18,7 +41,20 @@ AST::Function* Sema::find_function(std::string_view name)
   return nullptr;
 }
 
-BuiltinFunc const* Sema::find_builtin_func(std::string_view name)
+AST::Struct* Sema::find_struct(std::string_view name)
+{
+  for (auto&& item : this->root->list) {
+    if (auto st = (AST::Struct*)item;
+        st->kind == AST_Struct && st->name == name) {
+      return st;
+    }
+  }
+
+  return nullptr;
+}
+
+BuiltinFunc const* Sema::find_builtin_func(
+    std::string_view name)
 {
   for (auto&& builtinfunc : BuiltinFunc::get_builtin_list())
     if (builtinfunc.name == name)
@@ -53,7 +89,8 @@ void Sema::end_return_capture()
   this->return_captures.pop_back();
 }
 
-TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
+TypeInfo Sema::expect(TypeInfo const& expected,
+                      AST::Base* ast)
 {
   auto type = this->check(ast);
 

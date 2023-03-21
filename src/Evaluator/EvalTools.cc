@@ -13,7 +13,8 @@
 #include "Sema.h"
 #include "Evaluator.h"
 
-Object* Evaluator::default_constructer(TypeInfo const& type)
+Object* Evaluator::default_constructor(
+    TypeInfo const& type, bool construct_member)
 {
   switch (type.kind) {
     case TYPE_Int:
@@ -43,13 +44,26 @@ Object* Evaluator::default_constructer(TypeInfo const& type)
 
       return ret;
     }
+
+    case TYPE_UserDef: {
+      auto ret = new ObjUserType(type);
+
+      if (construct_member) {
+        for (auto&& member : type.members) {
+          ret->add_member(
+              this->default_constructor(member.second));
+        }
+      }
+
+      return ret;
+    }
   }
 
   panic("u9r043290");
 }
 
-void Evaluator::eval_expr_elem(AST::Expr::Element const& elem,
-                               Object* dest)
+void Evaluator::eval_expr_elem(
+    AST::Expr::Element const& elem, Object* dest)
 {
   auto const& op = elem.op;
 
@@ -59,7 +73,8 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem,
     case AST::EX_Add: {
       switch (dest->type.kind) {
         case TYPE_Int:
-          ((ObjLong*)dest)->value += ((ObjLong*)right)->value;
+          ((ObjLong*)dest)->value +=
+              ((ObjLong*)right)->value;
           break;
 
         case TYPE_String:
@@ -76,7 +91,8 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem,
     case AST::EX_Sub: {
       switch (dest->type.kind) {
         case TYPE_Int:
-          ((ObjLong*)dest)->value -= ((ObjLong*)right)->value;
+          ((ObjLong*)dest)->value -=
+              ((ObjLong*)right)->value;
           break;
 
         default:
@@ -88,11 +104,13 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem,
     case AST::EX_Mul: {
       switch (dest->type.kind) {
         case TYPE_Int:
-          ((ObjLong*)dest)->value *= ((ObjLong*)right)->value;
+          ((ObjLong*)dest)->value *=
+              ((ObjLong*)right)->value;
           break;
 
         case TYPE_Float:
-          ((ObjFloat*)dest)->value *= ((ObjFloat*)right)->value;
+          ((ObjFloat*)dest)->value *=
+              ((ObjFloat*)right)->value;
           break;
 
         default:
@@ -152,14 +170,14 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem,
       break;
 
     case AST::EX_And: {
-      ((ObjBool*)dest)->value =
-          ((ObjBool*)dest)->value && ((ObjBool*)right)->value;
+      ((ObjBool*)dest)->value = ((ObjBool*)dest)->value &&
+                                ((ObjBool*)right)->value;
       break;
     }
 
     case AST::EX_Or: {
-      ((ObjBool*)dest)->value =
-          ((ObjBool*)dest)->value || ((ObjBool*)right)->value;
+      ((ObjBool*)dest)->value = ((ObjBool*)dest)->value ||
+                                ((ObjBool*)right)->value;
       break;
     }
 
@@ -168,8 +186,8 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem,
   }
 }
 
-bool Evaluator::compute_compare(AST::CmpKind kind, Object* left,
-                                Object* right)
+bool Evaluator::compute_compare(AST::CmpKind kind,
+                                Object* left, Object* right)
 {
   float a = left->type.kind == TYPE_Int
                 ? ((ObjLong*)left)->value
@@ -233,8 +251,8 @@ Object* Evaluator::create_object(AST::Value* ast)
       break;
 
     case TYPE_String: {
-      auto ws =
-          Utils::String::to_wstr(std::string(ast->token.str));
+      auto ws = Utils::String::to_wstr(
+          std::string(ast->token.str));
 
       // remove double quotation
       ws.erase(ws.begin());
@@ -269,7 +287,8 @@ void Evaluator::leave_function()
   this->call_stack.pop_front();
 }
 
-Evaluator::FunctionStack& Evaluator::get_current_func_stack()
+Evaluator::FunctionStack&
+Evaluator::get_current_func_stack()
 {
   return *this->call_stack.begin();
 }

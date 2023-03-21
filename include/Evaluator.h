@@ -61,50 +61,27 @@ public:
   Evaluator();
   ~Evaluator();
 
-  /**
-   * @brief 構文木を評価する（実行）
-   *
-   * @param ast
-   * @return Object*
-   */
   Object* evaluate(AST::Base* ast);
 
-  /**
-   * @brief AST を左辺値の式として評価する
-   *
-   * @param ast
-   * @return Object*&
-   */
+  Object* eval_stmt(AST::Base* ast);
+
   Object*& eval_left(AST::Base* ast);
 
-  /**
-   * @brief
-   *
-   * @param obj
-   * @param ast
-   * @return Object*&
-   */
+  //
+  // index-ref
   Object*& eval_index_ref(Object*& obj, AST::IndexRef* ast);
+  Object*& eval_member_access(Object*& obj,
+                              AST::IndexRef* ast);
 
-  /**
-   * @brief 演算子
-   *
-   * @param kind
-   * @param left
-   * @param right
-   * @return Object*
-   */
+  //
+  // element in expr
   void eval_expr_elem(AST::Expr::Element const& elem,
                       Object* dest);
 
-  /**
-   * @brief 比較する
-   *
-   * @return true
-   * @return false
-   */
-  static bool compute_compare(AST::CmpKind kind, Object* left,
-                              Object* right);
+  //
+  // compare
+  static bool compute_compare(AST::CmpKind kind,
+                              Object* left, Object* right);
 
 private:
   /**
@@ -123,7 +100,8 @@ private:
    * @param type
    * @return Object*
    */
-  Object* default_constructer(TypeInfo const& type);
+  Object* default_constructor(TypeInfo const& type,
+                              bool construct_member = true);
 
   /**
    * @brief

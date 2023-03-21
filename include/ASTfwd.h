@@ -28,6 +28,7 @@ struct ConstKeyword;
 struct Value;
 struct Variable;
 struct CallFunc;
+struct TypeConstructor;
 
 struct Cast;
 struct Vector;
@@ -49,6 +50,9 @@ struct LoopController;
 
 struct Scope;
 
+struct Struct;
 struct Function;
+
+struct Ipml;
 
 }  // namespace AST

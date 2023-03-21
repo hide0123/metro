@@ -18,9 +18,9 @@
  * @param rhs
  * @return std::optional<TypeInfo>
  */
-std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
-                                            TypeInfo const& lhs,
-                                            TypeInfo const& rhs)
+std::optional<TypeInfo> Sema::is_valid_expr(
+    AST::ExprKind kind, TypeInfo const& lhs,
+    TypeInfo const& rhs)
 {
   if (lhs.equals(TYPE_None) || rhs.equals(TYPE_None))
     return std::nullopt;
@@ -137,8 +137,8 @@ TypeInfo& Sema::get_subscripted_type(
       }
 
       default:
-        Error(index,
-              "'" + type.to_string() + "' is not subscriptable")
+        Error(index, "'" + type.to_string() +
+                         "' is not subscriptable")
             .emit()
             .exit();
     }
@@ -196,8 +196,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
 
       if (x.equals(TYPE_None)) {
-        Error(ast,
-              "cannot cast 'none' to '" + _ret.to_string() + "'")
+        Error(ast, "cannot cast 'none' to '" +
+                       _ret.to_string() + "'")
             .emit()
             .exit();
       }
@@ -229,8 +229,8 @@ TypeInfo Sema::check(AST::Base* _ast)
           break;
       }
 
-      Error(ast, "cannot cast '" + _ret.to_string() + "' to '" +
-                     x.to_string() + "'")
+      Error(ast, "cannot cast '" + _ret.to_string() +
+                     "' to '" + x.to_string() + "'")
           .emit()
           .exit();
 
@@ -304,7 +304,96 @@ TypeInfo Sema::check(AST::Base* _ast)
     //
     // 関数呼び出し
     case AST_CallFunc: {
-      _ret = this->check_function_call((AST::CallFunc*)_ast);
+      _ret =
+          this->check_function_call((AST::CallFunc*)_ast);
+      break;
+    }
+
+    //
+    // Type Constructor
+    case AST_TypeConstructor: {
+      astdef(TypeConstructor);
+
+      auto& type = ast->typeinfo;
+
+      type = this->check(ast->type);
+
+      debug(for (auto&& elem
+                 : ast->elements) {
+        assert(elem.key->kind == AST_Variable);
+      });
+
+      //
+      // dont have any members
+      if (!type.have_members()) {
+        todo_impl;
+      }
+
+      //
+      // ユーザー定義 構造体
+      if (type.kind == TYPE_UserDef) {
+        auto ast_struct = type.userdef_struct;
+
+        // 初期化子の数が合わない
+        //  => エラー
+        if (ast->elements.size() !=
+            ast_struct->members.size()) {
+          Error(ERR_InvalidInitializer, ast,
+                "don't matching member size")
+              .emit()
+              .exit();
+        }
+
+        //
+        // 要素を全部チェック
+        for (size_t ast_member_index = 0;
+             auto&& elem : ast->elements) {
+          //
+          // 構造体のメンバへの参照
+          auto const& ast_member =
+              ast_struct->members[ast_member_index];
+
+          //
+          // 辞書と同じパース処理なので、
+          // メンバ名が変数になっていることを確認する
+          if (elem.key->kind != AST_Variable) {
+            // 変数じゃない場合はエラー
+            Error(ERR_InvalidSyntax, elem.key,
+                  "expected member name")
+                .emit()
+                .exit();
+          }
+          else {
+            // kind を メンバ変数にする
+            elem.key->kind = AST_MemberVariable;
+
+            ((AST::Variable*)elem.key)->index =
+                ast_member_index++;
+          }
+
+          // member type
+          auto const member_type =
+              this->check(ast_member.type);
+
+          // 名前が合わない
+          //  => エラー
+          if (ast_member.name != elem.key->token.str) {
+            Error(ERR_Undefined, elem.key,
+                  "unexpected member name")
+                .emit()
+                .exit();
+          }
+
+          this->expect(member_type, elem.value);
+
+          type.members.emplace_back(ast_member.name,
+                                    member_type);
+
+          // ast_member_index++;
+        }
+      }
+
+      _ret = type;
       break;
     }
 
@@ -330,7 +419,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         value_type = this->check(item_iter->value);
       }
 
-      for (; item_iter != ast->elements.end(); item_iter++) {
+      for (; item_iter != ast->elements.end();
+           item_iter++) {
         this->expect(key_type, item_iter->key);
         this->expect(value_type, item_iter->value);
       }
@@ -351,6 +441,45 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
+    case AST_MemberAccess: {
+      astdef(IndexRef);
+
+      auto type = this->check(ast->expr);
+      auto ptype = &type;
+
+      for (auto&& member : ast->indexes) {
+        switch (member->kind) {
+          case AST_Variable: {
+            auto x = (AST::Variable*)member;
+
+            auto find = ptype->find_member(x->name);
+
+            if (find == -1)
+              Error(ERR_Undefined, member,
+                    "struct '" + ptype->to_string() +
+                        "' don't have the member '" +
+                        std::string(x->name) + "'")
+                  .emit()
+                  .exit();
+
+            x->index = find;
+            ptype = &ptype->members[find].second;
+
+            break;
+          }
+
+          default:
+            Error(ERR_InvalidSyntax, member,
+                  "invalid syntax")
+                .emit()
+                .exit();
+        }
+      }
+
+      _ret = *ptype;
+      break;
+    }
+
     case AST_Range: {
       astdef(Range);
 
@@ -365,7 +494,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         Error(ast, "expected integer").emit().exit();
       }
 
-      return TYPE_Range;
+      _ret = TYPE_Range;
+      break;
     }
 
     //
@@ -400,7 +530,9 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto dest = this->check_as_left(ast->dest);
 
       if (dest.is_const) {
-        Error(ast, "destination is not mutable").emit().exit();
+        Error(ast, "destination is not mutable")
+            .emit()
+            .exit();
       }
 
       if (!dest.equals(this->check(ast->expr))) {
@@ -426,7 +558,8 @@ TypeInfo Sema::check(AST::Base* _ast)
           if (!left.equals(right))
             Error(elem.op, "type mismatch").emit().exit();
         }
-        else if (!left.is_numeric() || !right.is_numeric()) {
+        else if (!left.is_numeric() ||
+                 !right.is_numeric()) {
           Error(elem.op, "invalid operator").emit().exit();
         }
 
@@ -513,8 +646,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
 
       if (ast->expr) {
-        _ret = this->expect(this->check(cur_func->result_type),
-                            ast->expr);
+        _ret = this->expect(
+            this->check(cur_func->result_type), ast->expr);
       }
       else if (auto t = this->check(cur_func->result_type);
                !t.equals(TYPE_None)) {
@@ -570,13 +703,25 @@ TypeInfo Sema::check(AST::Base* _ast)
         auto tmp = this->check(case_ast->scope);
 
         if (detected && !type.equals(tmp)) {
-          Error(ERR_TypeMismatch, case_ast->token,
-                "expected '" + type.to_string() + "'")
+          if (type.equals(TYPE_None)) {
+            Error(ERR_TypeMismatch,
+                  *case_ast->scope->end_token,
+                  "expected semicolon before this token")
+                .emit()
+                .exit();
+          }
+
+          Error(ERR_TypeMismatch,
+                *case_ast->scope->end_token,
+                "expected '" + type.to_string() +
+                    "' expression before this token")
               .emit()
               .exit();
         }
-        else
+        else {
           type = tmp;
+          detected = true;
+        }
       }
 
       break;
@@ -710,8 +855,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       // 引数追加
       for (size_t ww = 0; auto&& arg : ast->args) {
-        auto& V =
-            S.lvar.append(this->check(arg->type), arg->name);
+        auto& V = S.lvar.append(this->check(arg->type),
+                                arg->name);
 
         V.index = ww++;
       }
@@ -741,7 +886,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         }
       }
       else if (!res_type.equals(TYPE_None)) {
-        if (ast->code->list.empty() || return_types.empty()) {
+        if (ast->code->list.empty() ||
+            return_types.empty()) {
           Error(ast->token,
                 "return type is not none, "
                 "but function return nothing")
@@ -760,12 +906,14 @@ TypeInfo Sema::check(AST::Base* _ast)
         semi++;
 
         if (last->kind != AST_Return) {
-          Error(*semi, "expected '" + res_type.to_string() +
-                           "' type expression after this token")
+          Error(*semi,
+                "expected '" + res_type.to_string() +
+                    "' type expression after this token")
               .emit();
 
           Error(last,
-                "semicolon ignores the evaluated result of this")
+                "semicolon ignores the evaluated result of "
+                "this")
               .emit(EL_Note)
               .exit();
         }
@@ -781,50 +929,64 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
+    // struct
+    case AST_Struct: {
+      astdef(Struct);
+
+      std::map<std::string_view, bool> map;
+
+      for (auto&& item : ast->members) {
+        if (!(map[item.name] ^= 1)) {
+          Error(ERR_MultipleDefined, item.token,
+                "multiple definition")
+              .emit()
+              .exit();
+        }
+
+        this->check(item.type);
+      }
+
+      break;
+    }
+
     //
     // 型
     case AST_Type: {
-      static struct {
-        TypeKind a;
-        char const* b;
-      } const names[]{
-          {TYPE_None, "none"},     {TYPE_Int, "int"},
-          {TYPE_USize, "usize"},   {TYPE_Float, "float"},
-          {TYPE_Bool, "bool"},     {TYPE_Char, "char"},
-          {TYPE_String, "string"}, {TYPE_Range, "range"},
-          {TYPE_Vector, "vector"}, {TYPE_Dict, "dict"},
-          {TYPE_Args, "args"},
-      };
-
       auto ast = (AST::Type*)_ast;
 
-      TypeInfo ret;
+      auto& ret = _ret;
 
-      for (auto&& x : names)
-        if (ast->token.str == x.b) {
-          ret = x.a;
+      if (auto res = this->get_type_from_name(ast->name);
+          res) {
+        ret = res.value();
+      }
+      else {
+        Error(ast, "unknown type name").emit().exit();
+      }
 
-          switch (x.a) {
-            case TYPE_Range:
-            case TYPE_Vector:
-            case TYPE_Dict:
-              if (ast->parameters.empty())
-                Error(ast, "missing parameters").emit().exit();
+      switch (ret.kind) {
+        case TYPE_UserDef:
+          // todo:
+          // if struct->params is zero: break
+          break;
 
-              // todo: case user-def struct
-          }
+        case TYPE_Range:
+        case TYPE_Vector:
+        case TYPE_Dict:
+          if (ast->parameters.empty())
+            Error(ast, "missing parameters").emit().exit();
 
-          goto skiperror009;
-        }
+          break;
+      }
 
-      // todo: find userdef struct
-      Error(ast, "unknown type name").emit().exit();
-
-    skiperror009:;
+      //
+      // add parameters
       for (auto&& sub : ast->parameters) {
         ret.type_params.emplace_back(this->check(sub));
       }
 
+      //
+      // is_const
       ret.is_const = ast->is_const;
 
       _ret = ret;
@@ -868,7 +1030,9 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
         step++;
       }
 
-      Error(ast->token, "undefined variable name").emit().exit();
+      Error(ast->token, "undefined variable name")
+          .emit()
+          .exit();
     }
 
     case AST_IndexRef: {
@@ -895,7 +1059,8 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
   }
 
   // 同じ名前のビルトインを探す
-  auto builtin_func_found = this->find_builtin_func(ast->name);
+  auto builtin_func_found =
+      this->find_builtin_func(ast->name);
 
   if (builtin_func_found) {
     ast->is_builtin = true;
@@ -935,8 +1100,8 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
       // 型が不一致の場合エラー
       if (!formal->equals(*actual)) {
         Error(*arg, "expected '" + formal->to_string() +
-                        "' but found '" + actual->to_string() +
-                        "'")
+                        "' but found '" +
+                        actual->to_string() + "'")
             .emit()
             .exit();
       }

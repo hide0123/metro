@@ -63,7 +63,7 @@ $(BUILD):
 clean:
 	rm -rf $(BUILD) $(TARGET)
 
-re: clean all
+re: clean $(BUILD) all
 
 run: cclear all
 	@clear

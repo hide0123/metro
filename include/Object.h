@@ -26,6 +26,27 @@ protected:
   Object(TypeInfo type);
 };
 
+struct ObjUserType : Object {
+  std::vector<Object*> members;
+
+  std::string to_string() const;
+  ObjUserType* clone() const;
+
+  Object*& add_member(Object* obj)
+  {
+    auto& ret = this->members.emplace_back(obj);
+
+    ret->ref_count++;
+
+    return ret;
+  }
+
+  explicit ObjUserType(TypeInfo const& type)
+      : Object(type)
+  {
+  }
+};
+
 struct ObjNone : Object {
   std::string to_string() const;
   ObjNone* clone() const;
@@ -214,7 +235,8 @@ struct ObjDict : Object {
     if (this->items.size() != x->items.size())
       return false;
 
-    for (auto xx = x->items.begin(); auto&& aa : this->items) {
+    for (auto xx = x->items.begin();
+         auto&& aa : this->items) {
       if (!aa.key->equals(xx->key) ||
           !aa.value->equals(xx->value))
         return false;

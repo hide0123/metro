@@ -11,22 +11,14 @@ struct Base {
   Token const& token;
   std::list<Token>::const_iterator end_token;
 
-  virtual ~Base()
-  {
-  }
+  bool is_left;
 
-  virtual std::string to_string() const
-  {
-    return std::string(this->token.str);
-  }
+  virtual ~Base();
+
+  virtual std::string to_string() const;
 
 protected:
-  explicit Base(ASTKind kind, Token const& token)
-      : kind(kind),
-        token(token),
-        end_token(nullptr)
-  {
-  }
+  Base(ASTKind kind, Token const& token);
 };
 
 struct ListBase : Base {
@@ -34,20 +26,14 @@ struct ListBase : Base {
   public:
     using std::vector<Base*>::vector;
 
-    ~ASTVector()
-    {
-      for (auto&& x : *this)
-        delete x;
-    }
+    ~ASTVector();
   };
 
+  virtual bool is_empty() const = 0;
   virtual Base*& append(Base* ast) = 0;
 
 protected:
-  ListBase(ASTKind kind, Token const& token)
-      : Base(kind, token)
-  {
-  }
+  ListBase(ASTKind kind, Token const& token);
 };
 
 template <class Kind, ASTKind _self_kind>

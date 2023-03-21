@@ -5,6 +5,12 @@
 #include "Parser.h"
 #include "Error.h"
 
+AST::Variable* Parser::new_variable()
+{
+  return (AST::Variable*)this->set_last_token(
+      new AST::Variable(*this->expect_identifier()));
+}
+
 bool Parser::is_ended_with_scope(AST::Base* ast)
 {
   switch (ast->kind) {
@@ -14,6 +20,7 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
     case AST_For:
     case AST_While:
     case AST_Scope:
+    case AST_Struct:
       return true;
   }
 
@@ -39,25 +46,34 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok,
 
   auto ast = new AST::Scope(first ? *tok : *this->ate);
 
+  if (first) {
+    ast->append(first);
+
+    if (!this->eat("}")) {
+      if (this->is_ended_with_scope(first))
+        this->expect_semi();
+    }
+    else {
+      ast->return_last_expr = true;
+      return ast;
+    }
+  }
+
   while (!this->eat("}")) {
     AST::Base* x = nullptr;
 
-    if (first) {
-      x = ast->append(first);
-      first = nullptr;
-    }
-    else
-      x = ast->append(this->expr());
+    x = ast->append(this->expr());
 
-    if (this->is_ended_with_scope(x))
-      ast->return_last_expr = !this->eat_semi();
-    else if (this->cur->str != "}")
-      this->expect_semi();
-    else
-      ast->return_last_expr = true;
+    if ((ast->return_last_expr = !this->eat_semi())) {
+      if (!(ast->return_last_expr =
+                this->cur->str == "}") &&
+          !this->is_ended_with_scope(x)) {
+        this->expect_semi();
+      }
+    }
   }
 
-  return ast;
+  return (AST::Scope*)this->set_last_token(ast);
 }
 
 /**
@@ -91,9 +107,9 @@ AST::Scope* Parser::expect_scope()
  */
 AST::Function* Parser::parse_function()
 {
-  auto func =
-      new AST::Function(*this->expect("fn"),
-                        *this->expect_identifier());  // AST 作成
+  auto func = new AST::Function(
+      *this->expect("fn"),
+      *this->expect_identifier());  // AST 作成
 
   this->expect("(");  // 引数リストの開きカッコ
 
@@ -118,6 +134,50 @@ AST::Function* Parser::parse_function()
   this->set_last_token(func);
 
   return func;
+}
+
+AST::Struct* Parser::parse_struct()
+{
+  auto ast = new AST::Struct(*this->expect("struct"));
+
+  ast->name = this->expect_identifier()->str;
+
+  this->expect("{");
+
+  if (this->eat("}")) {
+    Error(ERR_EmptyStruct, *this->ate,
+          "empty struct is not valid")
+        .emit()
+        .exit();
+  }
+
+  do {
+    auto& member =
+        ast->append(*this->expect_identifier(), nullptr);
+
+    this->expect(":");
+
+    member.type = this->expect_typename();
+  } while (this->eat(","));
+
+  ast->end_token = this->expect("}");
+
+  return ast;
+}
+
+AST::Impl* Parser::parse_impl()
+{
+  auto ast = new AST::Impl(*this->expect("impl"));
+
+  ast->name = this->expect_identifier()->str;
+
+  this->expect("{");
+
+  do {
+    ast->append(top());
+  } while (!this->eat("}"));
+
+  return (AST::Impl*)this->set_last_token(ast);
 }
 
 /**
@@ -197,12 +257,17 @@ Parser::token_iter Parser::next()
  */
 bool Parser::eat(char const* s)
 {
-  if (this->cur->str == s) {
+  if (this->found(s)) {
     this->ate = this->cur++;
     return true;
   }
 
   return false;
+}
+
+bool Parser::found(char const* s)
+{
+  return this->cur->str == s;
 }
 
 /**
@@ -216,8 +281,8 @@ bool Parser::eat(char const* s)
 Parser::token_iter Parser::expect(char const* s)
 {
   if (!this->eat(s)) {
-    Error(*(--this->cur),
-          "expected '" + std::string(s) + "' after this token")
+    Error(*(--this->cur), "expected '" + std::string(s) +
+                              "' after this token")
         .emit()
         .exit();
   }
@@ -241,7 +306,8 @@ Parser::token_iter Parser::expect_semi()
 Parser::token_iter Parser::expect_identifier()
 {
   if (this->cur->kind != TOK_Ident) {
-    Error(*(--this->cur), "expected identifier after this token")
+    Error(*(--this->cur),
+          "expected identifier after this token")
         .emit()
         .exit();
   }

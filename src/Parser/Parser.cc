@@ -55,9 +55,14 @@ AST::Scope* Parser::parse()
 
 AST::Base* Parser::top()
 {
-  if (this->cur->str == "fn") {
+  if (this->found("fn"))
     return this->parse_function();
-  }
+
+  if (this->found("struct"))
+    return this->parse_struct();
+
+  if (this->found("impl"))
+    return this->parse_impl();
 
   return this->expr();
 }

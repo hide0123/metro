@@ -20,26 +20,20 @@ public:
   AST::Scope* parse();
 
   AST::Base* factor();
-
   AST::Base* primary();
   AST::Base* unary();
   AST::Base* indexref();
   AST::Base* member_access();
-
   AST::Base* mul();
   AST::Base* add();
-
   AST::Base* shift();
   AST::Base* compare();
   AST::Base* bit_op();
   AST::Base* log_and_or();
-
   AST::Base* range();
-
   AST::Base* assign();
 
   AST::Base* expr();
-
   AST::Base* stmt();
 
   AST::Base* top();
@@ -49,6 +43,7 @@ private:
   token_iter next();
 
   bool eat(char const* s);
+  bool found(char const* s);
   token_iter expect(char const* s);
 
   bool eat_semi();
@@ -58,6 +53,8 @@ private:
 
   token_iter expect_identifier();
 
+  AST::Variable* new_variable();
+
   AST::Type* parse_typename();
   AST::Type* expect_typename();
 
@@ -66,6 +63,8 @@ private:
   AST::Scope* expect_scope();
 
   AST::Function* parse_function();
+  AST::Struct* parse_struct();
+  AST::Impl* parse_impl();
 
   // ast を return 文でラップする
   AST::Return* new_return_stmt(AST::Base* ast);
