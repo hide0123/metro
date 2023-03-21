@@ -126,6 +126,16 @@ bool TypeInfo::equals(TypeInfo const& type) const
   return true;
 }
 
+bool TypeInfo::have_members() const
+{
+  switch (this->kind) {
+    case TYPE_UserDef:
+      return true;
+  }
+
+  return false;
+}
+
 bool TypeInfo::is_numeric() const
 {
   switch (this->kind) {

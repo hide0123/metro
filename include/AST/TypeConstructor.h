@@ -7,35 +7,19 @@
 
 namespace AST {
 
-struct TypeConstructor : Base {
-  struct Element {
-    Token const& token;  // name
-    std::string_view name;
-    Base* expr;
+struct TypeConstructor : Dict {
+  Type* type;
+  TypeInfo typeinfo;
 
-    Element(Token const& token, Base* expr)
-        : token(token),
-          name(token.str),
-          expr(expr)
-    {
-    }
-  };
-
-  std::string_view name;
-  std::vector<Element> elements;
-
-  TypeInfo type;
-
-  TypeConstructor(Token const& token)
-      : Base(AST_TypeConstructor, token),
-        name(token.str)
+  explicit TypeConstructor(Type* type)
+      : Dict(type->token),
+        type(type)
   {
+    this->kind = AST_TypeConstructor;
   }
 
   ~TypeConstructor()
   {
-    for (auto&& x : this->elements)
-      delete x.expr;
   }
 };
 

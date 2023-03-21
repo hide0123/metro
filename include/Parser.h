@@ -53,6 +53,8 @@ private:
 
   token_iter expect_identifier();
 
+  AST::Variable* new_variable();
+
   AST::Type* parse_typename();
   AST::Type* expect_typename();
 

@@ -91,6 +91,11 @@ struct Dict : Base {
   Type* key_type;
   Type* value_type;
 
+  Item& append(Base* k, Token const& t, Base* v)
+  {
+    return this->elements.emplace_back(t, k, v);
+  }
+
   Dict(Token const& token)
       : Base(AST_Dict, token),
         key_type(nullptr),

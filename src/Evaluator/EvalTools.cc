@@ -43,6 +43,9 @@ Object* Evaluator::default_constructor(TypeInfo const& type)
 
       return ret;
     }
+
+    case TYPE_UserDef:
+      return new ObjUserType(type);
   }
 
   panic("u9r043290");

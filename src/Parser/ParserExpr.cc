@@ -34,9 +34,8 @@ AST::Base* Parser::factor()
                                  this->expr());
 
       while (this->eat(",")) {
-        x = this->expr();
-        ast->elements.emplace_back(*this->expect(":"), x,
-                                   this->expr());
+        ast->append(this->expr(), *this->expect(":"),
+                    this->expr());
       }
 
       ast->end_token = this->expect("}");
@@ -97,19 +96,25 @@ AST::Base* Parser::factor()
         return ast;
       }
 
+      AST::Type* ast_type = nullptr;
+
+      if (this->found("<")) {
+        this->cur = ident;
+        ast_type = this->expect_typename();
+      }
+
       //
       // type constructor
       if (this->eat("{")) {
-        auto ast = new AST::TypeConstructor(*ident);
+        if (!ast_type) {
+          ast_type = new AST::Type(*ident);
+        }
 
-        ast->name = ident->str;
+        auto ast = new AST::TypeConstructor(ast_type);
 
         do {
-          auto tok = this->expect_identifier();
-
-          this->expect(":");
-
-          ast->elements.emplace_back(tok, this->expr());
+          ast->append(this->expr(), *this->expect(":"),
+                      this->expr());
         } while (this->eat(","));
 
         ast->end_token = this->expect("}");
@@ -117,12 +122,9 @@ AST::Base* Parser::factor()
         return ast;
       }
 
-      // 開きかっこがなければ 変数
-      auto ast = new AST::Variable(*ident);
-
-      ast->end_token = ident;
-
-      return ast;
+      //
+      // 変数
+      return this->new_variable();
     }
   }
 

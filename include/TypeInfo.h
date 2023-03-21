@@ -76,6 +76,8 @@ struct TypeInfo {
 
   bool equals(TypeInfo const& type) const;
 
+  bool have_members() const;
+
   bool is_numeric() const;
   bool is_iterable() const;
 };

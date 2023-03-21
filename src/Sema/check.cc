@@ -314,15 +314,21 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_TypeConstructor: {
       astdef(TypeConstructor);
 
-      auto& type = ast->type;
+      auto& type = ast->typeinfo;
 
-      if (auto res = this->get_type_from_name(ast->name);
-          res)
-        type = res.value();
-      else
-        Error(ERR_Undefined, ast, "unknown type name")
-            .emit()
-            .exit();
+      type = this->check(ast->type);
+
+      debug(if (type.kind == TYPE_UserDef) {
+        for (auto&& elem : ast->elements) {
+          assert(elem.key->kind == AST_Variable);
+        }
+      });
+
+      //
+      // dont have any members
+      if (!type.have_members()) {
+        todo_impl;
+      }
 
       //
       // ユーザー定義 構造体
@@ -339,20 +345,32 @@ TypeInfo Sema::check(AST::Base* _ast)
               .exit();
         }
 
+        // 要素を全部チェック
         for (auto struct_member_iter =
                  ast_struct->members.begin();
              auto&& elem : ast->elements) {
+          // member type
+          auto const member_type =
+              this->check(struct_member_iter->type);
+
+          auto const& name = elem.key->token.str;
+
           // 名前が合わない
           //  => エラー
-          if ((struct_member_iter++)->name != elem.name) {
-            Error(ERR_Undefined, elem.token,
+          if ((struct_member_iter++)->name != name) {
+            Error(ERR_Undefined, elem.key,
                   "unexpected member name")
                 .emit()
                 .exit();
           }
+
+          this->expect(member_type, elem.key);
+
+          type.members.emplace_back(name, member_type);
         }
       }
 
+      _ret = type;
       break;
     }
 

@@ -5,6 +5,12 @@
 #include "Parser.h"
 #include "Error.h"
 
+AST::Variable* Parser::new_variable()
+{
+  return this->set_last_token(
+      new AST::Variable(*this->expect_identifier()));
+}
+
 bool Parser::is_ended_with_scope(AST::Base* ast)
 {
   switch (ast->kind) {

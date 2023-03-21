@@ -261,7 +261,11 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_TypeConstructor: {
       astdef(TypeConstructor);
 
-      break;
+      auto ret = this->default_constructor(ast->typeinfo);
+
+      for (auto&&)
+
+        break;
     }
 
     //
