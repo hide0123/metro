@@ -8,7 +8,8 @@ ConstKeyword::ConstKeyword(ASTKind kind, Token const& token)
 }
 
 Value::Value(Token const& tok)
-    : Base(AST_Value, tok)
+    : Base(AST_Value, tok),
+      object(nullptr)
 {
 }
 

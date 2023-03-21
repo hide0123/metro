@@ -2,7 +2,7 @@
 
 namespace AST {
 
-struct Struct : Base {
+struct Struct : Typeable {
   struct Member {
     Token const& token;
     Type* type;
@@ -27,7 +27,7 @@ struct Struct : Base {
   }
 
   Struct(Token const& token)
-      : Base(AST_Struct, token)
+      : Typeable(AST_Struct, token)
   {
   }
 

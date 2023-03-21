@@ -84,41 +84,16 @@ public:
   Sema(AST::Scope* root);
   ~Sema();
 
-  /**
-   * @brief 構文木の意味解析、型一致確認など行う
-   *
-   *
-   * @param _ast
-   * @return 評価された _ast の型 (TypeInfo)
-   */
   TypeInfo check(AST::Base* ast);
+  TypeInfo check_function_call(AST::CallFunc* ast);
 
-  /**
-   * @brief 左辺値としてチェック
-   *
-   * @param ast
-   * @return TypeInfo&
-   */
   TypeInfo& check_as_left(AST::Base* ast);
 
-  /**
-   * @brief インデックス参照
-   *
-   * @param type
-   * @param ast
-   * @return TypeInfo&
-   */
   TypeInfo& get_subscripted_type(
       TypeInfo& type,
       std::vector<AST::Base*> const& indexes);
 
-  /**
-   * @brief 関数呼び出しが正しいか検査する
-   *
-   * @param ast
-   * @return TypeInfo
-   */
-  TypeInfo check_function_call(AST::CallFunc* ast);
+  void check_struct(AST::Struct* ast);
 
   /**
    * @brief  式の両辺の型が正しいかどうか検査する
@@ -200,7 +175,7 @@ private:
   std::list<SemaScope> scope_list;
   std::list<AST::Function*> function_history;
 
-  size_t variable_stack_offs = 0;
+  std::vector<AST::Typeable*> type_check_stack;
 
   // captures
   std::vector<CaptureContext> captures;

@@ -207,11 +207,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Range: {
       astdef(Range);
 
-      auto begin = this->evaluate(ast->begin);
-      auto end = this->evaluate(ast->end);
+      auto begin = (ObjLong*)this->evaluate(ast->begin);
+      auto end = (ObjLong*)this->evaluate(ast->end);
 
-      return new ObjRange(((ObjLong*)begin)->value,
-                          ((ObjLong*)end)->value);
+      return new ObjRange(begin->value, end->value);
     }
 
     //
@@ -278,8 +277,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       debug(assert(ast->typeinfo.kind == TYPE_UserDef));
 
-      auto ret = (ObjUserType*)this->default_constructor(
-          ast->typeinfo, false);
+      auto ret = new ObjUserType(ast->typeinfo);
 
       for (auto&& elem : ast->elements) {
         ret->add_member(this->evaluate(elem.value));

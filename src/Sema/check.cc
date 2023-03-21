@@ -68,6 +68,8 @@ std::optional<TypeInfo> Sema::is_valid_expr(
     case AST::EX_Div: {
       if (lhs.is_numeric() && rhs.is_numeric())
         return lhs;
+
+      break;
     }
 
     //
@@ -159,7 +161,11 @@ TypeInfo Sema::check(AST::Base* _ast)
     cap.func(_ast);
   }
 
-  TypeInfo _ret = TYPE_None;
+  if (this->value_type_cache.contains(_ast)) {
+    return this->value_type_cache[_ast];
+  }
+
+  auto& _ret = this->value_type_cache[_ast];
 
   switch (_ast->kind) {
     case AST_None:
@@ -956,6 +962,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto& ret = _ret;
 
+      this->type_check_stack.emplace_back(ast);
+
       if (auto res = this->get_type_from_name(ast->name);
           res) {
         ret = res.value();
@@ -970,7 +978,6 @@ TypeInfo Sema::check(AST::Base* _ast)
           // if struct->params is zero: break
           break;
 
-        case TYPE_Range:
         case TYPE_Vector:
         case TYPE_Dict:
           if (ast->parameters.empty())
@@ -989,6 +996,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       // is_const
       ret.is_const = ast->is_const;
 
+      this->type_check_stack.pop_back();
+
       _ret = ret;
       break;
     }
@@ -997,8 +1006,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       debug(printf("%d\n", _ast->kind));
       todo_impl;
   }
-
-  value_type_cache[_ast] = _ret;
 
   for (auto&& retcap : this->return_captures) {
     retcap(_ret, _ast);
@@ -1170,4 +1177,20 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast)
   }
 
   Error(ast, "undefined function name").emit().exit();
+}
+
+void Sema::check_struct(AST::Struct* ast)
+{
+  std::map<std::string_view, bool> map;
+
+  for (auto&& item : ast->members) {
+    if (!(map[item.name] ^= 1)) {
+      Error(ERR_MultipleDefined, item.token,
+            "multiple definition")
+          .emit()
+          .exit();
+    }
+
+    this->check(item.type);
+  }
 }

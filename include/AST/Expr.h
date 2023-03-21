@@ -7,6 +7,8 @@ struct ConstKeyword : Base {
 };
 
 struct Value : Base {
+  Object* object;
+
   std::string to_string() const;
 
   Value(Token const& tok);
