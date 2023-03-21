@@ -5,7 +5,8 @@ namespace AST {
 Base::Base(ASTKind kind, Token const& token)
     : kind(kind),
       token(token),
-      end_token(nullptr)
+      end_token(nullptr),
+      is_left(false)
 {
 }
 

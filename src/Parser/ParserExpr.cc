@@ -284,7 +284,7 @@ AST::Base* Parser::member_access()
         continue;
       }
 
-      y->indexes.emplace_back(this->indexref());
+      y->indexes.emplace_back(tmp);
     }
 
     x = y;

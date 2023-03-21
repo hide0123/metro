@@ -15,6 +15,7 @@ struct Value : Base {
 struct Variable : Base {
   size_t step;
   size_t index;
+  std::string_view name;
 
   Variable(Token const& tok);
 };

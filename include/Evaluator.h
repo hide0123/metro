@@ -62,13 +62,16 @@ public:
   ~Evaluator();
 
   Object* evaluate(AST::Base* ast);
-  Object*& eval_left(AST::Base* ast);
 
   Object* eval_stmt(AST::Base* ast);
+
+  Object*& eval_left(AST::Base* ast);
 
   //
   // index-ref
   Object*& eval_index_ref(Object*& obj, AST::IndexRef* ast);
+  Object*& eval_member_access(Object*& obj,
+                              AST::IndexRef* ast);
 
   //
   // element in expr

@@ -11,6 +11,8 @@ struct Base {
   Token const& token;
   std::list<Token>::const_iterator end_token;
 
+  bool is_left;
+
   virtual ~Base();
 
   virtual std::string to_string() const;

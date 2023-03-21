@@ -31,6 +31,9 @@ enum TypeKind {
 };
 
 struct TypeInfo {
+  using member_pair_t =
+      std::pair<std::string_view, TypeInfo>;
+
   TypeKind kind;
   bool is_const;
 
@@ -40,8 +43,7 @@ struct TypeInfo {
 
   //
   // member variables
-  std::vector<std::pair<std::string_view, TypeInfo>>
-      members;
+  std::vector<member_pair_t> members;
 
   //
   // if type is struct, this is a pointer to it.
@@ -71,6 +73,18 @@ struct TypeInfo {
 
   static std::optional<TypeKind> get_kind_from_name(
       std::string_view const& name);
+
+  int find_member(std::string_view const& name)
+  {
+    for (int i = 0; auto&& [n, t] : this->members) {
+      if (n == name)
+        return i;
+
+      i++;
+    }
+
+    return -1;
+  }
 
   std::string to_string() const;
 

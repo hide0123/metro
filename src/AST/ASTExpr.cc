@@ -15,8 +15,10 @@ Value::Value(Token const& tok)
 Variable::Variable(Token const& tok)
     : Base(AST_Variable, tok),
       step(0),
-      index(0)
+      index(0),
+      name(tok.str)
 {
+  this->is_left = true;
 }
 
 CallFunc::CallFunc(Token const& name)

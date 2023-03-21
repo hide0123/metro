@@ -166,10 +166,25 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     }
 
     //
-    // 左辺値
+    // 変数
     case AST_Variable:
-    case AST_IndexRef:
       return this->eval_left(_ast)->clone();
+
+    case AST_IndexRef: {
+      astdef(IndexRef);
+
+      auto obj = this->evaluate(ast->expr);
+
+      return this->eval_index_ref(obj, ast);
+    }
+
+    case AST_MemberAccess: {
+      astdef(IndexRef);
+
+      auto obj = this->evaluate(ast->expr);
+
+      return this->eval_member_access(obj, ast);
+    }
 
     //
     // Dictionary
@@ -437,11 +452,16 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
       return this->eval_index_ref(
           this->eval_left(ast->expr), ast);
     }
+
+    case AST_MemberAccess: {
+      astdef(IndexRef);
+
+      return this->eval_index_ref(
+          this->eval_left(ast->expr), ast);
+    }
   }
 
-  panic("fck, ain't left value. " << _ast << " "
-                                  << _ast->kind);
-  throw 10;
+  throw 1;
 }
 
 Object*& Evaluator::eval_index_ref(Object*& obj,
@@ -510,4 +530,26 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
   }
 
   return *ret;
+}
+
+Object*& Evaluator::eval_member_access(Object*& obj,
+                                       AST::IndexRef* ast)
+{
+  auto pobj = &obj;
+
+  for (auto&& m : ast->indexes) {
+    switch (m->kind) {
+      case AST_Variable: {
+        pobj = &((ObjUserType*)*pobj)
+                    ->members[((AST::Variable*)m)->index];
+
+        break;
+      }
+
+      default:
+        todo_impl;
+    }
+  }
+
+  return *pobj;
 }

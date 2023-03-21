@@ -448,6 +448,32 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto ptype = &type;
 
       for (auto&& member : ast->indexes) {
+        switch (member->kind) {
+          case AST_Variable: {
+            auto x = (AST::Variable*)member;
+
+            auto find = ptype->find_member(x->name);
+
+            if (find == -1)
+              Error(ERR_Undefined, member,
+                    "struct '" + ptype->to_string() +
+                        "' don't have the member '" +
+                        std::string(x->name) + "'")
+                  .emit()
+                  .exit();
+
+            x->index = find;
+            ptype = &ptype->members[find].second;
+
+            break;
+          }
+
+          default:
+            Error(ERR_InvalidSyntax, member,
+                  "invalid syntax")
+                .emit()
+                .exit();
+        }
       }
 
       return *ptype;
