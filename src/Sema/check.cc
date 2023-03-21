@@ -476,7 +476,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         }
       }
 
-      return *ptype;
+      _ret = *ptype;
+      break;
     }
 
     case AST_Range: {
@@ -493,7 +494,8 @@ TypeInfo Sema::check(AST::Base* _ast)
         Error(ast, "expected integer").emit().exit();
       }
 
-      return TYPE_Range;
+      _ret = TYPE_Range;
+      break;
     }
 
     //
