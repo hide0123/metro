@@ -146,12 +146,12 @@ AST::Struct* Parser::parse_struct()
   }
 
   do {
-    auto& item =
+    auto& member =
         ast->append(*this->expect_identifier(), nullptr);
 
     this->expect(":");
 
-    item.type = this->expect_typename();
+    member.type = this->expect_typename();
   } while (this->eat(","));
 
   ast->end_token = this->expect("}");

@@ -20,6 +20,11 @@ std::optional<TypeInfo> Sema::get_type_from_name(
 
     ret.userdef_struct = usrdef;
 
+    for (auto&& member : usrdef->members) {
+      ret.members.emplace_back(member.name,
+                               this->check(member.type));
+    }
+
     return ret;
   }
 

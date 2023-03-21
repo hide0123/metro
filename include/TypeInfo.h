@@ -40,7 +40,8 @@ struct TypeInfo {
 
   //
   // member variables
-  std::vector<TypeInfo> members;
+  std::vector<std::pair<std::string_view, TypeInfo>>
+      members;
 
   //
   // if type is struct, this is a pointer to it.

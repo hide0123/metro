@@ -105,12 +105,11 @@ AST::Base* Parser::factor()
         ast->name = ident->str;
 
         do {
-          auto& elem = ast->elements.emplace_back(
-              this->expect_identifier()->str, nullptr);
+          auto tok = this->expect_identifier();
 
           this->expect(":");
 
-          elem.expr = this->expr();
+          ast->elements.emplace_back(tok, this->expr());
         } while (this->eat(","));
 
         ast->end_token = this->expect("}");

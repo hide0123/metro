@@ -309,8 +309,49 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
+    //
+    // Type Constructor
     case AST_TypeConstructor: {
       astdef(TypeConstructor);
+
+      auto& type = ast->type;
+
+      if (auto res = this->get_type_from_name(ast->name);
+          res)
+        type = res.value();
+      else
+        Error(ERR_Undefined, ast, "unknown type name")
+            .emit()
+            .exit();
+
+      //
+      // ユーザー定義 構造体
+      if (type.kind == TYPE_UserDef) {
+        auto ast_struct = type.userdef_struct;
+
+        // 初期化子の数が合わない
+        //  => エラー
+        if (ast->elements.size() !=
+            ast_struct->members.size()) {
+          Error(ERR_InvalidInitializer, ast,
+                "don't matching member size")
+              .emit()
+              .exit();
+        }
+
+        for (auto struct_member_iter =
+                 ast_struct->members.begin();
+             auto&& elem : ast->elements) {
+          // 名前が合わない
+          //  => エラー
+          if ((struct_member_iter++)->name != elem.name) {
+            Error(ERR_Undefined, elem.token,
+                  "unexpected member name")
+                .emit()
+                .exit();
+          }
+        }
+      }
 
       break;
     }
@@ -813,7 +854,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       std::map<std::string_view, bool> map;
 
-      for (auto&& item : ast->items) {
+      for (auto&& item : ast->members) {
         if (!(map[item.name] ^= 1)) {
           Error(ERR_MultipleDefined, item.token,
                 "multiple definition")
@@ -834,46 +875,29 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto& ret = _ret;
 
-      auto const& builtin_names =
-          TypeInfo::get_kind_and_names();
-
-      //
-      // find a builtin-type
-      for (auto&& pair : builtin_names) {
-        //
-        // if match
-        if (ast->token.str == pair.second) {
-          ret = pair.first;
-
-          switch (ret.kind) {
-            case TYPE_Range:
-            case TYPE_Vector:
-            case TYPE_Dict:
-              if (ast->parameters.empty())
-                Error(ast, "missing parameters")
-                    .emit()
-                    .exit();
-          }
-
-          goto foundBuiltinType;
-        }
+      if (auto res = this->get_type_from_name(ast->name);
+          res) {
+        ret = res.value();
       }
-
-      //
-      // find an user-defined struct
-      if (auto user_struct =
-              this->find_struct(ast->token.str);
-          user_struct) {
-        ret = TYPE_UserDef;
-        ret.userdef_struct = user_struct;
-      }
-      //
-      // not found
       else {
         Error(ast, "unknown type name").emit().exit();
       }
 
-    foundBuiltinType:
+      switch (ret.kind) {
+        case TYPE_UserDef:
+          // todo:
+          // if struct->params is zero: break
+          break;
+
+        case TYPE_Range:
+        case TYPE_Vector:
+        case TYPE_Dict:
+          if (ast->parameters.empty())
+            Error(ast, "missing parameters").emit().exit();
+
+          break;
+      }
+
       //
       // add parameters
       for (auto&& sub : ast->parameters) {

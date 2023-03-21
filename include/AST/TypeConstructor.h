@@ -9,11 +9,13 @@ namespace AST {
 
 struct TypeConstructor : Base {
   struct Element {
+    Token const& token;  // name
     std::string_view name;
     Base* expr;
 
-    Element(std::string_view name, Base* expr)
-        : name(name),
+    Element(Token const& token, Base* expr)
+        : token(token),
+          name(token.str),
           expr(expr)
     {
     }

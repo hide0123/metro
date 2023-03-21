@@ -21,6 +21,7 @@ enum ErrorKind {
 
   // Semantics
   ERR_TypeMismatch,
+  ERR_InvalidInitializer,
   ERR_UnexpectedType,
   ERR_ReturrnOutSideFunction,
   ERR_Undefined,

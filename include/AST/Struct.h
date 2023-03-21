@@ -3,13 +3,13 @@
 namespace AST {
 
 struct Struct : Base {
-  struct Item {
+  struct Member {
     Token const& token;
     Type* type;
 
     std::string_view name;
 
-    Item(Token const& token, Type* type)
+    Member(Token const& token, Type* type)
         : token(token),
           type(type),
           name(token.str)
@@ -19,11 +19,11 @@ struct Struct : Base {
 
   std::string_view name;
 
-  std::vector<Item> items;
+  std::vector<Member> members;
 
-  Item& append(Token const& token, Type* type)
+  Member& append(Token const& token, Type* type)
   {
-    return this->items.emplace_back(token, type);
+    return this->members.emplace_back(token, type);
   }
 
   Struct(Token const& token)
@@ -33,8 +33,8 @@ struct Struct : Base {
 
   ~Struct()
   {
-    for (auto&& item : this->items)
-      delete item.type;
+    for (auto&& m : this->members)
+      delete m.type;
   }
 };
 
