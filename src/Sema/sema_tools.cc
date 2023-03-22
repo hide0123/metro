@@ -8,6 +8,8 @@
 #include "Error.h"
 #include "Sema.h"
 
+//
+// 名前から型を探す
 std::optional<TypeInfo> Sema::get_type_from_name(
     std::string_view name)
 {
@@ -37,6 +39,9 @@ std::optional<TypeInfo> Sema::get_type_from_name(
   return std::nullopt;
 }
 
+//
+// ユーザー定義関数を探す
+//
 AST::Function* Sema::find_function(std::string_view name)
 {
   for (auto&& item : this->root->list)
@@ -47,6 +52,8 @@ AST::Function* Sema::find_function(std::string_view name)
   return nullptr;
 }
 
+//
+// ユーザー定義構造体を探す
 AST::Struct* Sema::find_struct(std::string_view name)
 {
   for (auto&& item : this->root->list) {
@@ -59,6 +66,8 @@ AST::Struct* Sema::find_struct(std::string_view name)
   return nullptr;
 }
 
+//
+// 組み込み関数を探す
 BuiltinFunc const* Sema::find_builtin_func(
     std::string_view name)
 {
@@ -69,16 +78,22 @@ BuiltinFunc const* Sema::find_builtin_func(
   return nullptr;
 }
 
+//
+// 今いる関数
 AST::Function* Sema::get_cur_func()
 {
   return *this->function_history.begin();
 }
 
+//
+// キャプチャ追加
 void Sema::begin_capture(Sema::CaptureFunction cap_func)
 {
   this->captures.emplace_back(cap_func);
 }
 
+//
+// キャプチャ削除
 void Sema::end_capture()
 {
   this->captures.pop_back();
