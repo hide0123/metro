@@ -5,6 +5,55 @@
 #include "Parser.h"
 #include "Error.h"
 
+#include "ScriptFileContext.h"
+
+AST::Scope* Parser::parse()
+{
+  auto root_scope = new AST::Scope(*this->cur);
+
+  while (this->check()) {
+    if (this->eat("import")) {
+      auto const& token = *this->ate;
+      std::string path;
+
+      do {
+        path += this->expect_identifier()->str;
+      } while (this->eat("/"));
+
+      path += ".metro";
+
+      if (!this->_context.import(path, token, root_scope)) {
+        Error(token, "failed to import file '" + path + "'")
+            .emit()
+            .exit();
+      }
+
+      continue;
+    }
+
+    auto x = root_scope->append(this->top());
+
+    if (this->check() && !this->is_ended_with_scope(x))
+      this->expect_semi();
+  }
+
+  return root_scope;
+}
+
+AST::Base* Parser::top()
+{
+  if (this->found("fn"))
+    return this->parse_function();
+
+  if (this->found("struct"))
+    return this->parse_struct();
+
+  if (this->found("impl"))
+    return this->parse_impl();
+
+  return this->expr();
+}
+
 AST::Variable* Parser::new_variable()
 {
   return (AST::Variable*)this->set_last_token(

@@ -25,6 +25,22 @@ public:
     LineView(size_t index, size_t begin, size_t end);
   };
 
+private:
+  struct SourceData {
+    std::string _path;
+    std::string _data;
+    std::vector<LineView> _lines;
+
+    LineView const* find_line_range(size_t srcpos) const;
+
+    std::string_view get_line(LineView const& line) const;
+    std::string_view get_line(Token const& token) const;
+
+    SourceData(std::string const& path);
+    ~SourceData();
+  };
+
+public:
   explicit ScriptFileContext(std::string const& path);
   ~ScriptFileContext();
 
@@ -51,20 +67,6 @@ public:
       std::string const& path) const;
 
 private:
-  struct SourceData {
-    std::string _path;
-    std::string _data;
-    std::vector<LineView> _lines;
-
-    LineView const* find_line_range(size_t srcpos) const;
-
-    std::string_view get_line(LineView const& line) const;
-    std::string_view get_line(Token const& token) const;
-
-    SourceData(std::string const& path);
-    ~SourceData();
-  };
-
   bool _is_open;
 
   SourceData _srcdata;

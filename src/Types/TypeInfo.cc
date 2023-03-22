@@ -18,10 +18,6 @@ static std::vector<std::pair<TypeKind, char const*>> const
         {TYPE_Args, "args"},
     };
 
-// static std::vector<std::string> const all_type_names{
-//     "none",   "int",   "usize",  "float", "bool", "char",
-//     "string", "range", "vector", "dict",  "args", "any"};
-
 //
 // ------------------------------------------------
 //  Get g_kind_and_names
@@ -124,49 +120,4 @@ bool TypeInfo::equals(TypeInfo const& type) const
   }
 
   return true;
-}
-
-bool TypeInfo::have_members() const
-{
-  switch (this->kind) {
-    case TYPE_UserDef:
-      return true;
-  }
-
-  return false;
-}
-
-bool TypeInfo::have_params() const
-{
-  switch (this->kind) {
-    case TYPE_Vector:
-    case TYPE_Dict:
-      return true;
-  }
-
-  return false;
-}
-
-bool TypeInfo::is_numeric() const
-{
-  switch (this->kind) {
-    case TYPE_Int:
-    case TYPE_USize:
-    case TYPE_Float:
-      return true;
-  }
-
-  return false;
-}
-
-bool TypeInfo::is_iterable() const
-{
-  switch (this->kind) {
-    case TYPE_Range:
-    case TYPE_Vector:
-    case TYPE_Dict:
-      return true;
-  }
-
-  return false;
 }

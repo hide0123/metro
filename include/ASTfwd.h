@@ -18,7 +18,9 @@ struct Base;
 template <class K, ASTKind _self_kind>
 struct ExprBase;
 
+struct Typeable;
 struct Type;
+struct TypeConstructor;
 
 //
 // ConstKeyword:
@@ -28,7 +30,6 @@ struct ConstKeyword;
 struct Value;
 struct Variable;
 struct CallFunc;
-struct TypeConstructor;
 
 struct Cast;
 struct Vector;
