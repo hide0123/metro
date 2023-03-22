@@ -17,8 +17,6 @@ struct Struct : Typeable {
     }
   };
 
-  std::string_view name;
-
   std::vector<Member> members;
 
   Member& append(Token const& token, Type* type)

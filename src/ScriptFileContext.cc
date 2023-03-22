@@ -103,18 +103,20 @@ bool SFContext::open_file()
     line += '\n';
     this->_srcdata._data += line;
 
-    line_pos = this->_srcdata._lines
-                   .emplace_back(index, line_pos,
-                                 line_pos + line.length() - 1)
-                   .end +
-               1;
+    line_pos =
+        this->_srcdata._lines
+            .emplace_back(index, line_pos,
+                          line_pos + line.length() - 1)
+            .end +
+        1;
 
     index++;
   }
 
   for (auto&& lview : this->_srcdata._lines) {
-    lview.str_view = {this->_srcdata._data.data() + lview.begin,
-                      lview.end - lview.begin};
+    lview.str_view = {
+        this->_srcdata._data.data() + lview.begin,
+        lview.end - lview.begin};
   }
 
   return true;
@@ -123,15 +125,16 @@ bool SFContext::open_file()
 //
 // import a script file
 bool SFContext::import(std::string const& path,
-                       Token const& token, AST::Scope* add_to)
+                       Token const& token,
+                       AST::Scope* add_to)
 {
   auto& ctx = this->_imported.emplace_back(path);
 
   ctx._owner = this;
   ctx._importer_token = &token;
 
-  auto found =
-      Application::get_instance()->get_context(ctx.get_path());
+  auto found = Application::get_instance()->get_context(
+      ctx.get_path());
 
   if (found && found != &ctx) {
     for (auto p = this->_owner; p; p = p->_owner) {
@@ -144,9 +147,10 @@ bool SFContext::import(std::string const& path,
               .exit();
         }
         else {
-          Error(token, "'" + path +
-                           "' is already opened by argument in "
-                           "command line")
+          Error(token,
+                "'" + path +
+                    "' is already opened by argument in "
+                    "command line")
               .emit(EL_Note)
               .exit();
         }
@@ -200,7 +204,7 @@ bool SFContext::check()
 {
   Sema sema{this->_ast};
 
-  sema.check(this->_ast);
+  sema.do_check();
 
   return !Error::was_emitted();
 }
@@ -217,8 +221,8 @@ Object* SFContext::evaluate()
 void SFContext::execute_full()
 {
   if (!this->open_file()) {
-    std::cout << "metro: cannot open file '" << this->get_path()
-              << "'" << std::endl;
+    std::cout << "metro: cannot open file '"
+              << this->get_path() << "'" << std::endl;
 
     return;
   }

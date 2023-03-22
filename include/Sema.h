@@ -80,9 +80,25 @@ class Sema {
     std::map<AST::Return*, TypeInfo> return_stmt_types;
   };
 
+  class TypeRecursionDetector {
+    Sema& S;
+
+  public:
+    TypeRecursionDetector(Sema& S)
+        : S(S)
+    {
+    }
+
+    void walk(AST::Typeable* ast);
+
+    std::vector<AST::Typeable*> stack;
+  };
+
 public:
   Sema(AST::Scope* root);
   ~Sema();
+
+  void do_check();
 
   TypeInfo check(AST::Base* ast);
   TypeInfo check_function_call(AST::CallFunc* ast);
