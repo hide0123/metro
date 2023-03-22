@@ -47,8 +47,7 @@ public:
   bool is_opened() const;
 
   bool open_file();
-  bool import(std::string const& path, Token const& token,
-              AST::Scope* add_to);
+  bool import(std::string const& path, Token const& token, AST::Scope* add_to);
 
   bool lex();
   bool parse();
@@ -60,11 +59,9 @@ public:
   std::string const& get_path() const;
   std::string& get_source_code();
 
-  std::vector<ScriptFileContext> const& get_imported_list()
-      const;
+  std::vector<ScriptFileContext> const& get_imported_list() const;
 
-  ScriptFileContext const* is_imported(
-      std::string const& path) const;
+  ScriptFileContext const* is_imported(std::string const& path) const;
 
 private:
   bool _is_open;

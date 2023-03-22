@@ -11,8 +11,7 @@
 
 struct Object;
 struct BuiltinFunc {
-  using Implementation =
-      std::function<Object*(std::vector<Object*> const&)>;
+  using Implementation = std::function<Object*(std::vector<Object*> const&)>;
 
   std::string name;  // 関数名
 

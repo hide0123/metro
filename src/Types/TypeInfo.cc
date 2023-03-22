@@ -8,15 +8,12 @@
 #include "TypeInfo.h"
 #include "AST.h"
 
-static std::vector<std::pair<TypeKind, char const*>> const
-    g_kind_and_names{
-        {TYPE_None, "none"},     {TYPE_Int, "int"},
-        {TYPE_USize, "usize"},   {TYPE_Float, "float"},
-        {TYPE_Bool, "bool"},     {TYPE_Char, "char"},
-        {TYPE_String, "string"}, {TYPE_Range, "range"},
-        {TYPE_Vector, "vector"}, {TYPE_Dict, "dict"},
-        {TYPE_Args, "args"},
-    };
+static std::vector<std::pair<TypeKind, char const*>> const g_kind_and_names{
+    {TYPE_None, "none"},     {TYPE_Int, "int"},     {TYPE_USize, "usize"},
+    {TYPE_Float, "float"},   {TYPE_Bool, "bool"},   {TYPE_Char, "char"},
+    {TYPE_String, "string"}, {TYPE_Range, "range"}, {TYPE_Vector, "vector"},
+    {TYPE_Dict, "dict"},     {TYPE_Args, "args"},
+};
 
 //
 // ------------------------------------------------
@@ -62,9 +59,7 @@ std::string TypeInfo::to_string() const
     return std::string(this->userdef_struct->name);
   }
 
-  std::string s =
-      ::g_kind_and_names[static_cast<int>(this->kind)]
-          .second;
+  std::string s = ::g_kind_and_names[static_cast<int>(this->kind)].second;
 
   //
   // template-parameters
@@ -94,8 +89,7 @@ std::string TypeInfo::to_string() const
 // 同じかどうか比較する
 bool TypeInfo::equals(TypeInfo const& type) const
 {
-  if (this->kind == TYPE_Template ||
-      type.kind == TYPE_Template)
+  if (this->kind == TYPE_Template || type.kind == TYPE_Template)
     return true;
 
   if (this->kind != type.kind)

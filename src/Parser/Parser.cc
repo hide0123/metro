@@ -5,8 +5,7 @@
 #include "Parser.h"
 #include "Error.h"
 
-Parser::Parser(ScriptFileContext& context,
-               std::list<Token>& token_list)
+Parser::Parser(ScriptFileContext& context, std::list<Token>& token_list)
     : _context(context),
       _token_list(token_list)
 {
@@ -43,12 +42,10 @@ AST::Base* Parser::factor()
     if (this->eat(":")) {
       auto ast = new AST::Dict(*token);
 
-      ast->elements.emplace_back(*this->ate, x,
-                                 this->expr());
+      ast->elements.emplace_back(*this->ate, x, this->expr());
 
       while (this->eat(",")) {
-        ast->append(this->expr(), *this->expect(":"),
-                    this->expr());
+        ast->append(this->expr(), *this->expect(":"), this->expr());
       }
 
       ast->end_token = this->expect("}");
@@ -126,8 +123,7 @@ AST::Base* Parser::factor()
         auto ast = new AST::TypeConstructor(ast_type);
 
         do {
-          ast->append(this->expr(), *this->expect(":"),
-                      this->expr());
+          ast->append(this->expr(), *this->expect(":"), this->expr());
         } while (this->eat(","));
 
         ast->end_token = this->expect("}");
@@ -137,8 +133,7 @@ AST::Base* Parser::factor()
 
       //
       // 変数
-      return this->set_last_token(
-          new AST::Variable(*ident));
+      return this->set_last_token(new AST::Variable(*ident));
     }
   }
 
@@ -222,12 +217,10 @@ AST::Base* Parser::primary()
 AST::Base* Parser::unary()
 {
   if (this->eat("-"))
-    return new AST::UnaryOp(AST_UnaryMinus, *this->ate,
-                            this->primary());
+    return new AST::UnaryOp(AST_UnaryMinus, *this->ate, this->primary());
 
   if (this->eat("+"))
-    return new AST::UnaryOp(AST_UnaryPlus, *this->ate,
-                            this->primary());
+    return new AST::UnaryOp(AST_UnaryPlus, *this->ate, this->primary());
 
   return this->primary();
 }
@@ -253,9 +246,8 @@ AST::Base* Parser::indexref()
       while (this->eat("[")) {
         alert;
 
-        ast->indexes.emplace_back(
-            AST::IndexRef::Subscript::SUB_Index,
-            this->expr());
+        ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Index,
+                                  this->expr());
 
         this->expect("]");
       }
@@ -294,8 +286,7 @@ AST::Base* Parser::indexref()
         continue;
       }
 
-      ast->indexes.emplace_back(
-          AST::IndexRef::Subscript::SUB_Member, tmp);
+      ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Member, tmp);
     }
     else
       break;
@@ -310,14 +301,11 @@ AST::Base* Parser::mul()
 
   while (this->check()) {
     if (this->eat("*"))
-      AST::Expr::create(x)->append(AST::EX_Mul, *this->ate,
-                                   this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Mul, *this->ate, this->indexref());
     else if (this->eat("/"))
-      AST::Expr::create(x)->append(AST::EX_Div, *this->ate,
-                                   this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Div, *this->ate, this->indexref());
     else if (this->eat("%"))
-      AST::Expr::create(x)->append(AST::EX_Mod, *this->ate,
-                                   this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Mod, *this->ate, this->indexref());
     else
       break;
   }
@@ -331,11 +319,9 @@ AST::Base* Parser::add()
 
   while (this->check()) {
     if (this->eat("+"))
-      AST::Expr::create(x)->append(AST::EX_Add, *this->ate,
-                                   this->mul());
+      AST::Expr::create(x)->append(AST::EX_Add, *this->ate, this->mul());
     else if (this->eat("-"))
-      AST::Expr::create(x)->append(AST::EX_Sub, *this->ate,
-                                   this->mul());
+      AST::Expr::create(x)->append(AST::EX_Sub, *this->ate, this->mul());
     else
       break;
   }
@@ -349,11 +335,9 @@ AST::Base* Parser::shift()
 
   while (this->check()) {
     if (this->eat("<<"))
-      AST::Expr::create(x)->append(AST::EX_LShift,
-                                   *this->ate, this->add());
+      AST::Expr::create(x)->append(AST::EX_LShift, *this->ate, this->add());
     else if (this->eat(">>"))
-      AST::Expr::create(x)->append(AST::EX_RShift,
-                                   *this->ate, this->add());
+      AST::Expr::create(x)->append(AST::EX_RShift, *this->ate, this->add());
     else
       break;
   }
@@ -367,25 +351,23 @@ AST::Base* Parser::compare()
 
   while (this->check()) {
     if (this->eat("=="))
-      AST::Compare::create(x)->append(
-          AST::CMP_Equal, *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
+                                      this->shift());
     else if (this->eat("!="))
-      AST::Compare::create(x)->append(
-          AST::CMP_Equal, *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_Equal, *this->ate,
+                                      this->shift());
     else if (this->eat(">="))
-      AST::Compare::create(x)->append(
-          AST::CMP_LeftBigOrEqual, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_LeftBigOrEqual, *this->ate,
+                                      this->shift());
     else if (this->eat("<="))
-      AST::Compare::create(x)->append(
-          AST::CMP_RightBigOrEqual, *this->ate,
-          this->shift());
+      AST::Compare::create(x)->append(AST::CMP_RightBigOrEqual, *this->ate,
+                                      this->shift());
     else if (this->eat(">"))
-      AST::Compare::create(x)->append(
-          AST::CMP_LeftBigger, *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_LeftBigger, *this->ate,
+                                      this->shift());
     else if (this->eat("<"))
-      AST::Compare::create(x)->append(
-          AST::CMP_RightBigger, *this->ate, this->shift());
+      AST::Compare::create(x)->append(AST::CMP_RightBigger, *this->ate,
+                                      this->shift());
     else
       break;
   }
@@ -399,14 +381,11 @@ AST::Base* Parser::bit_op()
 
   while (this->check()) {
     if (this->eat("&"))
-      AST::Expr::create(x)->append(
-          AST::EX_BitAND, *this->ate, this->compare());
+      AST::Expr::create(x)->append(AST::EX_BitAND, *this->ate, this->compare());
     else if (this->eat("^"))
-      AST::Expr::create(x)->append(
-          AST::EX_BitXOR, *this->ate, this->compare());
+      AST::Expr::create(x)->append(AST::EX_BitXOR, *this->ate, this->compare());
     else if (this->eat("|"))
-      AST::Expr::create(x)->append(
-          AST::EX_BitOR, *this->ate, this->compare());
+      AST::Expr::create(x)->append(AST::EX_BitOR, *this->ate, this->compare());
     else
       break;
   }
@@ -420,11 +399,9 @@ AST::Base* Parser::log_and_or()
 
   while (this->check()) {
     if (this->eat("&&"))
-      AST::Expr::create(x)->append(AST::EX_And, *this->ate,
-                                   this->compare());
+      AST::Expr::create(x)->append(AST::EX_And, *this->ate, this->compare());
     else if (this->eat("||"))
-      AST::Expr::create(x)->append(AST::EX_Or, *this->ate,
-                                   this->compare());
+      AST::Expr::create(x)->append(AST::EX_Or, *this->ate, this->compare());
     else
       break;
   }
@@ -523,8 +500,7 @@ AST::Base* Parser::stmt()
     ast->end_token = this->expect("}");
 
     if (ast->cases.empty()) {
-      Error(ERR_EmptySwitch, ast->token,
-            "empty switch-statement is not valid")
+      Error(ERR_EmptySwitch, ast->token, "empty switch-statement is not valid")
           .emit()
           .exit();
     }
@@ -535,8 +511,7 @@ AST::Base* Parser::stmt()
   //
   // loop
   if (this->eat("loop")) {
-    return this->set_last_token(
-        new AST::Loop(this->expect_scope()));
+    return this->set_last_token(new AST::Loop(this->expect_scope()));
   }
 
   //
@@ -616,8 +591,7 @@ AST::Base* Parser::stmt()
 
   // break
   if (this->eat("break")) {
-    auto ast =
-        new AST::LoopController(*this->ate, AST_Break);
+    auto ast = new AST::LoopController(*this->ate, AST_Break);
 
     // ast->end_token = this->expect_semi();
 
@@ -626,8 +600,7 @@ AST::Base* Parser::stmt()
 
   // continue
   if (this->eat("continue")) {
-    auto ast =
-        new AST::LoopController(*this->ate, AST_Continue);
+    auto ast = new AST::LoopController(*this->ate, AST_Continue);
 
     // ast->end_token = this->expect_semi();
 

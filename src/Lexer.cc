@@ -94,10 +94,9 @@ char Lexer::peek()
 
 bool Lexer::match(std::string_view str)
 {
-  return this->position + str.length() <=
-             this->source.length() &&
-         std::memcmp(this->source.data() + this->position,
-                     str.data(), str.length()) == 0;
+  return this->position + str.length() <= this->source.length() &&
+         std::memcmp(this->source.data() + this->position, str.data(),
+                     str.length()) == 0;
 }
 
 size_t Lexer::pass_while(std::function<bool(char)> cond)
@@ -154,14 +153,12 @@ bool Lexer::find_punctuator(Token& token)
     if (this->match(s)) {
       token.kind = TOK_Punctuater;
 
-      token.punct_kind =
-          static_cast<PunctuatorKind>(kind_offs);
+      token.punct_kind = static_cast<PunctuatorKind>(kind_offs);
 
       if (token.punct_kind >= PU_Bracket) {
         kind_offs -= PU_Bracket;
 
-        token.bracket_kind =
-            static_cast<BracketKind>(kind_offs / 2);
+        token.bracket_kind = static_cast<BracketKind>(kind_offs / 2);
 
         token.is_bracket_opened = !(token.bracket_kind % 2);
       }
@@ -210,8 +207,7 @@ std::list<Token> Lexer::lex()
         token.kind = TOK_USize;
 
         this->position++;
-        token.str = {
-            str, this->position - token.src_loc.position};
+        token.str = {str, this->position - token.src_loc.position};
       }
       else if (this->peek() == '.') {
         this->position++;
@@ -219,8 +215,7 @@ std::list<Token> Lexer::lex()
         if (isdigit(this->peek())) {
           this->pass_while(isdigit);
           token.kind = TOK_Float;
-          token.str = {
-              str, this->position - token.src_loc.position};
+          token.str = {str, this->position - token.src_loc.position};
         }
         else {
           this->position--;
@@ -261,8 +256,7 @@ std::list<Token> Lexer::lex()
     this->pass_space();
   }
 
-  ret.emplace_back(TOK_End).src_loc.position =
-      this->source.length() - 1;
+  ret.emplace_back(TOK_End).src_loc.position = this->source.length() - 1;
 
   return ret;
 }

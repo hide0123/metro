@@ -55,10 +55,8 @@ std::string ObjUserType::to_string() const
   auto ns = nested;
   nested = true;
 
-  for (auto pm = pStruct->members.begin();
-       auto&& member : this->members) {
-    ret += std::string((pm++)->name) + ": " +
-           member->to_string();
+  for (auto pm = pStruct->members.begin(); auto&& member : this->members) {
+    ret += std::string((pm++)->name) + ": " + member->to_string();
 
     if (pm != pStruct->members.end())
       ret += ", ";

@@ -29,16 +29,15 @@ SFContext::SourceData::~SourceData()
 {
 }
 
-SFContext::LineView::LineView(size_t index, size_t begin,
-                              size_t end)
+SFContext::LineView::LineView(size_t index, size_t begin, size_t end)
     : index(index),
       begin(begin),
       end(end)
 {
 }
 
-SFContext::LineView const*
-SFContext::SourceData::find_line_range(size_t srcpos) const
+SFContext::LineView const* SFContext::SourceData::find_line_range(
+    size_t srcpos) const
 {
   for (auto&& range : this->_lines) {
     if (range.begin <= srcpos && srcpos <= range.end)
@@ -51,15 +50,12 @@ SFContext::SourceData::find_line_range(size_t srcpos) const
 std::string_view SFContext::SourceData::get_line(
     SFContext::LineView const& line) const
 {
-  return {this->_data.data() + line.begin,
-          line.end - line.begin + 1};
+  return {this->_data.data() + line.begin, line.end - line.begin + 1};
 }
 
-std::string_view SFContext::SourceData::get_line(
-    Token const& token) const
+std::string_view SFContext::SourceData::get_line(Token const& token) const
 {
-  return this->get_line(
-      this->_lines[token.src_loc.line_num - 1]);
+  return this->get_line(this->_lines[token.src_loc.line_num - 1]);
 }
 
 SFContext::ScriptFileContext(std::string const& path)
@@ -103,20 +99,17 @@ bool SFContext::open_file()
     line += '\n';
     this->_srcdata._data += line;
 
-    line_pos =
-        this->_srcdata._lines
-            .emplace_back(index, line_pos,
-                          line_pos + line.length() - 1)
-            .end +
-        1;
+    line_pos = this->_srcdata._lines
+                   .emplace_back(index, line_pos, line_pos + line.length() - 1)
+                   .end +
+               1;
 
     index++;
   }
 
   for (auto&& lview : this->_srcdata._lines) {
-    lview.str_view = {
-        this->_srcdata._data.data() + lview.begin,
-        lview.end - lview.begin};
+    lview.str_view = {this->_srcdata._data.data() + lview.begin,
+                      lview.end - lview.begin};
   }
 
   return true;
@@ -124,8 +117,7 @@ bool SFContext::open_file()
 
 //
 // import a script file
-bool SFContext::import(std::string const& path,
-                       Token const& token,
+bool SFContext::import(std::string const& path, Token const& token,
                        AST::Scope* add_to)
 {
   auto& ctx = this->_imported.emplace_back(path);
@@ -133,8 +125,7 @@ bool SFContext::import(std::string const& path,
   ctx._owner = this;
   ctx._importer_token = &token;
 
-  auto found = Application::get_instance()->get_context(
-      ctx.get_path());
+  auto found = Application::get_instance()->get_context(ctx.get_path());
 
   if (found && found != &ctx) {
     for (auto p = this->_owner; p; p = p->_owner) {
@@ -147,10 +138,9 @@ bool SFContext::import(std::string const& path,
               .exit();
         }
         else {
-          Error(token,
-                "'" + path +
-                    "' is already opened by argument in "
-                    "command line")
+          Error(token, "'" + path +
+                           "' is already opened by argument in "
+                           "command line")
               .emit(EL_Note)
               .exit();
         }
@@ -221,8 +211,8 @@ Object* SFContext::evaluate()
 void SFContext::execute_full()
 {
   if (!this->open_file()) {
-    std::cout << "metro: cannot open file '"
-              << this->get_path() << "'" << std::endl;
+    std::cout << "metro: cannot open file '" << this->get_path() << "'"
+              << std::endl;
 
     return;
   }
@@ -251,14 +241,12 @@ std::string& SFContext::get_source_code()
   return this->_srcdata._data;
 }
 
-std::vector<ScriptFileContext> const&
-SFContext::get_imported_list() const
+std::vector<ScriptFileContext> const& SFContext::get_imported_list() const
 {
   return this->_imported;
 }
 
-ScriptFileContext const* SFContext::is_imported(
-    std::string const& path) const
+ScriptFileContext const* SFContext::is_imported(std::string const& path) const
 {
   for (auto&& ctx : this->_imported) {
     if (ctx.get_path() == path)

@@ -110,8 +110,7 @@ Cast::~Cast()
   delete this->expr;
 }
 
-UnaryOp::UnaryOp(ASTKind kind, Token const& token,
-                 Base* expr)
+UnaryOp::UnaryOp(ASTKind kind, Token const& token, Base* expr)
     : Base(kind, token),
       expr(expr)
 {
@@ -196,8 +195,7 @@ Return::~Return()
     delete this->expr;
 }
 
-LoopController ::LoopController(Token const& token,
-                                ASTKind kind)
+LoopController ::LoopController(Token const& token, ASTKind kind)
     : Base(kind, token)
 {
 }

@@ -31,8 +31,7 @@ enum TypeKind {
 };
 
 struct TypeInfo {
-  using member_pair_t =
-      std::pair<std::string_view, TypeInfo>;
+  using member_pair_t = std::pair<std::string_view, TypeInfo>;
 
   TypeKind kind;
   bool is_const;
@@ -56,8 +55,7 @@ struct TypeInfo {
   {
   }
 
-  TypeInfo(TypeKind kind,
-           std::initializer_list<TypeInfo> list,
+  TypeInfo(TypeKind kind, std::initializer_list<TypeInfo> list,
            bool is_const = false)
       : kind(kind),
         is_const(is_const),
@@ -114,8 +112,7 @@ struct TypeInfo {
     return false;
   }
 
-  static std::vector<
-      std::pair<TypeKind, char const*>> const&
+  static std::vector<std::pair<TypeKind, char const*>> const&
   get_kind_and_names();
 
   static std::vector<std::string> get_name_list();

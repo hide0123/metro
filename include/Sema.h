@@ -26,8 +26,7 @@ class Sema {
 
     bool is_global = 0;
 
-    explicit LocalVar(TypeInfo const& type,
-                      std::string_view name)
+    explicit LocalVar(TypeInfo const& type, std::string_view name)
         : type(type),
           name(name),
           step(0),
@@ -48,8 +47,7 @@ class Sema {
       return nullptr;
     }
 
-    LocalVar& append(TypeInfo const& type,
-                     std::string_view name)
+    LocalVar& append(TypeInfo const& type, std::string_view name)
     {
       return this->variables.emplace_back(type, name);
     }
@@ -113,9 +111,8 @@ public:
 
   //
   // 演算子の型の組み合わせが正しいかチェックする
-  std::optional<TypeInfo> is_valid_expr(
-      AST::ExprKind kind, TypeInfo const& lhs,
-      TypeInfo const& rhs);
+  std::optional<TypeInfo> is_valid_expr(AST::ExprKind kind, TypeInfo const& lhs,
+                                        TypeInfo const& rhs);
 
   //
   // ユーザー定義関数を探す
@@ -127,13 +124,11 @@ public:
 
   //
   // ビルトイン関数を探す
-  BuiltinFunc const* find_builtin_func(
-      std::string_view name);
+  BuiltinFunc const* find_builtin_func(std::string_view name);
 
   //
   // 名前から型を探す
-  std::optional<TypeInfo> get_type_from_name(
-      std::string_view name);
+  std::optional<TypeInfo> get_type_from_name(std::string_view name);
 
 private:
   using CaptureFunction = std::function<void(AST::Base*)>;
@@ -155,11 +150,9 @@ private:
   void begin_return_capture(ReturnCaptureFunction func);
   void end_return_capture();
 
-  int find_member(TypeInfo const& type,
-                  std::string_view name)
+  int find_member(TypeInfo const& type, std::string_view name)
   {
-    for (int i = 0;
-         auto&& m : type.userdef_struct->members) {
+    for (int i = 0; auto&& m : type.userdef_struct->members) {
       if (m.name == name)
         return i;
 

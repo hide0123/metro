@@ -83,8 +83,7 @@ struct ExprBase : Base {
     auto s = this->first->to_string();
 
     for (auto&& elem : this->elements) {
-      s += " " + std::string(elem.op.str) + " " +
-           elem.ast->to_string();
+      s += " " + std::string(elem.op.str) + " " + elem.ast->to_string();
     }
 
     return s;

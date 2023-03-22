@@ -64,8 +64,7 @@ public:
   Error(Error&&) = delete;
   Error(Error const&) = delete;
 
-  Error(ErrorKind kind, ErrorLocation&& loc,
-        std::string const& msg);
+  Error(ErrorKind kind, ErrorLocation&& loc, std::string const& msg);
 
   Error(ErrorLocation&& loc, std::string const& msg);
 
@@ -80,8 +79,7 @@ public:
   static bool was_emitted();
 
 private:
-  std::pair<Token const*, Token const*> get_token_range()
-      const;
+  std::pair<Token const*, Token const*> get_token_range() const;
   void show_error_lines();
 
   ErrorKind _kind;

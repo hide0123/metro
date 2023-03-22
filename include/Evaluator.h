@@ -70,18 +70,15 @@ public:
   //
   // index-ref
   Object*& eval_index_ref(Object*& obj, AST::IndexRef* ast);
-  Object*& eval_member_access(Object*& obj,
-                              AST::IndexRef* ast);
+  Object*& eval_member_access(Object*& obj, AST::IndexRef* ast);
 
   //
   // element in expr
-  void eval_expr_elem(AST::Expr::Element const& elem,
-                      Object* dest);
+  void eval_expr_elem(AST::Expr::Element const& elem, Object* dest);
 
   //
   // compare
-  static bool compute_compare(AST::CmpKind kind,
-                              Object* left, Object* right);
+  static bool compute_compare(AST::CmpKind kind, Object* left, Object* right);
 
 private:
   /**
