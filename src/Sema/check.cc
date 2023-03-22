@@ -1085,18 +1085,10 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
           .exit();
     }
 
-    case AST_IndexRef: {
-      astdef(IndexRef);
-
-      return this->get_subscripted_type(
-          this->check_as_left(ast->expr), ast->indexes);
-    }
-
-    case AST_MemberAccess: {
-      astdef(IndexRef);
-
-      return this->check_as_left(ast->expr);
-    }
+    case AST_IndexRef:
+    case AST_MemberAccess:
+      return this->check_as_left(
+          ((AST::IndexRef*)_ast)->expr);
   }
 
   Error(_ast, "expected lvalue expression").emit().exit();
