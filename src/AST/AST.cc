@@ -69,6 +69,7 @@ TypeConstructor::TypeConstructor(Type* type)
 
 TypeConstructor ::~TypeConstructor()
 {
+  delete this->type;
 }
 
 }  // namespace AST

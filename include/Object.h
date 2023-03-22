@@ -45,6 +45,13 @@ struct ObjUserType : Object {
       : Object(type)
   {
   }
+
+  ~ObjUserType()
+  {
+    for (auto&& m : this->members) {
+      m->ref_count--;
+    }
+  }
 };
 
 struct ObjNone : Object {
