@@ -9,7 +9,7 @@ int main(int argc, char** argv)
     return Application().main(argc, argv);
 #if !METRO_DEBUG
   }
-  catch (std::exception e) {
+  catch (std::exception const& e) {
     std::cout << "unhandled exception has been occurred:"
               << std::endl
               << "  " << e.what() << std::endl

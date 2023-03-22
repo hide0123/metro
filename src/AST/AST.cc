@@ -25,6 +25,15 @@ ListBase::ListBase(ASTKind kind, Token const& token)
 {
 }
 
+Typeable::Typeable(ASTKind kind, Token const& token)
+    : Base(kind, token)
+{
+}
+
+Typeable::~Typeable()
+{
+}
+
 std::string Base::to_string() const
 {
   return std::string(this->token.str);

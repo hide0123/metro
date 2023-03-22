@@ -52,11 +52,11 @@
 
 #else
 
-#define debug(...) 0;
-#define alert 0
-#define alertmsg(...) 0
-#define alert_ctor 0
-#define alert_dtor 0
+#define debug(...) (void)0;
+#define alert (void)0
+#define alertmsg(...) (void)0
+#define alert_ctor (void)0
+#define alert_dtor (void)0
 
 #endif
 

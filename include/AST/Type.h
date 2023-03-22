@@ -2,16 +2,15 @@
 
 namespace AST {
 
-struct Type : Base {
-  std::string_view name;
+struct Type : Typeable {
   std::vector<Type*> parameters;
   bool is_const;
 
   Type(Token const& token)
-      : Base(AST_Type, token),
-        name(token.str),
+      : Typeable(AST_Type, token),
         is_const(false)
   {
+    this->name = token.str;
   }
 
   ~Type()

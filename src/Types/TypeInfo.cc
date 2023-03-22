@@ -6,6 +6,7 @@
 
 #include "Token.h"
 #include "TypeInfo.h"
+#include "AST.h"
 
 static std::vector<std::pair<TypeKind, char const*>> const
     g_kind_and_names{
@@ -61,10 +62,9 @@ std::optional<TypeKind> TypeInfo::get_kind_from_name(
 // ------------------------------------------------
 std::string TypeInfo::to_string() const
 {
-  alertmsg("this->kind = " << this->kind);
-
-  assert(static_cast<int>(this->kind) <
-         (int)std::size(g_kind_and_names));
+  if (this->kind == TYPE_UserDef) {
+    return std::string(this->userdef_struct->name);
+  }
 
   std::string s =
       ::g_kind_and_names[static_cast<int>(this->kind)]
@@ -130,6 +130,17 @@ bool TypeInfo::have_members() const
 {
   switch (this->kind) {
     case TYPE_UserDef:
+      return true;
+  }
+
+  return false;
+}
+
+bool TypeInfo::have_params() const
+{
+  switch (this->kind) {
+    case TYPE_Vector:
+    case TYPE_Dict:
       return true;
   }
 
