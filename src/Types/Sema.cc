@@ -10,14 +10,229 @@
 
 #define astdef(T) auto ast = (AST::T*)_ast
 
-/**
- * @brief 演算子に対する両辺の型が適切かどうかチェックする
- *
- * @param kind
- * @param lhs
- * @param rhs
- * @return std::optional<TypeInfo>
- */
+std::map<AST::Base*, TypeInfo> Sema::value_type_cache;
+
+Sema::Sema(AST::Scope* root)
+    : root(root)
+{
+}
+
+Sema::~Sema()
+{
+}
+
+void Sema::do_check()
+{
+  TypeRecursionDetector tr{*this};
+
+  for (auto&& x : this->root->list) {
+    switch (x->kind) {
+      case AST_Struct:
+        tr.walk((AST::Typeable*)x);
+        break;
+    }
+  }
+
+  this->check(this->root);
+}
+//
+// 名前から型を探す
+std::optional<TypeInfo> Sema::get_type_from_name(
+    std::string_view name)
+{
+  if (auto builtin = TypeInfo::get_kind_from_name(name);
+      builtin)
+    return builtin.value();
+
+  if (auto usrdef = this->find_struct(name); usrdef) {
+    TypeInfo ret{TYPE_UserDef};
+
+    ret.userdef_struct = usrdef;
+
+    for (auto it = this->type_check_stack.rbegin() + 1;
+         it != this->type_check_stack.rend(); it++) {
+      if (*it == usrdef) {
+      }
+    }
+
+    for (auto&& member : usrdef->members) {
+      ret.members.emplace_back(member.name,
+                               this->check(member.type));
+    }
+
+    return ret;
+  }
+
+  return std::nullopt;
+}
+
+//
+// ユーザー定義関数を探す
+AST::Function* Sema::find_function(std::string_view name)
+{
+  for (auto&& item : this->root->list)
+    if (item->kind == AST_Function &&
+        ((AST::Function*)item)->name.str == name)
+      return (AST::Function*)item;
+
+  return nullptr;
+}
+
+//
+// ユーザー定義構造体を探す
+AST::Struct* Sema::find_struct(std::string_view name)
+{
+  for (auto&& item : this->root->list) {
+    if (auto st = (AST::Struct*)item;
+        st->kind == AST_Struct && st->name == name) {
+      return st;
+    }
+  }
+
+  return nullptr;
+}
+
+//
+// 組み込み関数を探す
+BuiltinFunc const* Sema::find_builtin_func(
+    std::string_view name)
+{
+  for (auto&& builtinfunc : BuiltinFunc::get_builtin_list())
+    if (builtinfunc.name == name)
+      return &builtinfunc;
+
+  return nullptr;
+}
+
+//
+// 今いる関数
+AST::Function* Sema::get_cur_func()
+{
+  return *this->function_history.begin();
+}
+
+//
+// キャプチャ追加
+void Sema::begin_capture(Sema::CaptureFunction cap_func)
+{
+  this->captures.emplace_back(cap_func);
+}
+
+//
+// キャプチャ削除
+void Sema::end_capture()
+{
+  this->captures.pop_back();
+}
+
+void Sema::begin_return_capture(
+    Sema::ReturnCaptureFunction cap_func)
+{
+  this->return_captures.emplace_back(cap_func);
+}
+
+void Sema::end_return_capture()
+{
+  this->return_captures.pop_back();
+}
+
+TypeInfo Sema::expect(TypeInfo const& expected,
+                      AST::Base* ast)
+{
+  auto type = this->check(ast);
+
+  if (type.equals(expected))
+    return expected;
+
+  switch (type.kind) {
+    case TYPE_Vector: {
+      auto x = (AST::Vector*)ast;
+
+      if (x->elements.empty())
+        return expected;
+
+      break;
+    }
+
+    case TYPE_Dict: {
+      if (ast->kind == AST_Scope &&
+          ((AST::Scope*)ast)->list.empty())
+        return expected;
+
+      auto x = (AST::Dict*)ast;
+
+      if (!!x->key_type && x->elements.empty())
+        return expected;
+
+      break;
+    }
+  }
+
+  if (ast->kind == AST_Scope) {
+    if (auto x = (AST::Scope*)ast; x->return_last_expr)
+      ast = *x->list.rbegin();
+  }
+
+  Error(ast, "expected '" + expected.to_string() +
+                 "' but found '" + type.to_string() + "'")
+      .emit()
+      .exit();
+}
+
+void Sema::TypeRecursionDetector::walk(AST::Typeable* ast)
+{
+  switch (ast->kind) {
+    case AST_Type: {
+      if (ast->name == "vector") {
+        return;
+      }
+
+      break;
+    }
+  }
+
+  if (std::find(this->stack.begin(), this->stack.end(),
+                ast) != this->stack.end()) {
+    Error(ast, "recursive type '" + std::string(ast->name) +
+                   "' have infinity size")
+        .single_line()
+        .emit();
+
+    Error(*this->stack.rbegin(),
+          "recursive without indirection")
+        .emit(EL_Note)
+        .exit();
+  }
+
+  this->stack.emplace_back(ast);
+
+  switch (ast->kind) {
+    case AST_Struct: {
+      auto x = (AST::Struct*)ast;
+
+      for (auto&& x : x->members) {
+        this->walk(x.type);
+      }
+
+      break;
+    }
+
+    case AST_Type: {
+      auto x = (AST::Type*)ast;
+
+      if (auto find = this->S.find_struct(x->name); find) {
+        this->walk(find);
+      }
+
+      break;
+    }
+  }
+
+  this->stack.pop_back();
+}
+
+//
+// 演算子の型の組み合わせが正しいかチェックする
 std::optional<TypeInfo> Sema::is_valid_expr(
     AST::ExprKind kind, TypeInfo const& lhs,
     TypeInfo const& rhs)
@@ -986,7 +1201,10 @@ TypeInfo Sema::check(AST::Base* _ast)
         ret = res.value();
       }
       else {
-        Error(ast, "unknown type name").emit().exit();
+        Error(ast, "undefined type name '" +
+                       std::string(ast->name) + "'")
+            .emit()
+            .exit();
       }
 
       switch (ret.kind) {
