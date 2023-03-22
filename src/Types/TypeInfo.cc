@@ -8,19 +8,12 @@
 #include "TypeInfo.h"
 #include "AST.h"
 
-static std::vector<std::pair<TypeKind, char const*>> const
-    g_kind_and_names{
-        {TYPE_None, "none"},     {TYPE_Int, "int"},
-        {TYPE_USize, "usize"},   {TYPE_Float, "float"},
-        {TYPE_Bool, "bool"},     {TYPE_Char, "char"},
-        {TYPE_String, "string"}, {TYPE_Range, "range"},
-        {TYPE_Vector, "vector"}, {TYPE_Dict, "dict"},
-        {TYPE_Args, "args"},
-    };
-
-// static std::vector<std::string> const all_type_names{
-//     "none",   "int",   "usize",  "float", "bool", "char",
-//     "string", "range", "vector", "dict",  "args", "any"};
+static std::vector<std::pair<TypeKind, char const*>> const g_kind_and_names{
+    {TYPE_None, "none"},     {TYPE_Int, "int"},     {TYPE_USize, "usize"},
+    {TYPE_Float, "float"},   {TYPE_Bool, "bool"},   {TYPE_Char, "char"},
+    {TYPE_String, "string"}, {TYPE_Range, "range"}, {TYPE_Vector, "vector"},
+    {TYPE_Dict, "dict"},     {TYPE_Args, "args"},
+};
 
 //
 // ------------------------------------------------
@@ -66,9 +59,7 @@ std::string TypeInfo::to_string() const
     return std::string(this->userdef_struct->name);
   }
 
-  std::string s =
-      ::g_kind_and_names[static_cast<int>(this->kind)]
-          .second;
+  std::string s = ::g_kind_and_names[static_cast<int>(this->kind)].second;
 
   //
   // template-parameters
@@ -98,8 +89,7 @@ std::string TypeInfo::to_string() const
 // 同じかどうか比較する
 bool TypeInfo::equals(TypeInfo const& type) const
 {
-  if (this->kind == TYPE_Template ||
-      type.kind == TYPE_Template)
+  if (this->kind == TYPE_Template || type.kind == TYPE_Template)
     return true;
 
   if (this->kind != type.kind)
@@ -124,49 +114,4 @@ bool TypeInfo::equals(TypeInfo const& type) const
   }
 
   return true;
-}
-
-bool TypeInfo::have_members() const
-{
-  switch (this->kind) {
-    case TYPE_UserDef:
-      return true;
-  }
-
-  return false;
-}
-
-bool TypeInfo::have_params() const
-{
-  switch (this->kind) {
-    case TYPE_Vector:
-    case TYPE_Dict:
-      return true;
-  }
-
-  return false;
-}
-
-bool TypeInfo::is_numeric() const
-{
-  switch (this->kind) {
-    case TYPE_Int:
-    case TYPE_USize:
-    case TYPE_Float:
-      return true;
-  }
-
-  return false;
-}
-
-bool TypeInfo::is_iterable() const
-{
-  switch (this->kind) {
-    case TYPE_Range:
-    case TYPE_Vector:
-    case TYPE_Dict:
-      return true;
-  }
-
-  return false;
 }

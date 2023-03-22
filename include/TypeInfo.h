@@ -31,8 +31,7 @@ enum TypeKind {
 };
 
 struct TypeInfo {
-  using member_pair_t =
-      std::pair<std::string_view, TypeInfo>;
+  using member_pair_t = std::pair<std::string_view, TypeInfo>;
 
   TypeKind kind;
   bool is_const;
@@ -56,8 +55,7 @@ struct TypeInfo {
   {
   }
 
-  TypeInfo(TypeKind kind,
-           std::initializer_list<TypeInfo> list,
+  TypeInfo(TypeKind kind, std::initializer_list<TypeInfo> list,
            bool is_const = false)
       : kind(kind),
         is_const(is_const),
@@ -65,8 +63,56 @@ struct TypeInfo {
   {
   }
 
-  static std::vector<
-      std::pair<TypeKind, char const*>> const&
+  std::string to_string() const;
+
+  bool equals(TypeInfo const& type) const;
+
+  bool have_members() const
+  {
+    switch (this->kind) {
+      case TYPE_UserDef:
+        return true;
+    }
+
+    return false;
+  }
+
+  bool have_params() const
+  {
+    switch (this->kind) {
+      case TYPE_Vector:
+      case TYPE_Dict:
+        return true;
+    }
+
+    return false;
+  }
+
+  bool is_numeric() const
+  {
+    switch (this->kind) {
+      case TYPE_Int:
+      case TYPE_USize:
+      case TYPE_Float:
+        return true;
+    }
+
+    return false;
+  }
+
+  bool is_iterable() const
+  {
+    switch (this->kind) {
+      case TYPE_Range:
+      case TYPE_Vector:
+      case TYPE_Dict:
+        return true;
+    }
+
+    return false;
+  }
+
+  static std::vector<std::pair<TypeKind, char const*>> const&
   get_kind_and_names();
 
   static std::vector<std::string> get_name_list();
@@ -85,14 +131,4 @@ struct TypeInfo {
 
     return -1;
   }
-
-  std::string to_string() const;
-
-  bool equals(TypeInfo const& type) const;
-
-  bool have_members() const;
-  bool have_params() const;
-
-  bool is_numeric() const;
-  bool is_iterable() const;
 };

@@ -45,6 +45,13 @@ struct ObjUserType : Object {
       : Object(type)
   {
   }
+
+  ~ObjUserType()
+  {
+    for (auto&& m : this->members) {
+      m->ref_count--;
+    }
+  }
 };
 
 struct ObjNone : Object {
@@ -235,10 +242,8 @@ struct ObjDict : Object {
     if (this->items.size() != x->items.size())
       return false;
 
-    for (auto xx = x->items.begin();
-         auto&& aa : this->items) {
-      if (!aa.key->equals(xx->key) ||
-          !aa.value->equals(xx->value))
+    for (auto xx = x->items.begin(); auto&& aa : this->items) {
+      if (!aa.key->equals(xx->key) || !aa.value->equals(xx->value))
         return false;
       xx++;
     }
@@ -291,8 +296,7 @@ struct ObjVector : Object {
     if (this->elements.size() != x->elements.size())
       return false;
 
-    for (auto y = x->elements.begin();
-         auto&& e : this->elements) {
+    for (auto y = x->elements.begin(); auto&& e : this->elements) {
       if (!e->equals(*y))
         return false;
     }

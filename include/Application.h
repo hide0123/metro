@@ -15,8 +15,7 @@ public:
 
   //
   // check if opened the path in any ScriptFileContext
-  ScriptFileContext const* get_context(
-      std::string const& path) const;
+  ScriptFileContext const* get_context(std::string const& path) const;
 
   ScriptFileContext const* get_current_context() const;
 

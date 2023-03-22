@@ -1,3 +1,7 @@
+// ---------------------------------------------
+//  BuiltinFunc
+// ---------------------------------------------
+
 #pragma once
 
 #include <functional>
@@ -6,13 +10,8 @@
 #include "TypeInfo.h"
 
 struct Object;
-
-// ---------------------------------------------
-//  BuiltinFunc
-// ---------------------------------------------
 struct BuiltinFunc {
-  using Implementation =
-      std::function<Object*(std::vector<Object*> const&)>;
+  using Implementation = std::function<Object*(std::vector<Object*> const&)>;
 
   std::string name;  // 関数名
 

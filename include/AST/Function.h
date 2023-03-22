@@ -6,8 +6,7 @@ struct Argument : Base {
   std::string_view name;
   AST::Type* type;
 
-  Argument(std::string_view const& name, Token const& colon,
-           AST::Type* type)
+  Argument(std::string_view const& name, Token const& colon, AST::Type* type)
       : Base(AST_Argument, colon),
         name(name),
         type(type)
@@ -34,11 +33,10 @@ struct Function : Base {
    * @param type
    * @return Argument&
    */
-  Argument*& append_argument(std::string_view const& name,
-                             Token const& colon, AST::Type* type)
+  Argument*& append_argument(std::string_view const& name, Token const& colon,
+                             AST::Type* type)
   {
-    return this->args.emplace_back(
-        new Argument(name, colon, type));
+    return this->args.emplace_back(new Argument(name, colon, type));
   }
 
   /**

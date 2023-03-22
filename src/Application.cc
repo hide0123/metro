@@ -39,16 +39,14 @@ int Application::main(int argc, char** argv)
     }
     else if (arg.ends_with(".metro")) {
       if (!std::ifstream(arg).good()) {
-        std::cerr << "fatal: cannot open file '" << arg << "'"
-                  << std::endl;
+        std::cerr << "fatal: cannot open file '" << arg << "'" << std::endl;
         return -1;
       }
 
       this->_contexts.emplace_back(arg);
     }
     else {
-      std::cerr << "fatal: unknown argument: " << arg
-                << std::endl;
+      std::cerr << "fatal: unknown argument: " << arg << std::endl;
 
       return -1;
     }
@@ -70,8 +68,7 @@ int Application::main(int argc, char** argv)
   return 0;
 }
 
-ScriptFileContext const* Application::get_context(
-    std::string const& path) const
+ScriptFileContext const* Application::get_context(std::string const& path) const
 {
   for (auto&& ctx : this->_contexts) {
     if (ctx.get_path() == path)

@@ -36,15 +36,6 @@ protected:
   ListBase(ASTKind kind, Token const& token);
 };
 
-struct Typeable : Base {
-  std::string_view name;
-
-  ~Typeable();
-
-protected:
-  Typeable(ASTKind kind, Token const& token);
-};
-
 template <class Kind, ASTKind _self_kind>
 struct ExprBase : Base {
   struct Element {
@@ -92,8 +83,7 @@ struct ExprBase : Base {
     auto s = this->first->to_string();
 
     for (auto&& elem : this->elements) {
-      s += " " + std::string(elem.op.str) + " " +
-           elem.ast->to_string();
+      s += " " + std::string(elem.op.str) + " " + elem.ast->to_string();
     }
 
     return s;

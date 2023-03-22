@@ -9,6 +9,55 @@
 #include "ScriptFileContext.h"
 #include "Application.h"
 
+size_t Error::_count;
+
+ErrorLocation::ErrorLocation(Token const& token)
+    : loc_kind(ERRLOC_Token),
+      ast(nullptr),
+      token(&token),
+      _line_num(token.src_loc.line_num)
+{
+}
+
+ErrorLocation::ErrorLocation(AST::Base const* ast)
+    : loc_kind(ERRLOC_AST),
+      ast(ast),
+      token(nullptr),
+      _line_num(ast->token.src_loc.line_num)
+{
+  assert(&*ast->end_token);
+}
+
+Error::Error(ErrorKind kind, ErrorLocation&& loc, std::string const& msg)
+    : _kind(kind),
+      _loc(std::move(loc)),
+      _is_single_line(false),
+      _msg(msg),
+      _pContext(Application::get_instance()->get_current_context())
+{
+}
+
+Error::Error(ErrorLocation&& loc, std::string const& msg)
+    : Error(ERR_None, std::move(loc), msg)
+{
+}
+
+Error& Error::single_line()
+{
+  this->_is_single_line = true;
+  return *this;
+}
+
+void Error::exit(int code)
+{
+  std::exit(code);
+}
+
+bool Error::was_emitted()
+{
+  return _count != 0;
+}
+
 Error& Error::emit(ErrorLevel level)
 {
   auto line_num = this->_loc._line_num;
@@ -17,28 +66,25 @@ Error& Error::emit(ErrorLevel level)
   switch (level) {
       // エラー
     case EL_Error:
-      std::cout << COL_BOLD COL_RED "error: " << COL_WHITE
-                << this->_msg;
+      std::cout << COL_BOLD COL_RED "error: " << COL_WHITE << this->_msg;
       break;
 
       // 警告
     case EL_Warning:
-      std::cout << COL_BOLD COL_MAGENTA "warning: "
-                << COL_WHITE << this->_msg;
+      std::cout << COL_BOLD COL_MAGENTA "warning: " << COL_WHITE << this->_msg;
       break;
 
       // ヒント、ヘルプなど
     case EL_Note:
-      std::cout << COL_BOLD COL_CYAN "note: " << COL_WHITE
-                << this->_msg;
+      std::cout << COL_BOLD COL_CYAN "note: " << COL_WHITE << this->_msg;
       break;
   }
 
   // エラーが起きたファイルと行番号
   std::cerr << std::endl
             << COL_GREEN "    --> " << _RGB(0, 255, 255)
-            << this->_pContext->get_path() << ":"
-            << line_num << COL_DEFAULT << std::endl;
+            << this->_pContext->get_path() << ":" << line_num << COL_DEFAULT
+            << std::endl;
 
   // エラーが起きた行
   this->show_error_lines();
@@ -52,8 +98,7 @@ Error& Error::emit(ErrorLevel level)
   return *this;
 }
 
-std::pair<Token const*, Token const*>
-Error::get_token_range() const
+std::pair<Token const*, Token const*> Error::get_token_range() const
 {
   Token const* begin = nullptr;
   Token const* end = nullptr;
@@ -96,39 +141,33 @@ void Error::show_error_lines()
     for (auto i = begin; i <= end; i++)
       lines.emplace_back(src_data._lines[i].str_view);
 
-    lines.begin()->insert(tbegin->src_loc.position -
-                              src_data._lines[begin].begin,
-                          "\033[4m");
+    lines.begin()->insert(
+        tbegin->src_loc.position - src_data._lines[begin].begin, "\033[4m");
 
-    lines.rbegin()->insert(tend->src_loc.get_end_pos() -
-                               src_data._lines[end].begin,
-                           COL_DEFAULT);
+    lines.rbegin()->insert(
+        tend->src_loc.get_end_pos() - src_data._lines[end].begin, COL_DEFAULT);
 
     lines.rbegin()->insert(0, "\033[4m");
   }
 
   std::cerr << "     |" << std::endl;
 
-  for (auto line_num = this->_loc._line_num;
-       auto&& line : lines) {
-    std::cerr << COL_DEFAULT
-              << Utils::format("%4d | ", line_num++) << line
+  for (auto line_num = this->_loc._line_num; auto&& line : lines) {
+    std::cerr << COL_DEFAULT << Utils::format("%4d | ", line_num++) << line
               << std::endl;
   }
 
   std::cerr << "     | ";
 
   if (lines.size() == 1) {
-    auto tmp = tend->src_loc.get_end_pos() -
-               tbegin->src_loc.position;
+    auto tmp = tend->src_loc.get_end_pos() - tbegin->src_loc.position;
 
     if (this->_is_single_line && tmp > lines[0].length()) {
       tmp = lines[0].length();
     }
 
     std::cerr << std::string(
-                     tbegin->src_loc.position -
-                         src_data._lines[begin].begin,
+                     tbegin->src_loc.position - src_data._lines[begin].begin,
                      ' ')
               << std::string(std::max<size_t>(tmp, 1), '^');
   }

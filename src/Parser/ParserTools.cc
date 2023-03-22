@@ -5,6 +5,53 @@
 #include "Parser.h"
 #include "Error.h"
 
+#include "ScriptFileContext.h"
+
+AST::Scope* Parser::parse()
+{
+  auto root_scope = new AST::Scope(*this->cur);
+
+  while (this->check()) {
+    if (this->eat("import")) {
+      auto const& token = *this->ate;
+      std::string path;
+
+      do {
+        path += this->expect_identifier()->str;
+      } while (this->eat("/"));
+
+      path += ".metro";
+
+      if (!this->_context.import(path, token, root_scope)) {
+        Error(token, "failed to import file '" + path + "'").emit().exit();
+      }
+
+      continue;
+    }
+
+    auto x = root_scope->append(this->top());
+
+    if (this->check() && !this->is_ended_with_scope(x))
+      this->expect_semi();
+  }
+
+  return root_scope;
+}
+
+AST::Base* Parser::top()
+{
+  if (this->found("fn"))
+    return this->parse_function();
+
+  if (this->found("struct"))
+    return this->parse_struct();
+
+  if (this->found("impl"))
+    return this->parse_impl();
+
+  return this->expr();
+}
+
 AST::Variable* Parser::new_variable()
 {
   return (AST::Variable*)this->set_last_token(
@@ -35,13 +82,10 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
  *
  * @return AST::Scope*
  */
-AST::Scope* Parser::parse_scope(Parser::token_iter tok,
-                                AST::Base* first)
+AST::Scope* Parser::parse_scope(Parser::token_iter tok, AST::Base* first)
 {
   if (!first && !this->eat("{")) {
-    Error(*--this->cur, "expected '{' after this token")
-        .emit()
-        .exit();
+    Error(*--this->cur, "expected '{' after this token").emit().exit();
   }
 
   auto ast = new AST::Scope(first ? *tok : *this->ate);
@@ -65,8 +109,7 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok,
     x = ast->append(this->expr());
 
     if ((ast->return_last_expr = !this->eat_semi())) {
-      if (!(ast->return_last_expr =
-                this->cur->str == "}") &&
+      if (!(ast->return_last_expr = this->cur->str == "}") &&
           !this->is_ended_with_scope(x)) {
         this->expect_semi();
       }
@@ -107,17 +150,15 @@ AST::Scope* Parser::expect_scope()
  */
 AST::Function* Parser::parse_function()
 {
-  auto func = new AST::Function(
-      *this->expect("fn"),
-      *this->expect_identifier());  // AST 作成
+  auto func = new AST::Function(*this->expect("fn"),
+                                *this->expect_identifier());  // AST 作成
 
   this->expect("(");  // 引数リストの開きカッコ
 
   // 閉じかっこがなければ、引数を読み取っていく
   if (!this->eat(")")) {
     do {
-      func->append_argument(this->expect_identifier()->str,
-                            *this->expect(":"),
+      func->append_argument(this->expect_identifier()->str, *this->expect(":"),
                             this->expect_typename());
     } while (this->eat(","));  // カンマがあれば続ける
 
@@ -145,15 +186,13 @@ AST::Struct* Parser::parse_struct()
   this->expect("{");
 
   if (this->eat("}")) {
-    Error(ERR_EmptyStruct, *this->ate,
-          "empty struct is not valid")
+    Error(ERR_EmptyStruct, *this->ate, "empty struct is not valid")
         .emit()
         .exit();
   }
 
   do {
-    auto& member =
-        ast->append(*this->expect_identifier(), nullptr);
+    auto& member = ast->append(*this->expect_identifier(), nullptr);
 
     this->expect(":");
 
@@ -281,8 +320,7 @@ bool Parser::found(char const* s)
 Parser::token_iter Parser::expect(char const* s)
 {
   if (!this->eat(s)) {
-    Error(*(--this->cur), "expected '" + std::string(s) +
-                              "' after this token")
+    Error(*(--this->cur), "expected '" + std::string(s) + "' after this token")
         .emit()
         .exit();
   }
@@ -306,10 +344,7 @@ Parser::token_iter Parser::expect_semi()
 Parser::token_iter Parser::expect_identifier()
 {
   if (this->cur->kind != TOK_Ident) {
-    Error(*(--this->cur),
-          "expected identifier after this token")
-        .emit()
-        .exit();
+    Error(*(--this->cur), "expected identifier after this token").emit().exit();
   }
 
   this->ate = this->cur++;

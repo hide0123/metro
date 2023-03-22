@@ -11,7 +11,7 @@ struct Token;
 class ScriptFileContext;
 class Lexer {
 public:
-  Lexer(ScriptFileContext const& context);
+  Lexer(ScriptFileContext& context);
   ~Lexer();
 
   std::list<Token> lex();
@@ -22,12 +22,12 @@ private:
   bool match(std::string_view str);
 
   size_t pass_while(std::function<bool(char)> cond);
-  size_t pass_space();
+  void pass_space();
 
   bool find_punctuator(Token& token);
 
-  std::string const& source;
+  std::string& source;
   size_t position;
 
-  ScriptFileContext const& _context;
+  ScriptFileContext& _context;
 };

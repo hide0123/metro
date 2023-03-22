@@ -12,8 +12,7 @@ class Parser {
   using token_iter = std::list<Token>::iterator;
 
 public:
-  Parser(ScriptFileContext& context,
-         std::list<Token>& token_list);
+  Parser(ScriptFileContext& context, std::list<Token>& token_list);
 
   ~Parser();
 
@@ -23,7 +22,6 @@ public:
   AST::Base* primary();
   AST::Base* unary();
   AST::Base* indexref();
-  AST::Base* member_access();
   AST::Base* mul();
   AST::Base* add();
   AST::Base* shift();
@@ -58,8 +56,7 @@ private:
   AST::Type* parse_typename();
   AST::Type* expect_typename();
 
-  AST::Scope* parse_scope(token_iter tok = {},
-                          AST::Base* first = nullptr);
+  AST::Scope* parse_scope(token_iter tok = {}, AST::Base* first = nullptr);
   AST::Scope* expect_scope();
 
   AST::Function* parse_function();

@@ -102,21 +102,43 @@ struct Vector : ListBase {
   Vector(Token const& token);
 };
 
-struct IndexRef : ListBase {
-  Base* expr;
-  ASTVector indexes;
+//
+// IndexRef
+//
+// 以下の２つで使われます:
+//   配列添字
+//   メンバアクセス
+struct IndexRef : Base {
+  struct Subscript {
+    enum Kind {
+      SUB_Index,
+      SUB_Member,
+    };
 
-  bool is_empty() const override
+    Kind kind;
+    Base* ast;
+
+    explicit Subscript(Kind kind, Base* ast)
+        : kind(kind),
+          ast(ast)
+    {
+    }
+  };
+
+  Base* expr;
+  std::vector<Subscript> indexes;
+
+  bool is_empty() const
   {
     return this->indexes.empty();
   }
 
-  Base*& append(Base* x) override
+  Subscript& append(Subscript::Kind kind, Base* x)
   {
-    return this->indexes.emplace_back(x);
+    return this->indexes.emplace_back(kind, x);
   }
 
-  IndexRef(Token const& t);
+  IndexRef(Token const& t, Base* expr);
   ~IndexRef();
 };
 

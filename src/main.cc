@@ -10,8 +10,7 @@ int main(int argc, char** argv)
 #if !METRO_DEBUG
   }
   catch (std::exception const& e) {
-    std::cout << "unhandled exception has been occurred:"
-              << std::endl
+    std::cout << "unhandled exception has been occurred:" << std::endl
               << "  " << e.what() << std::endl
               << std::endl
               << "please report this bug" << std::endl;
