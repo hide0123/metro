@@ -3,6 +3,7 @@
 
 # binary
 metro
+*.exe
 
 /*.txt
 /*.metro
