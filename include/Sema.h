@@ -109,39 +109,35 @@ public:
       TypeInfo& type,
       std::vector<AST::Base*> const& indexes);
 
+  TypeInfo member_access(
+      TypeInfo type,
+      std::vector<AST::Base*> const& reflist);
+
+  //
+  // 構造体
   void check_struct(AST::Struct* ast);
 
-  /**
-   * @brief  式の両辺の型が正しいかどうか検査する
-   *
-   * @param kind
-   * @param lhs
-   * @param rhs
-   * @return std::optional<TypeInfo>
-   */
+  //
+  // 演算子の型の組み合わせが正しいかチェックする
   std::optional<TypeInfo> is_valid_expr(
       AST::ExprKind kind, TypeInfo const& lhs,
       TypeInfo const& rhs);
 
-  /**
-   * @brief ユーザー定義関数を探す
-   *
-   * @param name
-   * @return AST::Function*
-   */
+  //
+  // ユーザー定義関数を探す
   AST::Function* find_function(std::string_view name);
 
+  //
+  // ユーザー定義構造体を探す
   AST::Struct* find_struct(std::string_view name);
 
-  /**
-   * @brief ビルトイン関数を探す
-   *
-   * @param name
-   * @return BuiltinFunc const*
-   */
+  //
+  // ビルトイン関数を探す
   BuiltinFunc const* find_builtin_func(
       std::string_view name);
 
+  //
+  // 名前から型を探す
   std::optional<TypeInfo> get_type_from_name(
       std::string_view name);
 

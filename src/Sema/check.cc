@@ -149,6 +149,49 @@ TypeInfo& Sema::get_subscripted_type(
   return *ret;
 }
 
+//
+// メンバアクセス
+TypeInfo Sema::member_access(
+    TypeInfo type, std::vector<AST::Base*> const& reflist)
+{
+  // メンバ参照のリスト
+  for (auto&& ref : reflist) {
+    switch (ref->kind) {
+      // 識別子
+      case AST_Variable: {
+        // 構造体を取得
+        auto pStruct = type.userdef_struct;
+
+        // 名前が一致するメンバを探す
+        for (auto&& M : pStruct->members) {
+          // 同じ名前が存在する場合
+          //  => コンティニュー
+          if (M.name == ((AST::Variable*)ref)->name) {
+            type = this->check(M.type);
+            continue;
+          }
+        }
+
+        // 一致するものがない
+        Error(ERR_Undefined, ref,
+              "struct '" + std::string(pStruct->name) +
+                  "' don't have a member '" +
+                  std::string(((AST::Variable*)ref)->name) +
+                  "'")
+            .emit()
+            .exit();
+
+        break;
+      }
+
+      default:
+        todo_impl;
+    }
+  }
+
+  return type;
+}
+
 // ------------------------------------------------ //
 //  check
 // ------------------------------------------------ //
@@ -1051,6 +1094,8 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
 
     case AST_MemberAccess: {
       astdef(IndexRef);
+
+      return this->check_as_left(ast->expr);
     }
   }
 
@@ -1058,7 +1103,7 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
 }
 
 // ------------------------------------------------ //
-//  check_function_call
+//  関数呼び出しをチェックする
 // ------------------------------------------------ //
 TypeInfo Sema::check_function_call(AST::CallFunc* ast)
 {

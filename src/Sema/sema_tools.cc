@@ -41,7 +41,6 @@ std::optional<TypeInfo> Sema::get_type_from_name(
 
 //
 // ユーザー定義関数を探す
-//
 AST::Function* Sema::find_function(std::string_view name)
 {
   for (auto&& item : this->root->list)
