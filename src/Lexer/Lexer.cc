@@ -7,7 +7,7 @@
 
 #include "ScriptFileContext.h"
 
-Lexer::Lexer(ScriptFileContext const& context)
+Lexer::Lexer(ScriptFileContext& context)
     : source(context.get_source_code()),
       position(0),
       _context(context)
@@ -50,8 +50,8 @@ std::list<Token> Lexer::lex()
         token.kind = TOK_USize;
 
         this->position++;
-        token.str = {str,
-                     this->position - token.src_loc.position};
+        token.str = {
+            str, this->position - token.src_loc.position};
       }
       else if (this->peek() == '.') {
         this->position++;
@@ -59,8 +59,8 @@ std::list<Token> Lexer::lex()
         if (isdigit(this->peek())) {
           this->pass_while(isdigit);
           token.kind = TOK_Float;
-          token.str = {str,
-                       this->position - token.src_loc.position};
+          token.str = {
+              str, this->position - token.src_loc.position};
         }
         else {
           this->position--;

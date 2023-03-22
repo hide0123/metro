@@ -246,7 +246,7 @@ std::string const& SFContext::get_path() const
   return this->_srcdata._path;
 }
 
-std::string const& SFContext::get_source_code() const
+std::string& SFContext::get_source_code()
 {
   return this->_srcdata._data;
 }

@@ -99,9 +99,38 @@ size_t Lexer::pass_while(std::function<bool(char)> cond)
   return len;
 }
 
-size_t Lexer::pass_space()
+void Lexer::pass_space()
 {
-  return this->pass_while(isspace);
+  auto pos = this->position;
+
+  while (this->check()) {
+    this->pass_while(isspace);
+
+    if (this->match("//")) {
+      this->position += 2;
+
+      while (!this->match("\n")) {
+        this->position++;
+      }
+
+      this->position++;
+    }
+    else if (this->match("/*")) {
+      this->position += 2;
+
+      while (!this->match("*/")) {
+        this->position++;
+      }
+
+      this->position += 2;
+    }
+    else
+      break;
+  }
+
+  while (pos < this->position) {
+    this->source[pos++] = ' ';
+  }
 }
 
 bool Lexer::find_punctuator(Token& token)
@@ -112,7 +141,8 @@ bool Lexer::find_punctuator(Token& token)
     if (this->match(s)) {
       token.kind = TOK_Punctuater;
 
-      token.punct_kind = static_cast<PunctuatorKind>(kind_offs);
+      token.punct_kind =
+          static_cast<PunctuatorKind>(kind_offs);
 
       if (token.punct_kind >= PU_Bracket) {
         kind_offs -= PU_Bracket;

@@ -82,12 +82,12 @@ enum BracketKind : uint8_t {
 
 class ScriptFileContext;
 struct SourceLoc {
-  ScriptFileContext const* context;
+  ScriptFileContext* context;
   size_t line_num;
   size_t position;
   size_t length;
 
-  std::string const& get_source() const;
+  std::string& get_source();
 
   size_t get_end_pos() const
   {

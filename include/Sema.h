@@ -105,9 +105,7 @@ public:
 
   TypeInfo& check_as_left(AST::Base* ast);
 
-  TypeInfo check_indexref(
-      TypeInfo& type,
-      std::vector<AST::Base*> const& indexes);
+  TypeInfo check_indexref(AST::IndexRef* ast);
 
   //
   // 構造体

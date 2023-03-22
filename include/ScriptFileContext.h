@@ -42,7 +42,7 @@ public:
   void execute_full();
 
   std::string const& get_path() const;
-  std::string const& get_source_code() const;
+  std::string& get_source_code();
 
   std::vector<ScriptFileContext> const& get_imported_list()
       const;
