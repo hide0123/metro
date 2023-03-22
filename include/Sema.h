@@ -105,13 +105,9 @@ public:
 
   TypeInfo& check_as_left(AST::Base* ast);
 
-  TypeInfo& get_subscripted_type(
+  TypeInfo check_indexref(
       TypeInfo& type,
       std::vector<AST::Base*> const& indexes);
-
-  TypeInfo member_access(
-      TypeInfo type,
-      std::vector<AST::Base*> const& reflist);
 
   //
   // 構造体
@@ -160,6 +156,20 @@ private:
 
   void begin_return_capture(ReturnCaptureFunction func);
   void end_return_capture();
+
+  int find_member(TypeInfo const& type,
+                  std::string_view name)
+  {
+    for (int i = 0;
+         auto&& m : type.userdef_struct->members) {
+      if (m.name == name)
+        return i;
+
+      i++;
+    }
+
+    return -1;
+  }
 
   SemaScope& get_cur_scope()
   {

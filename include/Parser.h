@@ -23,7 +23,6 @@ public:
   AST::Base* primary();
   AST::Base* unary();
   AST::Base* indexref();
-  AST::Base* member_access();
   AST::Base* mul();
   AST::Base* add();
   AST::Base* shift();

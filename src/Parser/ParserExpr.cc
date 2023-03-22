@@ -223,34 +223,34 @@ AST::Base* Parser::indexref()
 {
   auto x = this->unary();
 
-  if (this->cur->str == "[") {
-    auto y = new AST::IndexRef(*this->cur);
+  AST::IndexRef* ast = nullptr;
 
-    y->expr = x;
-
-    while (this->eat("[")) {
-      y->indexes.emplace_back(this->expr());
-      this->expect("]");
-    }
-
-    x = y;
+  if (this->found("[") || this->found(".")) {
+    ast = new AST::IndexRef(x->token, x);
   }
+  else
+    return x;
 
-  return this->set_last_token(x);
-}
+  while (this->check()) {
+    alert;
 
-AST::Base* Parser::member_access()
-{
-  auto x = this->indexref();
+    if (this->found("[")) {
+      alert;
 
-  if (this->cur->str == ".") {
-    auto y = new AST::IndexRef(*this->cur);
+      while (this->eat("[")) {
+        alert;
 
-    y->kind = AST_MemberAccess;
-    y->expr = x;
+        ast->indexes.emplace_back(
+            AST::IndexRef::Subscript::SUB_Index,
+            this->expr());
 
-    while (this->eat(".")) {
-      auto tmp = this->indexref();
+        this->expect("]");
+      }
+    }
+    else if (this->eat(".")) {
+      alert;
+
+      auto tmp = this->unary();
 
       //
       // 右辺に関数呼び出しがあった場合、
@@ -262,51 +262,49 @@ AST::Base* Parser::member_access()
         auto cf = (AST::CallFunc*)tmp;
 
         // メンバ参照してなければ、最初の要素だけ追加
-        if (y->indexes.empty()) {
-          cf->args.insert(cf->args.begin(), y->expr);
+        // if (ast->indexes.empty()) {
+        //   cf->args.insert(cf->args.begin(), ast->expr);
 
-          y->expr = nullptr;
-          delete y;
-        }
-        else  // あれば全体を追加
-          cf->args.insert(cf->args.begin(), y);
+        //   ast->expr = nullptr;
+        //   delete ast;
+        // }
+        // else  // あれば全体を追加
+        cf->args.insert(cf->args.begin(), ast);
 
-        if (this->found(".")) {
-          y = new AST::IndexRef(*this->cur);
-          y->kind = AST_MemberAccess;
-          y->expr = cf;
+        if (!this->found(".")) {
+          return cf;
         }
         else {
-          alert;
-          return cf;
+          ast = new AST::IndexRef(cf->token, cf);
         }
 
         continue;
       }
 
-      y->indexes.emplace_back(tmp);
+      ast->indexes.emplace_back(
+          AST::IndexRef::Subscript::SUB_Member, tmp);
     }
-
-    x = y;
+    else
+      break;
   }
 
-  return this->set_last_token(x);
+  return this->set_last_token(ast);
 }
 
 AST::Base* Parser::mul()
 {
-  auto x = this->member_access();
+  auto x = this->indexref();
 
   while (this->check()) {
     if (this->eat("*"))
       AST::Expr::create(x)->append(AST::EX_Mul, *this->ate,
-                                   this->member_access());
+                                   this->indexref());
     else if (this->eat("/"))
       AST::Expr::create(x)->append(AST::EX_Div, *this->ate,
-                                   this->member_access());
+                                   this->indexref());
     else if (this->eat("%"))
       AST::Expr::create(x)->append(AST::EX_Mod, *this->ate,
-                                   this->member_access());
+                                   this->indexref());
     else
       break;
   }

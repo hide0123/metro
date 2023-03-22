@@ -95,15 +95,19 @@ Vector::Vector(Token const& token)
 {
 }
 
-IndexRef::IndexRef(Token const& t)
-    : ListBase(AST_IndexRef, t),
-      expr(nullptr)
+IndexRef::IndexRef(Token const& t, Base* expr)
+    : Base(AST_IndexRef, t),
+      expr(expr)
 {
 }
 
 IndexRef::~IndexRef()
 {
   delete this->expr;
+
+  for (auto&& sub : this->indexes) {
+    delete sub.ast;
+  }
 }
 
 Range::Range(Token const& token)

@@ -101,94 +101,9 @@ std::optional<TypeInfo> Sema::is_valid_expr(
 // ------------------------------------------------ //
 //  get_subscripted_type
 // ------------------------------------------------ //
-TypeInfo& Sema::get_subscripted_type(
+TypeInfo Sema::check_indexref(
     TypeInfo& type, std::vector<AST::Base*> const& indexes)
 {
-  auto* ret = &type;
-
-  for (auto&& index : indexes) {
-    auto index_type = this->check(index);
-
-    switch (type.kind) {
-      //
-      // Vector
-      case TYPE_Vector: {
-        if (index_type.kind != TYPE_Int &&
-            index_type.kind != TYPE_USize) {
-          Error(index, "expected integer or usize").emit();
-        }
-
-        ret = &ret->type_params[0];
-        break;
-      }
-
-      //
-      // Disctionary
-      case TYPE_Dict: {
-        if (!index_type.equals(type.type_params[0])) {
-          Error(index, "expecte '" +
-                           type.type_params[0].to_string() +
-                           "' but found '" +
-                           index_type.to_string() + "'")
-              .emit()
-              .exit();
-        }
-
-        ret = &ret->type_params[1];
-        break;
-      }
-
-      default:
-        Error(index, "'" + type.to_string() +
-                         "' is not subscriptable")
-            .emit()
-            .exit();
-    }
-  }
-
-  return *ret;
-}
-
-//
-// メンバアクセス
-TypeInfo Sema::member_access(
-    TypeInfo type, std::vector<AST::Base*> const& reflist)
-{
-  // メンバ参照のリスト
-  for (auto&& ref : reflist) {
-    switch (ref->kind) {
-      // 識別子
-      case AST_Variable: {
-        // 構造体を取得
-        auto pStruct = type.userdef_struct;
-
-        // 名前が一致するメンバを探す
-        for (auto&& M : pStruct->members) {
-          // 同じ名前が存在する場合
-          //  => コンティニュー
-          if (M.name == ((AST::Variable*)ref)->name) {
-            type = this->check(M.type);
-            continue;
-          }
-        }
-
-        // 一致するものがない
-        Error(ERR_Undefined, ref,
-              "struct '" + std::string(pStruct->name) +
-                  "' don't have a member '" +
-                  std::string(((AST::Variable*)ref)->name) +
-                  "'")
-            .emit()
-            .exit();
-
-        break;
-      }
-
-      default:
-        todo_impl;
-    }
-  }
-
   return type;
 }
 
@@ -480,52 +395,122 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
+    //
+    // 配列添字・メンバアクセス
     case AST_IndexRef: {
       astdef(IndexRef);
 
-      auto x = this->check(ast->expr);
+      auto& type = _ret;
+      type = this->check(ast->expr);
 
-      _ret = this->get_subscripted_type(x, ast->indexes);
+      for (auto&& index : ast->indexes) {
+        switch (index.kind) {
+          //
+          // 配列添字
+          case AST::IndexRef::Subscript::SUB_Index: {
+            auto index_type = this->check(index.ast);
 
-      break;
-    }
+            switch (type.kind) {
+              //
+              // Vector
+              case TYPE_Vector: {
+                if (index_type.kind != TYPE_Int &&
+                    index_type.kind != TYPE_USize) {
+                  Error(index.ast,
+                        "expected integer or usize")
+                      .emit();
+                }
 
-    case AST_MemberAccess: {
-      astdef(IndexRef);
+                type = type.type_params[0];
+                break;
+              }
 
-      auto type = this->check(ast->expr);
-      auto ptype = &type;
+              //
+              // Disctionary
+              case TYPE_Dict: {
+                // キーの型と一致しない場合エラー
+                if (!index_type.equals(
+                        type.type_params[0])) {
+                  Error(
+                      index.ast,
+                      "expecte '" +
+                          type.type_params[0].to_string() +
+                          "' but found '" +
+                          index_type.to_string() + "'")
+                      .emit()
+                      .exit();
+                }
 
-      for (auto&& member : ast->indexes) {
-        switch (member->kind) {
-          case AST_Variable: {
-            auto x = (AST::Variable*)member;
+                // value
+                type = type.type_params[1];
+                break;
+              }
 
-            auto find = ptype->find_member(x->name);
+              default:
+                Error(index.ast,
+                      "'" + type.to_string() +
+                          "' is not subscriptable")
+                    .emit()
+                    .exit();
 
-            if (find == -1)
-              Error(ERR_Undefined, member,
-                    "struct '" + ptype->to_string() +
-                        "' don't have the member '" +
-                        std::string(x->name) + "'")
-                  .emit()
-                  .exit();
+                break;
+            }
 
-            x->index = find;
-            ptype = &ptype->members[find].second;
+            break;
+          }
+
+          //
+          // メンバアクセス
+          case AST::IndexRef::Subscript::SUB_Member: {
+            switch (index.ast->kind) {
+              // 識別子
+              case AST_Variable: {
+                // 構造体を取得
+                auto pStruct = type.userdef_struct;
+
+                auto var = (AST::Variable*)index.ast;
+
+                // 名前が一致するメンバを探す
+                for (size_t v_index = 0;
+                     auto&& M : pStruct->members) {
+                  alertmsg(M.name);
+
+                  // 同じ名前が存在する場合
+                  //  => コンティニュー
+                  if (M.name == var->name) {
+                    type = this->check(M.type);
+                    goto found_member;
+                  }
+
+                  var->index++;
+                }
+
+                // 一致するものがない
+                Error(ERR_Undefined, index.ast,
+                      "struct '" +
+                          std::string(pStruct->name) +
+                          "' don't have a member '" +
+                          std::string(var->name) + "'")
+                    .emit()
+                    .exit();
+
+              found_member:
+                break;
+              }
+
+              default:
+                alertmsg((int)index.ast->kind);
+                todo_impl;
+            }
 
             break;
           }
 
           default:
-            Error(ERR_InvalidSyntax, member,
-                  "invalid syntax")
-                .emit()
-                .exit();
+            todo_impl;
         }
       }
 
-      _ret = *ptype;
       break;
     }
 
@@ -584,9 +569,7 @@ TypeInfo Sema::check(AST::Base* _ast)
             .exit();
       }
 
-      if (!dest.equals(this->check(ast->expr))) {
-        Error(ast->token, "type mismatch").emit().exit();
-      }
+      this->expect(dest, ast->expr);
 
       _ret = dest;
       break;
@@ -1086,7 +1069,6 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
     }
 
     case AST_IndexRef:
-    case AST_MemberAccess:
       return this->check_as_left(
           ((AST::IndexRef*)_ast)->expr);
   }

@@ -175,15 +175,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto obj = this->evaluate(ast->expr);
 
+      alert;
       return this->eval_index_ref(obj, ast);
-    }
-
-    case AST_MemberAccess: {
-      astdef(IndexRef);
-
-      auto obj = this->evaluate(ast->expr);
-
-      return this->eval_member_access(obj, ast);
     }
 
     //
@@ -450,13 +443,6 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
       return this->eval_index_ref(
           this->eval_left(ast->expr), ast);
     }
-
-    case AST_MemberAccess: {
-      astdef(IndexRef);
-
-      return this->eval_index_ref(
-          this->eval_left(ast->expr), ast);
-    }
   }
 
   throw 1;
@@ -467,79 +453,85 @@ Object*& Evaluator::eval_index_ref(Object*& obj,
 {
   Object** ret = &obj;
 
-  for (auto&& index_ast : ast->indexes) {
-    auto obj_index = this->evaluate(index_ast);
+  alert;
 
-    switch ((*ret)->type.kind) {
-      case TYPE_Vector: {
-        auto& obj_vec = *(ObjVector**)ret;
+  for (auto&& index : ast->indexes) {
+    switch (index.kind) {
+      case AST::IndexRef::Subscript::SUB_Index: {
+        auto obj_index = this->evaluate(index.ast);
 
-        size_t index = 0;
+        switch ((*ret)->type.kind) {
+          case TYPE_Vector: {
+            auto& obj_vec = *(ObjVector**)ret;
 
-        switch (obj_index->type.kind) {
-          case TYPE_Int:
-            index = ((ObjLong*)obj_index)->value;
+            size_t indexval = 0;
+
+            switch (obj_index->type.kind) {
+              case TYPE_Int:
+                indexval = ((ObjLong*)obj_index)->value;
+                break;
+
+              case TYPE_USize:
+                indexval = ((ObjUSize*)obj_index)->value;
+                break;
+
+              default:
+                panic("int or usize??aa");
+            }
+
+            if (indexval >= obj_vec->elements.size()) {
+              Error(index.ast, "index out of range")
+                  .emit()
+                  .exit();
+            }
+
+            ret = &obj_vec->elements[indexval];
             break;
+          }
 
-          case TYPE_USize:
-            index = ((ObjUSize*)obj_index)->value;
+          case TYPE_Dict: {
+            auto& obj_dict = *(ObjDict**)ret;
+
+            for (auto&& item : obj_dict->items) {
+              if (item.key->equals(obj_index)) {
+                ret = &item.value;
+                goto _dict_value_found;
+              }
+            }
+
+            {
+              auto& item = obj_dict->append(
+                  obj_index,
+                  this->default_constructor(
+                      obj_dict->type.type_params[1]));
+
+              ret = &item.value;
+            }
+
+          _dict_value_found:
+            break;
+          }
+
+          default:
+            panic("no index");
+        }
+
+        break;
+      }
+
+      case AST::IndexRef::Subscript::SUB_Member: {
+        switch (index.ast->kind) {
+          case AST_Variable:
+            alertmsg(((AST::Variable*)index.ast)->index);
+
+            ret = &((ObjUserType*)*ret)
+                       ->members[((AST::Variable*)index.ast)
+                                     ->index];
             break;
 
           default:
-            panic("int or usize??aa");
+            todo_impl;
         }
-
-        if (index >= obj_vec->elements.size()) {
-          Error(index_ast, "index out of range")
-              .emit()
-              .exit();
-        }
-
-        ret = &obj_vec->elements[index];
-        break;
-      }
-
-      case TYPE_Dict: {
-        auto& obj_dict = *(ObjDict**)ret;
-
-        for (auto&& item : obj_dict->items) {
-          if (item.key->equals(obj_index)) {
-            ret = &item.value;
-            goto _dict_value_found;
-          }
-        }
-
-        {
-          auto& item = obj_dict->append(
-              obj_index,
-              this->default_constructor(
-                  obj_dict->type.type_params[1]));
-
-          ret = &item.value;
-        }
-
-      _dict_value_found:
-        break;
-      }
-
-      default:
-        panic("no index");
-    }
-  }
-
-  return *ret;
-}
-
-Object*& Evaluator::eval_member_access(Object*& obj,
-                                       AST::IndexRef* ast)
-{
-  auto pobj = &obj;
-
-  for (auto&& m : ast->indexes) {
-    switch (m->kind) {
-      case AST_Variable: {
-        pobj = &((ObjUserType*)*pobj)
-                    ->members[((AST::Variable*)m)->index];
 
         break;
       }
@@ -549,5 +541,5 @@ Object*& Evaluator::eval_member_access(Object*& obj,
     }
   }
 
-  return *pobj;
+  return *ret;
 }
