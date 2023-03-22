@@ -60,7 +60,7 @@ std::string_view SFContext::SourceData::get_line(Token const& token) const
 
 SFContext::ScriptFileContext(std::string const& path)
     : _is_open(false),
-      _srcdata(std::filesystem::canonical(path)),
+      _srcdata(std::filesystem::canonical(path).string()),
       _ast(nullptr),
       _owner(nullptr),
       _importer_token(nullptr)
