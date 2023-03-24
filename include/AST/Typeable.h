@@ -29,11 +29,29 @@ struct Type : Typeable {
   }
 };
 
-struct TypeConstructor : Dict {
-  Type* type;
-  TypeInfo typeinfo;
+struct TypeConstructor : Base {
+  struct Pair {
+    Token const* t_period;
+    Token const* t_name;
+    Token const* t_assign;
 
-  Base* init;  // for enum
+    std::string_view name;
+    Base* expr;
+
+    Pair(Token const* name, Base* expr)
+      : t_period(nullptr),
+        t_name(name),
+        t_assign(nullptr),
+        name(name->str),
+        expr(expr)
+    {
+    }
+  };
+
+  Type* type;
+  // TypeInfo typeinfo;
+
+  std::vector<Pair> init_pair_list;
 
   explicit TypeConstructor(Type* type);
   ~TypeConstructor();

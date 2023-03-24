@@ -82,6 +82,8 @@ private:
     return ast = (AST::Base*)this->new_return_stmt(ast);
   }
 
+  bool in_impl;
+
   token_iter cur;
   token_iter ate;
 

@@ -8,7 +8,8 @@
 #include "ScriptFileContext.h"
 
 Parser::Parser(ScriptFileContext& context, std::list<Token>& token_list)
-  : _context(context),
+  : in_impl(false),
+    _context(context),
     _token_list(token_list)
 {
   this->cur = this->_token_list.begin();
@@ -172,28 +173,28 @@ AST::Base* Parser::factor()
 
       //
       // type constructor
-      if (this->eat("{")) {
-        if (!ast_type) {
-          ast_type = new AST::Type(*ident);
-        }
+      // if (this->eat("{")) {
+      //   if (!ast_type) {
+      //     ast_type = new AST::Type(*ident);
+      //   }
 
-        auto ast = new AST::TypeConstructor(ast_type);
+      //   auto ast = new AST::TypeConstructor(ast_type);
 
-        do {
-          auto x = this->expr();
+      //   do {
+      //     auto x = this->expr();
 
-          if (this->found("}")) {
-            ast->init = x;
-            break;
-          }
+      //     if (this->found("}")) {
+      //       ast->init = x;
+      //       break;
+      //     }
 
-          ast->append(x, *this->expect(":"), this->expr());
-        } while (this->eat(","));
+      //     ast->append(x, *this->expect(":"), this->expr());
+      //   } while (this->eat(","));
 
-        ast->end_token = this->expect("}");
+      //   ast->end_token = this->expect("}");
 
-        return ast;
-      }
+      //   return ast;
+      // }
 
       //
       // 変数
@@ -271,6 +272,29 @@ AST::Base* Parser::primary()
     this->expect("(");
     ast->expr = this->expr();
     ast->end_token = this->expect(")");
+
+    return ast;
+  }
+
+  //
+  // Type Constructor
+  if (this->eat("new")) {
+    auto ast = new AST::TypeConstructor(this->expect_typename());
+
+    this->expect("{");
+
+    do {
+      auto period = this->expect(".");
+
+      auto& pair =
+        ast->init_pair_list.emplace_back(&*this->expect_identifier(), nullptr);
+
+      pair.t_assign = &*this->expect("=");
+
+      pair.expr = this->expr();
+    } while (this->eat(","));
+
+    this->expect("}");
 
     return ast;
   }

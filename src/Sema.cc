@@ -35,6 +35,19 @@ void Sema::do_check()
 
   this->check(this->root);
 }
+
+void Sema::compare_argument(TypeVector const& formal, TypeVector const& actual)
+{
+  // formal = 定義側
+  // actual = 呼び出し側
+
+  // formal
+  auto f_it = formal.begin();
+
+  // actual
+  auto a_it = actual.begin();
+}
+
 //
 // 名前から型を探す
 std::optional<TypeInfo> Sema::get_type_from_name(std::string_view name)
@@ -60,8 +73,27 @@ std::optional<TypeInfo> Sema::get_type_from_name(std::string_view name)
 
 //
 // ユーザー定義関数を探す
-AST::Function* Sema::find_function(std::string_view name)
+Sema::FunctionFindResult Sema::find_function(std::string_view name,
+                                             bool have_self,
+                                             TypeInfo const& self_type,
+                                             std::vector<TypeInfo> const& args)
 {
+  FunctionFindResult result;
+
+  auto const& builtins = BuiltinFunc::get_builtin_list();
+
+  // find builtin
+  for (auto&& func : builtins) {
+    if (func.name == name) {
+      if (func.have_self != have_self)
+        continue;
+
+      if (!func.self_type.equals(self_type))
+        continue;
+    }
+  }
+
+  // find user-def
   for (auto&& item : this->root->list)
     if (item->kind == AST_Function && ((AST::Function*)item)->name.str == name)
       return (AST::Function*)item;
@@ -87,14 +119,14 @@ AST::Typeable* Sema::find_usertype(std::string_view name)
 
 //
 // 組み込み関数を探す
-BuiltinFunc const* Sema::find_builtin_func(std::string_view name)
-{
-  for (auto&& builtinfunc : BuiltinFunc::get_builtin_list())
-    if (builtinfunc.name == name)
-      return &builtinfunc;
+// BuiltinFunc const* Sema::find_builtin_func(std::string_view name)
+// {
+//   for (auto&& builtinfunc : BuiltinFunc::get_builtin_list())
+//     if (builtinfunc.name == name)
+//       return &builtinfunc;
 
-  return nullptr;
-}
+//   return nullptr;
+// }
 
 //
 // 今いる関数
@@ -1293,6 +1325,12 @@ TypeInfo Sema::check(AST::Base* _ast)
 
         this->check(item.type);
       }
+
+      break;
+    }
+
+    case AST_Impl: {
+      astdef(Impl);
 
       break;
     }

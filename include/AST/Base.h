@@ -11,7 +11,7 @@ struct Base {
   Token const& token;
   std::list<Token>::const_iterator end_token;
 
-  bool is_left;
+  bool is_mutable;
 
   virtual ~Base();
 
@@ -19,6 +19,22 @@ struct Base {
 
 protected:
   Base(ASTKind kind, Token const& token);
+};
+
+//
+struct Mutable : Base {
+  ASTKind new_kind;
+
+  ~Mutable()
+  {
+  }
+
+protected:
+  Mutable(ASTKind kind, Token const& token)
+    : Base(kind, token),
+      new_kind(kind)
+  {
+  }
 };
 
 struct ListBase : Base {
@@ -44,9 +60,9 @@ struct ExprBase : Base {
     Base* ast;
 
     explicit Element(Kind kind, Token const& op, Base* ast)
-        : kind(kind),
-          op(op),
-          ast(ast)
+      : kind(kind),
+        op(op),
+        ast(ast)
     {
     }
 
@@ -59,8 +75,8 @@ struct ExprBase : Base {
   std::vector<Element> elements;
 
   ExprBase(Base* first)
-      : Base(_self_kind, first->token),
-        first(first)
+    : Base(_self_kind, first->token),
+      first(first)
   {
   }
 

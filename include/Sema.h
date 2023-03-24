@@ -17,6 +17,8 @@ class Evaluator;
 class Sema {
   friend class Evaluator;
 
+  using TypeVector = std::vector<TypeInfo>;
+
   struct LocalVar {
     TypeInfo type;
     std::string_view name;
@@ -102,7 +104,7 @@ class Sema {
     BuiltinFunc const* builtin;
     AST::Function* userdef;
 
-    explicit FunctionFindResult(BuiltinFunc const* b)
+    explicit FunctionFindResult(BuiltinFunc const* b = nullptr)
       : type(FN_Builtin),
         builtin(b),
         userdef(nullptr)
@@ -122,6 +124,8 @@ public:
   ~Sema();
 
   void do_check();
+
+  void compare_argument(TypeVector const& formal, TypeVector const& actual);
 
   TypeInfo check(AST::Base* ast);
   TypeInfo check_function_call(AST::CallFunc* ast);
@@ -145,9 +149,11 @@ public:
                                    TypeInfo const& self_type,
                                    std::vector<TypeInfo> const& args);
 
+  AST::Typeable* find_usertype(std::string_view name);
+
   //
   // ビルトイン関数を探す
-  BuiltinFunc const* find_builtin_func(std::string_view name);
+  // BuiltinFunc const* find_builtin_func(std::string_view name);
 
   //
   // 名前から型を探す

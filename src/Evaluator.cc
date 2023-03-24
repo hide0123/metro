@@ -444,7 +444,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
 
         if (auto& x = ast->indexes[0]; x.ast->kind == AST_TypeConstructor) {
-          ret->value = this->evaluate(((AST::TypeConstructor*)x.ast)->init);
+          todo_impl;
+          // ret->value = this->evaluate(((AST::TypeConstructor*)x.ast)->init);
         }
 
         return ret;
@@ -544,13 +545,15 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_TypeConstructor: {
       astdef(TypeConstructor);
 
-      debug(assert(ast->typeinfo.kind == TYPE_UserDef));
+      // debug(assert(ast->typeinfo.kind == TYPE_UserDef));
 
-      auto ret = new ObjUserType(ast->typeinfo);
+      // auto ret = new ObjUserType(ast->typeinfo);
 
-      for (auto&& elem : ast->elements) {
-        ret->add_member(this->evaluate(elem.value));
-      }
+      // for (auto&& elem : ast->elements) {
+      //   ret->add_member(this->evaluate(elem.value));
+      // }
+
+      todo_impl;
 
       return ret;
     }

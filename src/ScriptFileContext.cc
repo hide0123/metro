@@ -224,6 +224,9 @@ void SFContext::execute_full()
     if (!this->parse())
       return;
 
+    alert;
+    return;
+
     if (!this->check())
       return;
 

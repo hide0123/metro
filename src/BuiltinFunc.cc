@@ -25,7 +25,7 @@ static std::vector<BuiltinFunc> const _builtin_functions{
   // id
   BuiltinFunc{.name = "id",
               .is_template = true,
-              .have_self =,
+              .have_self = false,
               .is_template = true,
               .result_type = TYPE_Int,
               .arg_types = {TYPE_Template},

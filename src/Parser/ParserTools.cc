@@ -113,6 +113,21 @@ AST::Function* Parser::parse_function()
   // 閉じかっこがなければ、引数を読み取っていく
   if (!this->eat(")")) {
     do {
+      if (this->eat("self")) {
+        if (!this->in_impl) {
+          Error(ERR_InvalidSyntax, *this->ate, "used 'self' without impl-block")
+            .emit()
+            .exit();
+        }
+
+        func->have_self = true;
+
+        if (this->eat(","))
+          continue;
+
+        break;
+      }
+
       func->append_argument(this->expect_identifier()->str, *this->expect(":"),
                             this->expect_typename());
     } while (this->eat(","));  // カンマがあれば続ける
@@ -185,6 +200,8 @@ AST::Struct* Parser::parse_struct()
 
 AST::Impl* Parser::parse_impl()
 {
+  this->in_impl = true;
+
   auto ast = new AST::Impl(*this->expect("impl"));
 
   ast->name = this->expect_identifier()->str;
@@ -209,6 +226,8 @@ AST::Impl* Parser::parse_impl()
           .exit();
     }
   } while (!this->eat("}"));
+
+  this->in_impl = false;
 
   return (AST::Impl*)this->set_last_token(ast);
 }
