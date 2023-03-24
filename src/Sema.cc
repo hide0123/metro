@@ -367,6 +367,10 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
       //
       // メンバアクセス
       case AST::IndexRef::Subscript::SUB_Member: {
+        if (type.kind != TYPE_UserDef) {
+          Error(index.ast, "uwaaaa!!").emit().exit();
+        }
+
         switch (index.ast->kind) {
           // 識別子
           case AST_Variable: {
@@ -1172,6 +1176,24 @@ TypeInfo Sema::check(AST::Base* _ast)
       this->leave_scope();
 
       this->function_history.pop_front();
+
+      break;
+    }
+
+    case AST_Enum: {
+      astdef(Enum);
+
+      std::map<std::string_view, bool> map;
+
+      for (auto&& e : ast->enumerators) {
+        if (!(map[e.name] ^= 1)) {
+          Error(ERR_MultipleDefined, e.token, "multiple definition")
+            .emit()
+            .exit();
+        }
+
+        this->check(e.value_type);
+      }
 
       break;
     }

@@ -119,14 +119,16 @@ struct IndexRef : Base {
     Base* ast;
 
     explicit Subscript(Kind kind, Base* ast)
-        : kind(kind),
-          ast(ast)
+      : kind(kind),
+        ast(ast)
     {
     }
   };
 
   Base* expr;
   std::vector<Subscript> indexes;
+
+  bool is_enum;
 
   bool is_empty() const
   {

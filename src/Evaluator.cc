@@ -116,8 +116,10 @@ Object* Evaluator::default_constructor(TypeInfo const& type,
       switch (type.userdef_type->kind) {
         case AST_Enum:
           for (int64_t val = 0;
-               auto&& e : ((AST::Enum*)type.userdef_type)->enumerators) {
-            ret->add_member(new ObjLong(val++));
+               val <
+               (signed)((AST::Enum*)type.userdef_type)->enumerators.size();
+               val++) {
+            ret->add_member(new ObjLong(val));
           }
 
           break;
@@ -367,6 +369,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
   switch (_ast->kind) {
     case AST_None:
     case AST_Function:
+    case AST_Enum:
     case AST_Struct:
       break;
 
