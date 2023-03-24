@@ -29,6 +29,8 @@ struct Type : Typeable {
   }
 };
 
+//
+// new T(.a = <expr>, .b = <expr>, ...)
 struct TypeConstructor : Base {
   struct Pair {
     Token const* t_period;
@@ -49,11 +51,10 @@ struct TypeConstructor : Base {
   };
 
   Type* type;
-  // TypeInfo typeinfo;
-
+  Struct* p_struct;
   std::vector<Pair> init_pair_list;
 
-  explicit TypeConstructor(Type* type);
+  explicit TypeConstructor(Token const& token, Type* type);
   ~TypeConstructor();
 };
 

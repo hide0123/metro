@@ -279,7 +279,7 @@ AST::Base* Parser::primary()
   //
   // Type Constructor
   if (this->eat("new")) {
-    auto ast = new AST::TypeConstructor(this->expect_typename());
+    auto ast = new AST::TypeConstructor(*this->ate, this->expect_typename());
 
     this->expect("{");
 

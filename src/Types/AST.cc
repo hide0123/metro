@@ -5,8 +5,7 @@ namespace AST {
 Base::Base(ASTKind kind, Token const& token)
   : kind(kind),
     token(token),
-    end_token(nullptr),
-    is_left(false)
+    end_token(nullptr)
 {
 }
 
@@ -51,7 +50,6 @@ Variable::Variable(Token const& tok)
     index(0),
     name(tok.str)
 {
-  this->is_left = true;
 }
 
 CallFunc::CallFunc(Token const& name)
@@ -333,17 +331,21 @@ std::string CallFunc::to_string() const
   return ret + ")";
 }
 
-TypeConstructor::TypeConstructor(Type* type)
-  : Dict(type->token),
+TypeConstructor::TypeConstructor(Token const& token, Type* type)
+  : Base(AST_TypeConstructor, token),
     type(type),
-    init(nullptr)
+    p_struct(nullptr)
 {
   this->kind = AST_TypeConstructor;
 }
 
 TypeConstructor ::~TypeConstructor()
 {
-  delete this->type;
+  delete this->p_struct;
+
+  for (auto&& pair : this->init_pair_list) {
+    delete pair.expr;
+  }
 }
 
 }  // namespace AST

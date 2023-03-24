@@ -19,9 +19,7 @@ class Sema {
 
   using TypeVector = std::vector<TypeInfo>;
 
-  struct ArgumentWrap;
-  using ArgVector = std::vector<ArgumentWrap>;
-
+  class ArgVector;
   struct ArgumentWrap {
     enum ArgType {
       ARG_Formal,
@@ -32,6 +30,7 @@ class Sema {
     TypeInfo typeinfo;
 
     // if formal
+    AST::Argument* arg;  // 定義された型
     AST::Type* defined;  // 定義された型
     std::string_view name;
 
@@ -40,14 +39,39 @@ class Sema {
 
     explicit ArgumentWrap(ArgType type)
       : type(type),
+        arg(nullptr),
         defined(nullptr),
         value(nullptr)
     {
     }
 
-    static Sema::ArgVector construct_from_call(Sema& S, AST::CallFunc* func);
-    static Sema::ArgVector construct_from_function(Sema& S,
-                                                   AST::Function* func);
+    AST::Base* get_ast() const
+    {
+      switch (this->type) {
+        case ARG_Formal:
+          return arg;
+
+        case ARG_Actual:
+          return value;
+      }
+
+      return nullptr;
+    }
+
+    static Sema::ArgVector make_vector_from_call(Sema& S, AST::CallFunc* ast);
+    static Sema::ArgVector make_vector_from_function(Sema& S,
+                                                     AST::Function* ast);
+    static Sema::ArgVector make_vector_from_builtin(Sema& S,
+                                                    BuiltinFunc const* func);
+  };
+
+  class ArgVector : public std::vector<ArgumentWrap> {
+  public:
+    BuiltinFunc const* builtin = nullptr;
+    AST::Function* userdef_func = nullptr;
+    AST::CallFunc* caller = nullptr;
+
+    using std::vector<ArgumentWrap>::vector;
   };
 
   struct LocalVar {
@@ -127,6 +151,7 @@ class Sema {
 
   struct FunctionFindResult {
     enum FunctionType {
+      FN_NotFound,
       FN_Builtin,
       FN_UserDefined,
     };
@@ -156,10 +181,11 @@ public:
 
   void do_check();
 
-  void compare_argument(TypeVector const& formal, TypeVector const& actual);
+  void compare_argument(ArgVector const& formal, ArgVector const& actual);
 
   TypeInfo check(AST::Base* ast);
-  TypeInfo check_function_call(AST::CallFunc* ast);
+  TypeInfo check_function_call(AST::CallFunc* ast, bool have_self,
+                               TypeInfo const& self_type);
 
   TypeInfo& check_as_left(AST::Base* ast);
 
@@ -178,7 +204,7 @@ public:
   // 関数を探す
   FunctionFindResult find_function(std::string_view name, bool have_self,
                                    TypeInfo const& self_type,
-                                   std::vector<TypeInfo> const& args);
+                                   ArgVector const& args);
 
   AST::Typeable* find_usertype(std::string_view name);
 

@@ -33,12 +33,14 @@ Sema::~Sema()
 {
 }
 
-Sema::ArgVector Sema::ArgumentWrap::construct_from_call(Sema& S,
-                                                        AST::CallFunc* func)
+Sema::ArgVector Sema::ArgumentWrap::make_vector_from_call(Sema& S,
+                                                          AST::CallFunc* ast)
 {
   ArgVector ret;
 
-  for (auto&& arg : func->args) {
+  ret.caller = ast;
+
+  for (auto&& arg : ast->args) {
     auto& W = ret.emplace_back(ArgumentWrap::ARG_Actual);
 
     W.typeinfo = S.check(arg);
@@ -48,17 +50,35 @@ Sema::ArgVector Sema::ArgumentWrap::construct_from_call(Sema& S,
   return ret;
 }
 
-Sema::ArgVector Sema::ArgumentWrap::construct_from_function(Sema& S,
-                                                            AST::Function* func)
+Sema::ArgVector Sema::ArgumentWrap::make_vector_from_function(
+  Sema& S, AST::Function* ast)
 {
   ArgVector ret;
 
-  for (auto&& arg : func->args) {
+  ret.userdef_func = ast;
+
+  for (auto&& arg : ast->args) {
     auto& W = ret.emplace_back(ArgumentWrap::ARG_Formal);
 
     W.typeinfo = S.check(arg->type);
     W.defined = arg->type;
-    }
+  }
+
+  return ret;
+}
+
+Sema::ArgVector Sema::ArgumentWrap::make_vector_from_builtin(
+  Sema& S, BuiltinFunc const* func)
+{
+  ArgVector ret;
+
+  ret.builtin = func;
+
+  for (auto&& arg : func->arg_types) {
+    auto& W = ret.emplace_back(ArgumentWrap::ARG_Formal);
+
+    W.typeinfo = arg;
+  }
 
   return ret;
 }
@@ -78,7 +98,7 @@ void Sema::do_check()
   this->check(this->root);
 }
 
-void Sema::compare_argument(TypeVector const& formal, TypeVector const& actual)
+void Sema::compare_argument(ArgVector const& formal, ArgVector const& actual)
 {
   // formal = 定義側
   // actual = 呼び出し側
@@ -89,10 +109,29 @@ void Sema::compare_argument(TypeVector const& formal, TypeVector const& actual)
   // actual
   auto a_it = actual.begin();
 
-  if (formal.empty() && !actual.empty()) {
+  while (f_it != formal.end()) {
+    if (f_it->typeinfo.kind == TYPE_Args) {
+      break;
+    }
+
+    if (a_it == actual.end()) {
+      Error(actual.caller, "too few arguments").emit().exit();
+    }
+
+    if (!f_it->typeinfo.equals(a_it->typeinfo)) {
+      Error(ERR_TypeMismatch, a_it->get_ast(),
+            "expected '" + f_it->typeinfo.to_string() + "' but found '" +
+              a_it->typeinfo.to_string() + "'")
+        .emit()
+        .exit();
+    }
+
+    f_it++;
+    a_it++;
   }
 
-  while (1) {
+  if (a_it != actual.end()) {
+    Error(actual.caller, "too many arguments").emit().exit();
   }
 }
 
@@ -124,7 +163,7 @@ std::optional<TypeInfo> Sema::get_type_from_name(std::string_view name)
 Sema::FunctionFindResult Sema::find_function(std::string_view name,
                                              bool have_self,
                                              TypeInfo const& self_type,
-                                             std::vector<TypeInfo> const& args)
+                                             ArgVector const& args)
 {
   FunctionFindResult result;
 
@@ -181,30 +220,6 @@ AST::Typeable* Sema::find_usertype(std::string_view name)
 AST::Function* Sema::get_cur_func()
 {
   return *this->function_history.begin();
-}
-
-//
-// キャプチャ追加
-void Sema::begin_capture(Sema::CaptureFunction cap_func)
-{
-  this->captures.emplace_back(cap_func);
-}
-
-//
-// キャプチャ削除
-void Sema::end_capture()
-{
-  this->captures.pop_back();
-}
-
-void Sema::begin_return_capture(Sema::ReturnCaptureFunction cap_func)
-{
-  this->return_captures.emplace_back(cap_func);
-}
-
-void Sema::end_return_capture()
-{
-  this->return_captures.pop_back();
 }
 
 TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
@@ -493,25 +508,33 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
             name = ((AST::Variable*)index.ast)->name;
             break;
 
-          case AST_TypeConstructor: {
-            auto typeCtor = (AST::TypeConstructor*)index.ast;
-            auto ast_type = typeCtor->type;
+          case AST_CallFunc: {
+            auto cf = (AST::CallFunc*)index.ast;
 
-            if (!typeCtor->init) {
-              Error(ERR_InvalidSyntax, typeCtor->elements[0].colon,
-                    "expected '}', but found ':'")
-                .emit()
-                .exit();
-            }
-
-            name = ast_type->name;
-            p_params = &ast_type->parameters;
-
-            init = typeCtor->init;
-            init_type = this->check(init);
+            name = cf->name;
 
             break;
           }
+
+            /*case AST_TypeConstructor: {
+                        auto typeCtor = (AST::TypeConstructor*)index.ast;
+                        auto ast_type = typeCtor->type;
+
+                        if (!typeCtor->init) {
+                          Error(ERR_InvalidSyntax, typeCtor->elements[0].colon,
+                                "expected '}', but found ':'")
+                            .emit()
+                            .exit();
+                        }
+
+                        name = ast_type->name;
+                        p_params = &ast_type->parameters;
+
+                        init = typeCtor->init;
+                        init_type = this->check(init);
+                        break;
+                      }
+                      */
 
           default:
             Error(ERR_InvalidSyntax, index.ast, "invalid syntax").emit().exit();
@@ -787,85 +810,47 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_TypeConstructor: {
       astdef(TypeConstructor);
 
-      auto& type = ast->typeinfo;
+      auto& pStruct = ast->p_struct;
 
+      auto& type = _ret;
       type = this->check(ast->type);
 
-      debug(for (auto&& elem
-                 : ast->elements) { assert(elem.key->kind == AST_Variable); });
+      if (type.kind != TYPE_UserDef || type.userdef_type->kind != AST_Struct) {
+        Error(ast->type, "aiueo@@@").emit().exit();
+      }
+
+      pStruct = (AST::Struct*)ast->type;
 
       //
-      // dont have any members
-      if (!type.have_members()) {
-        todo_impl;
+      // すべてのメンバを初期化するのが前提なので
+      // 個数、名前は完全一致していなければエラー
+      //
+
+      // 初期化子の数が合わない
+      //  => エラー
+      if (ast->init_pair_list.size() != pStruct->members.size()) {
+        Error(ERR_InvalidInitializer, ast, "don't matching member size")
+          .emit()
+          .exit();
       }
 
       //
-      // ユーザー定義型
-      if (type.kind == TYPE_UserDef) {
-        auto usertype = type.userdef_type;
+      // 要素を全部チェック
+      for (size_t ast_member_index = 0; auto&& pair : ast->init_pair_list) {
+        //
+        // メンバ
+        auto const& ast_member = pStruct->members[ast_member_index];
 
-        switch (usertype->kind) {
-          case AST_Enum: {
-            break;
-          }
-
-          case AST_Struct: {
-            auto ast_struct = (AST::Struct*)usertype;
-
-            // 初期化子の数が合わない
-            //  => エラー
-            if (ast->elements.size() != ast_struct->members.size()) {
-              Error(ERR_InvalidInitializer, ast, "don't matching member size")
-                .emit()
-                .exit();
-            }
-
-            //
-            // 要素を全部チェック
-            for (size_t ast_member_index = 0; auto&& elem : ast->elements) {
-              //
-              // 構造体のメンバへの参照
-              auto const& ast_member = ast_struct->members[ast_member_index];
-
-              //
-              // 辞書と同じパース処理なので、
-              // メンバ名が変数になっていることを確認する
-              if (elem.key->kind != AST_Variable) {
-                // 変数じゃない場合はエラー
-                Error(ERR_InvalidSyntax, elem.key, "expected member name")
-                  .emit()
-                  .exit();
-              }
-              else {
-                // kind を メンバ変数にする
-                elem.key->kind = AST_MemberVariable;
-
-                ((AST::Variable*)elem.key)->index = ast_member_index++;
-              }
-
-              // member type
-              auto const member_type = this->check(ast_member.type);
-
-              // 名前が合わない
-              //  => エラー
-              if (ast_member.name != elem.key->token.str) {
-                Error(ERR_Undefined, elem.key, "unexpected member name")
-                  .emit()
-                  .exit();
-              }
-
-              this->expect(member_type, elem.value);
-
-              type.members.emplace_back(ast_member.name, member_type);
-
-              // ast_member_index++;
-            }
-
-            break;
-          }
+        // 名前
+        if (pair.name != ast_member.name) {
+          Error(*pair.t_name, "no match member name").emit().exit();
         }
+
+        // 型
+        this->expect(this->check(ast_member.type), pair.expr);
       }
+
+      break;
 
       _ret = type;
       break;
@@ -1480,120 +1465,38 @@ TypeInfo& Sema::check_as_left(AST::Base* _ast)
 // ------------------------------------------------ //
 //  関数呼び出しをチェックする
 // ------------------------------------------------ //
-TypeInfo Sema::check_function_call(AST::CallFunc* ast)
+TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
+                                   TypeInfo const& self_type)
 {
-  std::vector<TypeInfo> arg_types;
+  using FFResult = FunctionFindResult;
 
+  //
   // 引数
-  for (auto&& arg : ast->args) {
-    arg_types.emplace_back(this->check(arg));
-  }
+  auto args = ArgumentWrap::make_vector_from_call(*this, ast);
 
-  // 同じ名前のビルトインを探す
-  auto builtin_func_found = this->find_builtin_func(ast->name);
+  // 同じ名前の関数を探す
+  auto result = this->find_function(ast->name, have_self, self_type, args);
 
-  if (builtin_func_found) {
+  //
+  // ビルトイン
+  if (result.type == FFResult::FN_Builtin) {
     ast->is_builtin = true;
-    ast->builtin_func = builtin_func_found;
+    ast->builtin_func = result.builtin;
 
-    // 引数チェック
-    auto formal = builtin_func_found->arg_types.begin();
-    auto actual = arg_types.begin();
+    this->compare_argument(
+      ArgumentWrap::make_vector_from_builtin(*this, result.builtin), args);
 
-    auto e1 = builtin_func_found->arg_types.end();
-    auto e2 = arg_types.end();
-
-    auto arg = ast->args.begin();
-
-    while (1) {
-      // 呼び出し側の引数が終わった
-      if (actual == e2) {
-        if (formal == e1)  // 定義のほうも終わってたら抜ける
-          break;
-
-        // 定義側が引数リスト
-        //  => 渡す引数なし
-        if (formal->equals(TYPE_Args)) {
-          break;
-        }
-      }
-      // 定義側が終わった
-      else if (formal == e1) {
-        // 呼び出し側が多いのでエラー
-        Error(*arg, "too many arguments").emit().exit();
-      }
-      // 定義側が引数リスト
-      else if (formal->equals(TYPE_Args)) {
-        break;
-      }
-
-      // 型が不一致の場合エラー
-      if (!formal->equals(*actual)) {
-        Error(*arg, "expected '" + formal->to_string() + "' but found '" +
-                      actual->to_string() + "'")
-          .emit()
-          .exit();
-      }
-
-      formal++;
-      actual++;
-      arg++;
-    }
-
-    return builtin_func_found->result_type;
+    return result.builtin->result_type;
   }
 
-  // なければユーザー定義関数を探す
-  if (auto func = this->find_function(ast->name); func) {
-    ast->callee = func;
+  // ユーザー定義関数
+  if (result.type == FFResult::FN_UserDefined) {
+    ast->callee = result.userdef;
 
-    // 仮引数 無し
-    // if( func->args.empty() ) {
-    if (0) {
-      // ここのスコープ使わない
-      if (!ast->args.empty()) {
-        Error(ast, "too many arguments").emit().exit();
-      }
-    }
-    // 仮引数 有り
-    else {
-      /// こっちに入る
+    this->compare_argument(
+      ArgumentWrap::make_vector_from_function(*this, result.userdef), args);
 
-      // 定義側の引数
-      auto formal_arg_it = func->args.begin();
-
-      // 呼び出す方の引数
-      auto act_arg_it = ast->args.begin();
-
-      while (1) {
-        if (auto Q = formal_arg_it == func->args.end();
-            Q != (act_arg_it == ast->args.end())) {
-          if (Q) {  // 定義側の引数
-            Error(*act_arg_it, "too many arguments").emit().exit();
-          }
-
-          Error(ast, "too few arguments").emit().exit();
-        }
-        else if (Q) {  // true!=true で、ループ終了
-          break;
-        }
-
-        auto arg = *act_arg_it;
-
-        auto aa = this->check((*formal_arg_it)->type);
-        auto bb = this->check(*act_arg_it);
-
-        if (!aa.equals(bb)) {
-          Error(arg, "mismatched type").emit();
-        }
-
-        formal_arg_it++;
-        act_arg_it++;
-      }
-
-    }  // 引数チェック終了
-
-    return this->check(func->result_type);
+    return this->check(result.userdef->result_type);
   }
 
   Error(ast, "undefined function name").emit().exit();
@@ -1612,4 +1515,28 @@ void Sema::check_struct(AST::Struct* ast)
 
     this->check(item.type);
   }
+}
+
+//
+// キャプチャ追加
+void Sema::begin_capture(Sema::CaptureFunction cap_func)
+{
+  this->captures.emplace_back(cap_func);
+}
+
+//
+// キャプチャ削除
+void Sema::end_capture()
+{
+  this->captures.pop_back();
+}
+
+void Sema::begin_return_capture(Sema::ReturnCaptureFunction cap_func)
+{
+  this->return_captures.emplace_back(cap_func);
+}
+
+void Sema::end_return_capture()
+{
+  this->return_captures.pop_back();
 }

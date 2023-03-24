@@ -555,7 +555,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       todo_impl;
 
-      return ret;
+      // return ret;
     }
 
     //
