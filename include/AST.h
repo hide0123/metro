@@ -18,6 +18,7 @@
 
 #include "AST/Typeable.h"
 
+#include "AST/Enum.h"
 #include "AST/Struct.h"
 #include "AST/Function.h"
 
