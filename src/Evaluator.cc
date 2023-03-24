@@ -441,7 +441,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       if (ast->is_enum) {
         assert(ast->indexes.size() == 1);
 
-        return new ObjEnumerator(ast->enum_type, ast->enum_value);
+        auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
+
+        if (auto& x = ast->indexes[0]; x.ast->kind == AST_TypeConstructor) {
+          ret->value = this->evaluate(((AST::TypeConstructor*)x.ast)->init);
+        }
+
+        return ret;
       }
 
       auto obj = this->evaluate(ast->expr);

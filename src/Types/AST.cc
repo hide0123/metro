@@ -131,7 +131,7 @@ IndexRef::IndexRef(Token const& t, Base* expr)
     expr(expr),
     is_enum(false),
     enum_type(nullptr),
-    enum_value(0)
+    enumerator_index(0)
 {
 }
 
@@ -333,7 +333,8 @@ std::string CallFunc::to_string() const
 
 TypeConstructor::TypeConstructor(Type* type)
   : Dict(type->token),
-    type(type)
+    type(type),
+    init(nullptr)
 {
   this->kind = AST_TypeConstructor;
 }

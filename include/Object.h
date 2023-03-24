@@ -112,7 +112,8 @@ struct ObjUSize : Object {
 };
 
 struct ObjEnumerator : Object {
-  size_t value;
+  size_t index;
+  Object* value;
 
   std::string to_string() const;
   ObjEnumerator* clone() const;
@@ -124,11 +125,14 @@ struct ObjEnumerator : Object {
 
   bool equals(ObjEnumerator* x) const
   {
-    return this->value == x->value;
+    return this->index == x->index &&
+           (this->value ? this->value->equals(x->value) : true);
   }
 
-  ObjEnumerator(AST::Typeable* enum_ast, size_t value = 0)
+  ObjEnumerator(AST::Typeable* enum_ast, size_t index = 0,
+                Object* value = nullptr)
     : Object(TYPE_Enumerator),
+      index(index),
       value(value)
   {
     this->type.userdef_type = enum_ast;

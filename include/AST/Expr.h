@@ -131,7 +131,7 @@ struct IndexRef : Base {
 
   bool is_enum;
   Enum* enum_type;
-  size_t enum_value;
+  size_t enumerator_index;
 
   bool is_empty() const
   {

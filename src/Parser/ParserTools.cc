@@ -142,7 +142,7 @@ AST::Enum* Parser::parse_enum()
   }
 
   do {
-    auto enumerator = ast->add_enumerator(*this->expect_identifier(), nullptr);
+    auto& enumerator = ast->add_enumerator(*this->expect_identifier(), nullptr);
 
     if (this->eat("(")) {
       enumerator.value_type = this->expect_typename();

@@ -173,7 +173,14 @@ AST::Base* Parser::factor()
         auto ast = new AST::TypeConstructor(ast_type);
 
         do {
-          ast->append(this->expr(), *this->expect(":"), this->expr());
+          auto x = this->expr();
+
+          if (this->found("}")) {
+            ast->init = x;
+            break;
+          }
+
+          ast->append(x, *this->expect(":"), this->expr());
         } while (this->eat(","));
 
         ast->end_token = this->expect("}");
