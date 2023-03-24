@@ -12,33 +12,35 @@
 size_t Error::_count;
 
 ErrorLocation::ErrorLocation(Token const& token)
-    : loc_kind(ERRLOC_Token),
-      ast(nullptr),
-      token(&token),
-      _line_num(token.src_loc.line_num)
+  : loc_kind(ERRLOC_Token),
+    ast(nullptr),
+    token(&token),
+    _line_num(token.src_loc.line_num),
+    _context(token.src_loc.context)
 {
 }
 
 ErrorLocation::ErrorLocation(AST::Base const* ast)
-    : loc_kind(ERRLOC_AST),
-      ast(ast),
-      token(nullptr),
-      _line_num(ast->token.src_loc.line_num)
+  : loc_kind(ERRLOC_AST),
+    ast(ast),
+    token(nullptr),
+    _line_num(ast->token.src_loc.line_num),
+    _context(ast->token.src_loc.context)
 {
   assert(&*ast->end_token);
 }
 
 Error::Error(ErrorKind kind, ErrorLocation&& loc, std::string const& msg)
-    : _kind(kind),
-      _loc(std::move(loc)),
-      _is_single_line(false),
-      _msg(msg),
-      _pContext(Application::get_instance()->get_current_context())
+  : _kind(kind),
+    _loc(std::move(loc)),
+    _is_single_line(false),
+    _msg(msg),
+    _pContext(loc._context)
 {
 }
 
 Error::Error(ErrorLocation&& loc, std::string const& msg)
-    : Error(ERR_None, std::move(loc), msg)
+  : Error(ERR_None, std::move(loc), msg)
 {
 }
 
@@ -142,10 +144,10 @@ void Error::show_error_lines()
       lines.emplace_back(src_data._lines[i].str_view);
 
     lines.begin()->insert(
-        tbegin->src_loc.position - src_data._lines[begin].begin, "\033[4m");
+      tbegin->src_loc.position - src_data._lines[begin].begin, "\033[4m");
 
     lines.rbegin()->insert(
-        tend->src_loc.get_end_pos() - src_data._lines[end].begin, COL_DEFAULT);
+      tend->src_loc.get_end_pos() - src_data._lines[end].begin, COL_DEFAULT);
 
     lines.rbegin()->insert(0, "\033[4m");
   }
@@ -167,8 +169,7 @@ void Error::show_error_lines()
     }
 
     std::cerr << std::string(
-                     tbegin->src_loc.position - src_data._lines[begin].begin,
-                     ' ')
+                   tbegin->src_loc.position - src_data._lines[begin].begin, ' ')
               << std::string(std::max<size_t>(tmp, 1), '^');
   }
 }

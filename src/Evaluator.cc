@@ -140,7 +140,7 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem, Object* dest)
           break;
 
         case TYPE_String:
-          ((ObjString*)dest)->value += ((ObjString*)right)->value;
+          ((ObjString*)dest)->append((ObjString*)right);
           break;
 
         default:
@@ -441,7 +441,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       if (ast->is_enum) {
         assert(ast->indexes.size() == 1);
 
-        return new ObjEnumerator(ast->enum_type, ast->enum_value);
+        auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
+
+        if (auto& x = ast->indexes[0]; x.ast->kind == AST_TypeConstructor) {
+          ret->value = this->evaluate(((AST::TypeConstructor*)x.ast)->init);
+        }
+
+        return ret;
       }
 
       auto obj = this->evaluate(ast->expr);
@@ -671,7 +677,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       obj->ref_count++;
 
-      this->get_vst().append_lvar(obj);
+      if (ast->is_shadowing) {
+        auto& dest = this->get_vst().lvar_list[ast->index];
+
+        dest->ref_count--;
+        dest = obj;
+      }
+      else
+        this->get_vst().append_lvar(obj);
 
       break;
     }
@@ -912,6 +925,32 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
         auto obj_index = this->evaluate(index.ast);
 
         switch ((*ret)->type.kind) {
+          case TYPE_String: {
+            auto& obj_str = *(ObjString**)ret;
+
+            size_t indexval = 0;
+
+            switch (obj_index->type.kind) {
+              case TYPE_Int:
+                indexval = ((ObjLong*)obj_index)->value;
+                break;
+
+              case TYPE_USize:
+                indexval = ((ObjUSize*)obj_index)->value;
+                break;
+
+              default:
+                panic("int or usize??aa");
+            }
+
+            if (indexval >= obj_str->characters.size()) {
+              Error(index.ast, "index out of range").emit().exit();
+            }
+
+            ret = &(Object*&)obj_str->characters[indexval];
+            break;
+          }
+
           case TYPE_Vector: {
             auto& obj_vec = *(ObjVector**)ret;
 

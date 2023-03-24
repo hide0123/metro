@@ -1,0 +1,11 @@
+struct MyStruct {
+    a: int,
+    b: vector<MyStruct>
+}
+
+let x = 123;
+let x = MyStruct{ a: x, b: [] };
+println(x);
+
+x = MyStruct{ a: 1, b: [x] };
+println(x);

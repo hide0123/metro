@@ -341,15 +341,19 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
 
         switch (type.kind) {
           //
-          // Vector
-          case TYPE_Vector: {
+          // vector or string
+          case TYPE_String:
+          case TYPE_Vector:
             if (index_type.kind != TYPE_Int && index_type.kind != TYPE_USize) {
               Error(index.ast, "expected integer or usize").emit();
             }
 
-            type = type.type_params[0];
+            if (type.kind == TYPE_String)
+              type = TYPE_Char;
+            else
+              type = type.type_params[0];
+
             break;
-          }
 
           //
           // Disctionary
@@ -381,6 +385,17 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
       //
       // メンバアクセス
       case AST::IndexRef::Subscript::SUB_Member: {
+        if (type.kind == TYPE_Enumerator) {
+          if (index.ast->kind == AST_Variable &&
+              ((AST::Variable*)index.ast)->name == "value") {
+            type = this->check(((AST::Enum*)type.userdef_type)
+                                 ->enumerators[ast->enumerator_index]
+                                 .value_type);
+
+            break;
+          }
+        }
+
         if (type.kind != TYPE_UserDef) {
           Error(index.ast,
                 "'" + type.to_string() + "' type object don't have any members")
@@ -388,80 +403,128 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
             .exit();
         }
 
+        std::string name;
+        std::vector<AST::Type*>* p_params = nullptr;
+        AST::Base* init = nullptr;
+        TypeInfo init_type;
+
         switch (index.ast->kind) {
-          // 識別子
-          case AST_Variable: {
-            auto var = (AST::Variable*)index.ast;
+          case AST_Variable:
+            name = ((AST::Variable*)index.ast)->name;
+            break;
 
-            switch (type.userdef_type->kind) {
-              //
-              // 列挙型
-              case AST_Enum: {
-                auto pEnum = (AST::Enum*)type.userdef_type;
+          case AST_TypeConstructor: {
+            auto typeCtor = (AST::TypeConstructor*)index.ast;
+            auto ast_type = typeCtor->type;
 
-                // 名前が一致する列挙値を探す
-                for (auto&& E : pEnum->enumerators) {
-                  // 一致する名前を見つけた
-                  // --> ループ抜ける (--> @found_enumerator)
-                  if (E.name == var->name) {
-                    type.kind = TYPE_Enumerator;
-                    assert(type.userdef_type);
-
-                    goto found_enumerator;
-                  }
-
-                  //
-                  ast->enum_value++;
-                }
-
-                // 一致するものがない
-                Error(ERR_Undefined, index.ast,
-                      "enum '" + std::string(pEnum->name) +
-                        "' don't have a enumerator '" + std::string(var->name) +
-                        "'")
-                  .emit()
-                  .exit();
-
-              found_enumerator:
-                break;
-              }
-
-              //
-              // 構造体
-              case AST_Struct: {
-                // AST 構造体へのポインタ
-                auto pStruct = (AST::Struct*)type.userdef_type;
-
-                // 名前が一致するメンバを探す
-                for (auto&& M : pStruct->members) {
-                  // 一致する名前を発見
-                  //  --> ループ抜ける (--> @found_member)
-                  if (M.name == var->name) {
-                    type = this->check(M.type);
-                    goto found_member;
-                  }
-
-                  var->index++;
-                }
-
-                // 一致するものがない
-                Error(ERR_Undefined, index.ast,
-                      "struct '" + std::string(pStruct->name) +
-                        "' don't have a member '" + std::string(var->name) +
-                        "'")
-                  .emit()
-                  .exit();
-
-              found_member:
-                break;
-              }
+            if (!typeCtor->init) {
+              Error(ERR_InvalidSyntax, typeCtor->elements[0].colon,
+                    "expected '}', but found ':'")
+                .emit()
+                .exit();
             }
+
+            name = ast_type->name;
+            p_params = &ast_type->parameters;
+
+            init = typeCtor->init;
+            init_type = this->check(init);
 
             break;
           }
 
           default:
-            alertmsg((int)index.ast->kind);
+            Error(ERR_InvalidSyntax, index.ast, "invalid syntax").emit().exit();
+        }
+
+        switch (type.userdef_type->kind) {
+          //
+          // 列挙型
+          case AST_Enum: {
+            auto pEnum = (AST::Enum*)type.userdef_type;
+
+            // 名前が一致する列挙値を探す
+            for (auto&& E : pEnum->enumerators) {
+              // 一致する名前を見つけた
+              // --> ループ抜ける (--> @found_enumerator)
+              if (E.name == name) {
+                assert(type.userdef_type);
+
+                type.kind = TYPE_Enumerator;
+
+                if (E.value_type) {
+                  auto deftype = this->check(E.value_type);
+
+                  if (!init) {
+                    Error(ERR_InvalidSyntax, index.ast,
+                          "expected initializer of '" + deftype.to_string() +
+                            "' after this token")
+                      .emit()
+                      .exit();
+                  }
+                  else if (!deftype.equals(init_type)) {
+                    Error(ERR_TypeMismatch, init,
+                          "expected '" + deftype.to_string() + "' but found '" +
+                            init_type.to_string() + "'")
+                      .emit()
+                      .exit();
+                  }
+                }
+                else if (init) {
+                  Error(ERR_InvalidSyntax, index.ast->token,
+                        "dont need initializer")
+                    .emit()
+                    .exit();
+                }
+
+                goto found_enumerator;
+              }
+
+              //
+              ast->enumerator_index++;
+            }
+
+            // 一致するものがない
+            Error(ERR_Undefined, index.ast,
+                  "enum '" + std::string(pEnum->name) +
+                    "' don't have a enumerator '" + name + "'")
+              .emit()
+              .exit();
+
+          found_enumerator:
+            break;
+          }
+
+          //
+          // 構造体
+          case AST_Struct: {
+            // AST 構造体へのポインタ
+            auto pStruct = (AST::Struct*)type.userdef_type;
+
+            // 名前が一致するメンバを探す
+            for (auto&& M : pStruct->members) {
+              // 一致する名前を発見
+              //  --> ループ抜ける (--> @found_member)
+              if (M.name == name) {
+                type = this->check(M.type);
+                goto found_member;
+              }
+
+              ((AST::Variable*)index.ast)->index++;
+            }
+
+            // 一致するものがない
+            Error(ERR_Undefined, index.ast,
+                  "struct '" + std::string(pStruct->name) +
+                    "' don't have a member '" + name + "'")
+              .emit()
+              .exit();
+
+          found_member:
+            break;
+          }
+
+          default:
             todo_impl;
         }
 
@@ -900,12 +963,15 @@ TypeInfo Sema::check(AST::Base* _ast)
       //  => シャドウイングする
       if (pvar && !pvar->type.equals(type)) {
         pvar->type = type;
+
+        ast->is_shadowing = true;
+        ast->index = pvar->index;
       }
       // そうでなければ新規追加
       else {
         auto& var = scope_emu.lvar.append(type, ast->name);
 
-        var.index = scope_emu.lvar.variables.size() - 1;
+        ast->index = var.index = scope_emu.lvar.variables.size() - 1;
       }
 
       break;
@@ -1144,9 +1210,12 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       if (ast->code->return_last_expr) {
         if (!code_type.equals(res_type)) {
-          Error(ERR_TypeMismatch, *ast->code->list.rbegin(), "type mismatch")
-            .emit()
-            .exit();
+          Error(ERR_TypeMismatch, (*ast->code->list.rbegin())->token,
+                "expected '" + res_type.to_string() + "' but found '" +
+                  code_type.to_string() + "'")
+            .emit();
+
+          goto err_specify_ast;
         }
       }
       else if (!res_type.equals(TYPE_None)) {
@@ -1156,6 +1225,7 @@ TypeInfo Sema::check(AST::Base* _ast)
                 "but function return nothing")
             .emit();
 
+        err_specify_ast:
           Error(ast->result_type, "return type specified with '" +
                                     res_type.to_string() + "' here")
             .emit(EL_Note)

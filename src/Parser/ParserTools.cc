@@ -22,6 +22,7 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
     case AST_Scope:
     case AST_Enum:
     case AST_Struct:
+    case AST_Function:
       return true;
   }
 
@@ -39,7 +40,7 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
 AST::Scope* Parser::parse_scope(Parser::token_iter tok, AST::Base* first)
 {
   if (!first && !this->eat("{")) {
-    Error(*--this->cur, "expected '{' after this token").emit().exit();
+    Error(*--this->cur, "expected scope after this token").emit().exit();
   }
 
   auto ast = new AST::Scope(first ? *tok : *this->ate);
@@ -142,7 +143,7 @@ AST::Enum* Parser::parse_enum()
   }
 
   do {
-    auto enumerator = ast->add_enumerator(*this->expect_identifier(), nullptr);
+    auto& enumerator = ast->add_enumerator(*this->expect_identifier(), nullptr);
 
     if (this->eat("(")) {
       enumerator.value_type = this->expect_typename();
@@ -306,6 +307,18 @@ Parser::token_iter Parser::expect(char const* s)
   return this->ate;
 }
 
+Parser::token_iter Parser::get(size_t offs)
+{
+  auto it = this->cur;
+
+  while (offs != 0) {
+    it++;
+    offs--;
+  }
+
+  return it;
+}
+
 // セミコロン消費
 bool Parser::eat_semi()
 {
@@ -322,7 +335,7 @@ Parser::token_iter Parser::expect_semi()
 Parser::token_iter Parser::expect_identifier()
 {
   if (this->cur->kind != TOK_Ident) {
-    Error(*(--this->cur), "expected identifier after this token").emit().exit();
+    throw Error(*(--this->cur), "expected identifier after this token");
   }
 
   this->ate = this->cur++;

@@ -44,6 +44,7 @@ enum ErrorLevel {
 };
 
 class Error;
+class ScriptFileContext;
 struct ErrorLocation {
   ErrorLocationKind loc_kind;
 
@@ -55,11 +56,11 @@ struct ErrorLocation {
 
 private:
   size_t const _line_num;
+  ScriptFileContext const* _context;
 
   friend class Error;
 };
 
-class ScriptFileContext;
 class Error {
 public:
   Error(Error&&) = delete;

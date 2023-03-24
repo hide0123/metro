@@ -22,89 +22,109 @@ static Object* print_impl(std::vector<Object*> const& args)
 }
 
 static std::vector<BuiltinFunc> const _builtin_functions{
-    // id
-    BuiltinFunc{.name = "id",
-                .is_template = true,
-                .result_type = TYPE_Int,
-                .arg_types = {TYPE_Template},
-                .impl = [](std::vector<Object*> const& args) -> Object* {
-                  return new ObjString(
-                      Utils::String::to_wstr(Utils::format("%p", args[0])));
-                }},
+  // id
+  BuiltinFunc{.name = "id",
+              .is_template = true,
+              .result_type = TYPE_Int,
+              .arg_types = {TYPE_Template},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                return new ObjString(
+                  Utils::String::to_wstr(Utils::format("%p", args[0])));
+              }},
 
-    // print
-    BuiltinFunc{.name = "print",
-                .is_template = false,
-                .result_type = TYPE_Int,
-                .arg_types = {TYPE_Args},
-                .impl = print_impl},
+  // length
+  BuiltinFunc{.name = "length",
+              .is_template = true,
+              .result_type = TYPE_USize,
+              .arg_types = {TYPE_Template},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                auto obj = args[0];
 
-    // println
-    BuiltinFunc{.name = "println",
-                .is_template = false,
-                .result_type = TYPE_Int,
-                .arg_types = {TYPE_Args},
-                .impl = [](std::vector<Object*> const& args) -> Object* {
-                  auto ret = print_impl(args);
+                switch (obj->type.kind) {
+                  case TYPE_String:
+                    return new ObjUSize(((ObjString*)obj)->characters.size());
 
-                  std::cout << "\n";
-                  ((ObjLong*)ret)->value += 1;
+                  case TYPE_Vector:
+                    return new ObjUSize(((ObjVector*)obj)->elements.size());
 
-                  return ret;
-                }},
+                  case TYPE_Dict:
+                    return new ObjUSize(((ObjDict*)obj)->items.size());
+                }
+              }},
 
-    BuiltinFunc{.name = "input",
-                .is_template = false,
-                .result_type = TYPE_String,
-                .arg_types = {},
-                .impl = [](std::vector<Object*> const& args) -> Object* {
-                  (void)args;
+  // print
+  BuiltinFunc{.name = "print",
+              .is_template = false,
+              .result_type = TYPE_Int,
+              .arg_types = {TYPE_Args},
+              .impl = print_impl},
 
-                  std::string input;
+  // println
+  BuiltinFunc{.name = "println",
+              .is_template = false,
+              .result_type = TYPE_Int,
+              .arg_types = {TYPE_Args},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                auto ret = print_impl(args);
 
-                  std::getline(std::cin, input);
+                std::cout << "\n";
+                ((ObjLong*)ret)->value += 1;
 
-                  return new ObjString(Utils::String::to_wstr(input));
-                }},
+                return ret;
+              }},
 
-    // push
-    BuiltinFunc{
-        .name = "push",
-        .is_template = true,
-        .result_type = TYPE_None,
-        .arg_types = {TypeInfo(TYPE_Vector, {TYPE_Template}), TYPE_Template},
-        .impl = [](std::vector<Object*> const& args) -> Object* {
-          return ((ObjVector*)args[0])->append(args[1]);
-        }},
+  BuiltinFunc{.name = "input",
+              .is_template = false,
+              .result_type = TYPE_String,
+              .arg_types = {},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                (void)args;
 
-    // to_string
-    BuiltinFunc{.name = "to_string",
-                .is_template = true,
-                .result_type = TYPE_String,
-                .arg_types = {TYPE_Template},
-                .impl = [](std::vector<Object*> const& args) -> Object* {
-                  return new ObjString(
-                      Utils::String::to_wstr(args[0]->to_string()));
-                }},
+                std::string input;
 
-    // type
-    BuiltinFunc{.name = "type",
-                .is_template = true,
-                .result_type = TYPE_String,
-                .arg_types = {TYPE_Template},
-                .impl = [](std::vector<Object*> const& args) -> Object* {
-                  return new ObjString(
-                      Utils::String::to_wstr(args[0]->type.to_string()));
-                }},
+                std::getline(std::cin, input);
 
-    // exit
-    BuiltinFunc{.name = "exit",
-                .is_template = false,
-                .result_type = TYPE_None,
-                .arg_types = {TYPE_Int},
-                .impl = [](std::vector<Object*> const& args) -> Object* {
-                  std::exit((int)((ObjLong*)args[0])->value);
-                }},
+                return new ObjString(Utils::String::to_wstr(input));
+              }},
+
+  // push
+  BuiltinFunc{
+    .name = "push",
+    .is_template = true,
+    .result_type = TYPE_None,
+    .arg_types = {TypeInfo(TYPE_Vector, {TYPE_Template}), TYPE_Template},
+    .impl = [](std::vector<Object*> const& args) -> Object* {
+      return ((ObjVector*)args[0])->append(args[1]);
+    }},
+
+  // to_string
+  BuiltinFunc{.name = "to_string",
+              .is_template = true,
+              .result_type = TYPE_String,
+              .arg_types = {TYPE_Template},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                return new ObjString(
+                  Utils::String::to_wstr(args[0]->to_string()));
+              }},
+
+  // type
+  BuiltinFunc{.name = "type",
+              .is_template = true,
+              .result_type = TYPE_String,
+              .arg_types = {TYPE_Template},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                return new ObjString(
+                  Utils::String::to_wstr(args[0]->type.to_string()));
+              }},
+
+  // exit
+  BuiltinFunc{.name = "exit",
+              .is_template = false,
+              .result_type = TYPE_None,
+              .arg_types = {TYPE_Int},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                std::exit((int)((ObjLong*)args[0])->value);
+              }},
 
 };
 

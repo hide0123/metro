@@ -16,8 +16,8 @@ struct Type : Typeable {
   bool is_const;
 
   Type(Token const& token)
-      : Typeable(AST_Type, token),
-        is_const(false)
+    : Typeable(AST_Type, token),
+      is_const(false)
   {
     this->name = token.str;
   }
@@ -32,6 +32,8 @@ struct Type : Typeable {
 struct TypeConstructor : Dict {
   Type* type;
   TypeInfo typeinfo;
+
+  Base* init;  // for enum
 
   explicit TypeConstructor(Type* type);
   ~TypeConstructor();

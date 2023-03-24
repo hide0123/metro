@@ -38,6 +38,7 @@ bool Object::equals(Object* object) const
     ajjja(String);
     ajjja(Dict);
     ajjja(Vector);
+    ajjja(Enumerator);
 
     case TYPE_None:
       return true;
@@ -87,8 +88,13 @@ std::string ObjEnumerator::to_string() const
 
   auto ast = (AST::Enum*)this->type.userdef_type;
 
-  return std::string(ast->name) + "." +
-         std::string(ast->enumerators[this->value].name);
+  auto ret = std::string(ast->name) + "." +
+             std::string(ast->enumerators[this->index].name);
+
+  if (this->value)
+    ret += "(" + this->value->to_string() + ")";
+
+  return ret;
 }
 
 std::string ObjFloat::to_string() const
@@ -102,13 +108,20 @@ std::string ObjFloat::to_string() const
   return ret;
 }
 
+std::string ObjChar::to_string() const
+{
+  return Utils::String::to_str(std::wstring(1, this->value));
+}
+
 std::string ObjString::to_string() const
 {
+  auto str = Utils::String::to_str(this->get_wstring());
+
   if (nested) {
-    return '"' + Utils::String::to_str(this->value) + '"';
+    return '"' + str + '"';
   }
 
-  return Utils::String::to_str(this->value);
+  return str;
 }
 
 std::string ObjRange::to_string() const
@@ -180,7 +193,7 @@ ObjUSize* ObjUSize::clone() const
 
 ObjEnumerator* ObjEnumerator::clone() const
 {
-  return new ObjEnumerator(this->type.userdef_type, this->value);
+  return new ObjEnumerator(this->type.userdef_type, this->index, this->value);
 }
 
 ObjFloat* ObjFloat::clone() const
@@ -188,9 +201,14 @@ ObjFloat* ObjFloat::clone() const
   return new ObjFloat(this->value);
 }
 
+ObjChar* ObjChar::clone() const
+{
+  return new ObjChar(this->value);
+}
+
 ObjString* ObjString::clone() const
 {
-  return new ObjString(this->value);
+  return new ObjString(this->characters);
 }
 
 ObjRange* ObjRange::clone() const
