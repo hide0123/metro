@@ -5,57 +5,10 @@
 #include "Parser.h"
 #include "Error.h"
 
-#include "ScriptFileContext.h"
-
-AST::Scope* Parser::parse()
-{
-  auto root_scope = new AST::Scope(*this->cur);
-
-  while (this->check()) {
-    if (this->eat("import")) {
-      auto const& token = *this->ate;
-      std::string path;
-
-      do {
-        path += this->expect_identifier()->str;
-      } while (this->eat("/"));
-
-      path += ".metro";
-
-      if (!this->_context.import(path, token, root_scope)) {
-        Error(token, "failed to import file '" + path + "'").emit().exit();
-      }
-
-      continue;
-    }
-
-    auto x = root_scope->append(this->top());
-
-    if (this->check() && !this->is_ended_with_scope(x))
-      this->expect_semi();
-  }
-
-  return root_scope;
-}
-
-AST::Base* Parser::top()
-{
-  if (this->found("fn"))
-    return this->parse_function();
-
-  if (this->found("struct"))
-    return this->parse_struct();
-
-  if (this->found("impl"))
-    return this->parse_impl();
-
-  return this->expr();
-}
-
 AST::Variable* Parser::new_variable()
 {
   return (AST::Variable*)this->set_last_token(
-      new AST::Variable(*this->expect_identifier()));
+    new AST::Variable(*this->expect_identifier()));
 }
 
 bool Parser::is_ended_with_scope(AST::Base* ast)
@@ -67,6 +20,7 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
     case AST_For:
     case AST_While:
     case AST_Scope:
+    case AST_Enum:
     case AST_Struct:
       return true;
   }
@@ -137,8 +91,8 @@ AST::Scope* Parser::expect_scope()
     --tok;
   }),
         "expected scope after this token")
-      .emit()
-      .exit();
+    .emit()
+    .exit();
 }
 
 /**
@@ -177,6 +131,30 @@ AST::Function* Parser::parse_function()
   return func;
 }
 
+AST::Enum* Parser::parse_enum()
+{
+  auto ast = new AST::Enum(*this->expect("enum"), *this->expect_identifier());
+
+  this->expect("{");
+
+  if (this->eat("}")) {
+    Error(ERR_EmptyEnum, ast->token, "empty enum is not valid").emit().exit();
+  }
+
+  do {
+    auto enumerator = ast->add_enumerator(*this->expect_identifier(), nullptr);
+
+    if (this->eat("(")) {
+      enumerator.value_type = this->expect_typename();
+      this->expect(")");
+    }
+  } while (this->eat(","));
+
+  this->expect("}");
+
+  return ast;
+}
+
 AST::Struct* Parser::parse_struct()
 {
   auto ast = new AST::Struct(*this->expect("struct"));
@@ -187,8 +165,8 @@ AST::Struct* Parser::parse_struct()
 
   if (this->eat("}")) {
     Error(ERR_EmptyStruct, *this->ate, "empty struct is not valid")
-        .emit()
-        .exit();
+      .emit()
+      .exit();
   }
 
   do {
@@ -264,8 +242,8 @@ AST::Type* Parser::expect_typename()
     --tok;
   }),
         "expected typename after this token")
-      .emit()
-      .exit();
+    .emit()
+    .exit();
 }
 
 /**
@@ -321,8 +299,8 @@ Parser::token_iter Parser::expect(char const* s)
 {
   if (!this->eat(s)) {
     Error(*(--this->cur), "expected '" + std::string(s) + "' after this token")
-        .emit()
-        .exit();
+      .emit()
+      .exit();
   }
 
   return this->ate;

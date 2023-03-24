@@ -16,8 +16,6 @@ enum ErrorKind {
   // Syntaxes
   ERR_InvalidSyntax,
   ERR_UnexpectedToken,
-  ERR_EmptySwitch,
-  ERR_EmptyStruct,
 
   // Semantics
   ERR_TypeMismatch,
@@ -26,6 +24,9 @@ enum ErrorKind {
   ERR_ReturrnOutSideFunction,
   ERR_Undefined,
   ERR_MultipleDefined,
+  ERR_EmptySwitch,
+  ERR_EmptyEnum,
+  ERR_EmptyStruct,
 
   // run-time
   ERR_IndexOutOfRange,

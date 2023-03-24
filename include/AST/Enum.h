@@ -18,6 +18,13 @@ struct Enum : Typeable {
 
   std::vector<Enumerator> enumerators;
 
+  template <class... Args>
+  requires std::is_constructible_v<Enumerator, Args...>
+  Enumerator& add_enumerator(Args&&... args)
+  {
+    return this->enumerators.emplace_back(std::forward<Args>(args)...);
+  }
+
   Enum(Token const& token, Token const& name_token)
     : Typeable(AST_Enum, token)
   {

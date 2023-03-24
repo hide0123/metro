@@ -27,10 +27,10 @@ class Sema {
     bool is_global = 0;
 
     explicit LocalVar(TypeInfo const& type, std::string_view name)
-        : type(type),
-          name(name),
-          step(0),
-          index(0)
+      : type(type),
+        name(name),
+        step(0),
+        index(0)
     {
     }
   };
@@ -62,10 +62,10 @@ class Sema {
     bool is_continueable;
 
     SemaScope(AST::Base* ast)
-        : ast(ast),
-          is_loop(false),
-          is_breakable(false),
-          is_continueable(false)
+      : ast(ast),
+        is_loop(false),
+        is_breakable(false),
+        is_continueable(false)
     {
     }
   };
@@ -83,7 +83,7 @@ class Sema {
 
   public:
     TypeRecursionDetector(Sema& S)
-        : S(S)
+      : S(S)
     {
     }
 
@@ -120,7 +120,7 @@ public:
 
   //
   // ユーザー定義構造体を探す
-  AST::Struct* find_struct(std::string_view name);
+  AST::Typeable* find_usertype(std::string_view name);
 
   //
   // ビルトイン関数を探す
@@ -133,13 +133,13 @@ public:
 private:
   using CaptureFunction = std::function<void(AST::Base*)>;
   using ReturnCaptureFunction =
-      std::function<void(TypeInfo const&, AST::Base*)>;
+    std::function<void(TypeInfo const&, AST::Base*)>;
 
   struct CaptureContext {
     CaptureFunction func;
 
     CaptureContext(CaptureFunction f)
-        : func(f)
+      : func(f)
     {
     }
   };
@@ -152,7 +152,7 @@ private:
 
   int find_member(TypeInfo const& type, std::string_view name)
   {
-    for (int i = 0; auto&& m : type.userdef_struct->members) {
+    for (int i = 0; auto&& m : ((AST::Struct*)type.userdef_type)->members) {
       if (m.name == name)
         return i;
 

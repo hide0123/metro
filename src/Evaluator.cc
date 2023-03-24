@@ -20,9 +20,9 @@ std::map<Object*, bool> Evaluator::allocated_objects;
 bool _gc_stopped;
 
 Object::Object(TypeInfo type)
-    : type(type),
-      ref_count(0),
-      no_delete(false)
+  : type(type),
+    ref_count(0),
+    no_delete(false)
 {
   Evaluator::allocated_objects[this] = 1;
 }
@@ -113,10 +113,24 @@ Object* Evaluator::default_constructor(TypeInfo const& type,
     case TYPE_UserDef: {
       auto ret = new ObjUserType(type);
 
-      if (construct_member) {
-        for (auto&& member : type.members) {
-          ret->add_member(this->default_constructor(member.second));
-        }
+      switch (type.userdef_type->kind) {
+        case AST_Enum:
+          for (int64_t val = 0;
+               auto&& e : ((AST::Enum*)type.userdef_type)->enumerators) {
+            ret->add_member(new ObjLong(val++));
+          }
+
+          break;
+
+        case AST_Struct:
+          if (!construct_member)
+            break;
+
+          for (auto&& member : type.members) {
+            ret->add_member(this->default_constructor(member.second));
+          }
+
+          break;
       }
 
       return ret;
@@ -229,13 +243,13 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem, Object* dest)
 
     case AST::EX_And: {
       ((ObjBool*)dest)->value =
-          ((ObjBool*)dest)->value && ((ObjBool*)right)->value;
+        ((ObjBool*)dest)->value && ((ObjBool*)right)->value;
       break;
     }
 
     case AST::EX_Or: {
       ((ObjBool*)dest)->value =
-          ((ObjBool*)dest)->value || ((ObjBool*)right)->value;
+        ((ObjBool*)dest)->value || ((ObjBool*)right)->value;
       break;
     }
 
@@ -943,8 +957,8 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
 
             {
               auto& item = obj_dict->append(
-                  obj_index,
-                  this->default_constructor(obj_dict->type.type_params[1]));
+                obj_index,
+                this->default_constructor(obj_dict->type.type_params[1]));
 
               ret = &item.value;
             }
@@ -963,10 +977,9 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
       case AST::IndexRef::Subscript::SUB_Member: {
         switch (index.ast->kind) {
           case AST_Variable:
-            alertmsg(((AST::Variable*)index.ast)->index);
-
             ret = &((ObjUserType*)*ret)
-                       ->members[((AST::Variable*)index.ast)->index];
+                     ->members[((AST::Variable*)index.ast)->index];
+
             break;
 
           default:

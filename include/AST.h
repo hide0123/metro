@@ -5,6 +5,7 @@
 
 #include <map>
 #include <vector>
+#include <concepts>
 
 #include "Token.h"
 #include "TypeInfo.h"

@@ -48,7 +48,7 @@ bool Object::equals(Object* object) const
 
 std::string ObjUserType::to_string() const
 {
-  auto pStruct = this->type.userdef_struct;
+  auto pStruct = (AST::Struct*)this->type.userdef_type;
 
   auto ret = std::string(pStruct->name) + "{ ";
 
