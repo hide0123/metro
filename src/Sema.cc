@@ -341,15 +341,19 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
 
         switch (type.kind) {
           //
-          // Vector
-          case TYPE_Vector: {
+          // vector or string
+          case TYPE_String:
+          case TYPE_Vector:
             if (index_type.kind != TYPE_Int && index_type.kind != TYPE_USize) {
               Error(index.ast, "expected integer or usize").emit();
             }
 
-            type = type.type_params[0];
+            if (type.kind == TYPE_String)
+              type = TYPE_Char;
+            else
+              type = type.type_params[0];
+
             break;
-          }
 
           //
           // Disctionary

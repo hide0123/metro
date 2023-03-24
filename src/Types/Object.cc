@@ -108,13 +108,20 @@ std::string ObjFloat::to_string() const
   return ret;
 }
 
+std::string ObjChar::to_string() const
+{
+  return Utils::String::to_str(std::wstring(1, this->value));
+}
+
 std::string ObjString::to_string() const
 {
+  auto str = Utils::String::to_str(this->get_wstring());
+
   if (nested) {
-    return '"' + Utils::String::to_str(this->value) + '"';
+    return '"' + str + '"';
   }
 
-  return Utils::String::to_str(this->value);
+  return str;
 }
 
 std::string ObjRange::to_string() const
@@ -194,9 +201,14 @@ ObjFloat* ObjFloat::clone() const
   return new ObjFloat(this->value);
 }
 
+ObjChar* ObjChar::clone() const
+{
+  return new ObjChar(this->value);
+}
+
 ObjString* ObjString::clone() const
 {
-  return new ObjString(this->value);
+  return new ObjString(this->characters);
 }
 
 ObjRange* ObjRange::clone() const

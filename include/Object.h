@@ -206,25 +206,68 @@ struct ObjChar : Object {
 };
 
 struct ObjString : Object {
-  std::wstring value;
+  std::vector<ObjChar*> characters;
 
   std::string to_string() const;
   ObjString* clone() const;
 
   bool equals(ObjString* x) const
   {
-    return this->value == x->value;
+    if (this->characters.size() == x->characters.size()) {
+      for (auto it = this->characters.begin(); auto&& c : x->characters)
+        if (!(*it)->equals(c))
+          return false;
+    }
+
+    return false;
+  }
+
+  ObjChar* append(ObjChar* c)
+  {
+    return this->characters.emplace_back(c);
+  }
+
+  ObjChar* append(wchar_t c)
+  {
+    return this->characters.emplace_back(new ObjChar(c));
+  }
+
+  ObjString& append(ObjString* str)
+  {
+    for (auto&& c : str->characters)
+      this->append(c);
+
+    return *this;
+  }
+
+  ObjString& append(std::wstring const& str)
+  {
+    for (auto&& c : str)
+      this->append(c);
+
+    return *this;
+  }
+
+  std::wstring get_wstring() const
+  {
+    std::wstring ret;
+
+    for (auto&& c : this->characters)
+      ret += c->value;
+
+    return ret;
   }
 
   ObjString(std::wstring const& value = L"")
-    : Object(TYPE_String),
-      value(value)
+    : Object(TYPE_String)
   {
+    for (auto&& c : value)
+      this->append(c);
   }
 
-  ObjString(std::wstring&& value)
+  ObjString(std::vector<ObjChar*> const& vec)
     : Object(TYPE_String),
-      value(std::move(value))
+      characters(vec)
   {
   }
 };

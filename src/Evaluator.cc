@@ -140,7 +140,7 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem, Object* dest)
           break;
 
         case TYPE_String:
-          ((ObjString*)dest)->value += ((ObjString*)right)->value;
+          ((ObjString*)dest)->append((ObjString*)right);
           break;
 
         default:
@@ -918,6 +918,32 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
         auto obj_index = this->evaluate(index.ast);
 
         switch ((*ret)->type.kind) {
+          case TYPE_String: {
+            auto& obj_str = *(ObjString**)ret;
+
+            size_t indexval = 0;
+
+            switch (obj_index->type.kind) {
+              case TYPE_Int:
+                indexval = ((ObjLong*)obj_index)->value;
+                break;
+
+              case TYPE_USize:
+                indexval = ((ObjUSize*)obj_index)->value;
+                break;
+
+              default:
+                panic("int or usize??aa");
+            }
+
+            if (indexval >= obj_str->characters.size()) {
+              Error(index.ast, "index out of range").emit().exit();
+            }
+
+            ret = &(Object*&)obj_str->characters[indexval];
+            break;
+          }
+
           case TYPE_Vector: {
             auto& obj_vec = *(ObjVector**)ret;
 
