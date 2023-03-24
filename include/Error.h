@@ -55,6 +55,7 @@ struct ErrorLocation {
 
 private:
   size_t const _line_num;
+  ScriptFileContext const* _context;
 
   friend class Error;
 };
