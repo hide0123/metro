@@ -173,7 +173,9 @@ Assign::~Assign()
 VariableDeclaration::VariableDeclaration(Token const& token)
   : Base(AST_Let, token),
     type(nullptr),
-    init(nullptr)
+    init(nullptr),
+    is_shadowing(false),
+    index(0)
 {
 }
 

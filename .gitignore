@@ -1,8 +1,11 @@
 /build
+/build-release
+/build-debug
 /__pychache__
 
 # binary
 metro
+metro-debug
 *.exe
 
 /*.txt

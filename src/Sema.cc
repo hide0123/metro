@@ -963,12 +963,15 @@ TypeInfo Sema::check(AST::Base* _ast)
       //  => シャドウイングする
       if (pvar && !pvar->type.equals(type)) {
         pvar->type = type;
+
+        ast->is_shadowing = true;
+        ast->index = pvar->index;
       }
       // そうでなければ新規追加
       else {
         auto& var = scope_emu.lvar.append(type, ast->name);
 
-        var.index = scope_emu.lvar.variables.size() - 1;
+        ast->index = var.index = scope_emu.lvar.variables.size() - 1;
       }
 
       break;

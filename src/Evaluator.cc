@@ -677,7 +677,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       obj->ref_count++;
 
-      this->get_vst().append_lvar(obj);
+      if (ast->is_shadowing) {
+        auto& dest = this->get_vst().lvar_list[ast->index];
+
+        dest->ref_count--;
+        dest = obj;
+      }
+      else
+        this->get_vst().append_lvar(obj);
 
       break;
     }

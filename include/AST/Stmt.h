@@ -9,6 +9,9 @@ struct VariableDeclaration : Base {
   Type* type;
   Base* init;
 
+  bool is_shadowing;
+  size_t index;
+
   VariableDeclaration(Token const& token);
   ~VariableDeclaration();
 };
