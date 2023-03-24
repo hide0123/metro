@@ -60,6 +60,7 @@ private:
   AST::Scope* expect_scope();
 
   AST::Function* parse_function();
+  AST::Enum* parse_enum();
   AST::Struct* parse_struct();
   AST::Impl* parse_impl();
 

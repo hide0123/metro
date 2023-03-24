@@ -48,7 +48,7 @@ bool Object::equals(Object* object) const
 
 std::string ObjUserType::to_string() const
 {
-  auto pStruct = this->type.userdef_struct;
+  auto pStruct = (AST::Struct*)this->type.userdef_type;
 
   auto ret = std::string(pStruct->name) + "{ ";
 
@@ -79,6 +79,16 @@ std::string ObjLong::to_string() const
 std::string ObjUSize::to_string() const
 {
   return std::to_string(this->value);
+}
+
+std::string ObjEnumerator::to_string() const
+{
+  assert(this->type.userdef_type);
+
+  auto ast = (AST::Enum*)this->type.userdef_type;
+
+  return std::string(ast->name) + "." +
+         std::string(ast->enumerators[this->value].name);
 }
 
 std::string ObjFloat::to_string() const
@@ -166,6 +176,11 @@ ObjLong* ObjLong::clone() const
 ObjUSize* ObjUSize::clone() const
 {
   return new ObjUSize(this->value);
+}
+
+ObjEnumerator* ObjEnumerator::clone() const
+{
+  return new ObjEnumerator(this->type.userdef_type, this->value);
 }
 
 ObjFloat* ObjFloat::clone() const

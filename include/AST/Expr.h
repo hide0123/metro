@@ -108,6 +108,7 @@ struct Vector : ListBase {
 // 以下の２つで使われます:
 //   配列添字
 //   メンバアクセス
+struct Enum;
 struct IndexRef : Base {
   struct Subscript {
     enum Kind {
@@ -119,14 +120,18 @@ struct IndexRef : Base {
     Base* ast;
 
     explicit Subscript(Kind kind, Base* ast)
-        : kind(kind),
-          ast(ast)
+      : kind(kind),
+        ast(ast)
     {
     }
   };
 
   Base* expr;
   std::vector<Subscript> indexes;
+
+  bool is_enum;
+  Enum* enum_type;
+  size_t enum_value;
 
   bool is_empty() const
   {

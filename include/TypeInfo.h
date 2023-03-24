@@ -10,7 +10,7 @@
 
 namespace AST {
 
-struct Struct;
+struct Typeable;
 
 }
 
@@ -18,6 +18,7 @@ enum TypeKind {
   TYPE_None,
   TYPE_Int,
   TYPE_USize,
+  TYPE_Enumerator,
   TYPE_Float,
   TYPE_Bool,
   TYPE_Char,
@@ -46,20 +47,20 @@ struct TypeInfo {
 
   //
   // if type is struct, this is a pointer to it.
-  AST::Struct* userdef_struct;
+  AST::Typeable* userdef_type;
 
   TypeInfo(TypeKind kind = TYPE_None)
-      : kind(kind),
-        is_const(false),
-        userdef_struct(nullptr)
+    : kind(kind),
+      is_const(false),
+      userdef_type(nullptr)
   {
   }
 
   TypeInfo(TypeKind kind, std::initializer_list<TypeInfo> list,
            bool is_const = false)
-      : kind(kind),
-        is_const(is_const),
-        type_params(list)
+    : kind(kind),
+      is_const(is_const),
+      type_params(list)
   {
   }
 
@@ -118,7 +119,7 @@ struct TypeInfo {
   static std::vector<std::string> get_name_list();
 
   static std::optional<TypeKind> get_kind_from_name(
-      std::string_view const& name);
+    std::string_view const& name);
 
   int find_member(std::string_view const& name)
   {

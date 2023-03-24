@@ -5,6 +5,7 @@
 
 #include <map>
 #include <vector>
+#include <concepts>
 
 #include "Token.h"
 #include "TypeInfo.h"
@@ -18,6 +19,7 @@
 
 #include "AST/Typeable.h"
 
+#include "AST/Enum.h"
 #include "AST/Struct.h"
 #include "AST/Function.h"
 

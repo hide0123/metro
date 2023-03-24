@@ -3,10 +3,10 @@
 namespace AST {
 
 Base::Base(ASTKind kind, Token const& token)
-    : kind(kind),
-      token(token),
-      end_token(nullptr),
-      is_left(false)
+  : kind(kind),
+    token(token),
+    end_token(nullptr),
+    is_left(false)
 {
 }
 
@@ -21,12 +21,12 @@ ListBase::ASTVector::~ASTVector()
 }
 
 ListBase::ListBase(ASTKind kind, Token const& token)
-    : Base(kind, token)
+  : Base(kind, token)
 {
 }
 
 Typeable::Typeable(ASTKind kind, Token const& token)
-    : Base(kind, token)
+  : Base(kind, token)
 {
 }
 
@@ -35,31 +35,31 @@ Typeable::~Typeable()
 }
 
 ConstKeyword::ConstKeyword(ASTKind kind, Token const& token)
-    : Base(kind, token)
+  : Base(kind, token)
 {
 }
 
 Value::Value(Token const& tok)
-    : Base(AST_Value, tok),
-      object(nullptr)
+  : Base(AST_Value, tok),
+    object(nullptr)
 {
 }
 
 Variable::Variable(Token const& tok)
-    : Base(AST_Variable, tok),
-      step(0),
-      index(0),
-      name(tok.str)
+  : Base(AST_Variable, tok),
+    step(0),
+    index(0),
+    name(tok.str)
 {
   this->is_left = true;
 }
 
 CallFunc::CallFunc(Token const& name)
-    : ListBase(AST_CallFunc, name),
-      name(name.str),
-      is_builtin(false),
-      builtin_func(nullptr),
-      callee(nullptr)
+  : ListBase(AST_CallFunc, name),
+    name(name.str),
+    is_builtin(false),
+    builtin_func(nullptr),
+    callee(nullptr)
 {
 }
 
@@ -68,9 +68,9 @@ CallFunc::~CallFunc()
 }
 
 Dict::Item::Item(Token const& colon, Base* k, Base* v)
-    : colon(colon),
-      key(k),
-      value(v)
+  : colon(colon),
+    key(k),
+    value(v)
 {
 }
 
@@ -79,9 +79,9 @@ Dict::Item::~Item()
 }
 
 Dict::Dict(Token const& token)
-    : Base(AST_Dict, token),
-      key_type(nullptr),
-      value_type(nullptr)
+  : Base(AST_Dict, token),
+    key_type(nullptr),
+    value_type(nullptr)
 {
 }
 
@@ -100,7 +100,7 @@ Dict::~Dict()
 }
 
 Cast::Cast(Token const& token)
-    : Base(AST_Cast, token)
+  : Base(AST_Cast, token)
 {
 }
 
@@ -111,8 +111,8 @@ Cast::~Cast()
 }
 
 UnaryOp::UnaryOp(ASTKind kind, Token const& token, Base* expr)
-    : Base(kind, token),
-      expr(expr)
+  : Base(kind, token),
+    expr(expr)
 {
 }
 
@@ -122,13 +122,16 @@ UnaryOp::~UnaryOp()
 }
 
 Vector::Vector(Token const& token)
-    : ListBase(AST_Vector, token)
+  : ListBase(AST_Vector, token)
 {
 }
 
 IndexRef::IndexRef(Token const& t, Base* expr)
-    : Base(AST_IndexRef, t),
-      expr(expr)
+  : Base(AST_IndexRef, t),
+    expr(expr),
+    is_enum(false),
+    enum_type(nullptr),
+    enum_value(0)
 {
 }
 
@@ -142,9 +145,9 @@ IndexRef::~IndexRef()
 }
 
 Range::Range(Token const& token)
-    : Base(AST_Range, token),
-      begin(nullptr),
-      end(nullptr)
+  : Base(AST_Range, token),
+    begin(nullptr),
+    end(nullptr)
 {
 }
 
@@ -155,9 +158,9 @@ Range::~Range()
 }
 
 Assign::Assign(Token const& assign_op)
-    : Base(AST_Assign, assign_op),
-      dest(nullptr),
-      expr(nullptr)
+  : Base(AST_Assign, assign_op),
+    dest(nullptr),
+    expr(nullptr)
 {
 }
 
@@ -168,9 +171,9 @@ Assign::~Assign()
 }
 
 VariableDeclaration::VariableDeclaration(Token const& token)
-    : Base(AST_Let, token),
-      type(nullptr),
-      init(nullptr)
+  : Base(AST_Let, token),
+    type(nullptr),
+    init(nullptr)
 {
 }
 
@@ -184,8 +187,8 @@ VariableDeclaration ::~VariableDeclaration()
 }
 
 Return::Return(Token const& token)
-    : Base(AST_Return, token),
-      expr(nullptr)
+  : Base(AST_Return, token),
+    expr(nullptr)
 {
 }
 
@@ -196,13 +199,13 @@ Return::~Return()
 }
 
 LoopController ::LoopController(Token const& token, ASTKind kind)
-    : Base(kind, token)
+  : Base(kind, token)
 {
 }
 
 Scope::Scope(Token const& token)
-    : ListBase(AST_Scope, token),
-      return_last_expr(false)
+  : ListBase(AST_Scope, token),
+    return_last_expr(false)
 {
 }
 
@@ -210,10 +213,10 @@ Scope ::~Scope()
 {
 }
 If::If(Token const& token)
-    : Base(AST_If, token),
-      condition(nullptr),
-      if_true(nullptr),
-      if_false(nullptr)
+  : Base(AST_If, token),
+    condition(nullptr),
+    if_true(nullptr),
+    if_false(nullptr)
 {
 }
 If ::~If()
@@ -225,9 +228,9 @@ If ::~If()
     delete this->if_false;
 }
 Case::Case(Token const& token)
-    : Base(AST_Case, token),
-      cond(nullptr),
-      scope(nullptr)
+  : Base(AST_Case, token),
+    cond(nullptr),
+    scope(nullptr)
 {
 }
 Case::~Case()
@@ -237,8 +240,8 @@ Case::~Case()
 }
 
 Switch::Switch(Token const& token)
-    : Base(AST_Switch, token),
-      expr(nullptr)
+  : Base(AST_Switch, token),
+    expr(nullptr)
 {
 }
 
@@ -251,10 +254,10 @@ Switch::~Switch()
 }
 
 For::For(Token const& tok)
-    : Base(AST_For, tok),
-      iter(nullptr),
-      iterable(nullptr),
-      code(nullptr)
+  : Base(AST_For, tok),
+    iter(nullptr),
+    iterable(nullptr),
+    code(nullptr)
 {
 }
 
@@ -266,9 +269,9 @@ For::~For()
 }
 
 While::While(Token const& tok)
-    : Base(AST_While, tok),
-      cond(nullptr),
-      code(nullptr)
+  : Base(AST_While, tok),
+    cond(nullptr),
+    code(nullptr)
 {
 }
 
@@ -279,9 +282,9 @@ While::~While()
 }
 
 DoWhile::DoWhile(Token const& tok)
-    : Base(AST_DoWhile, tok),
-      code(nullptr),
-      cond(nullptr)
+  : Base(AST_DoWhile, tok),
+    code(nullptr),
+    cond(nullptr)
 {
 }
 
@@ -292,8 +295,8 @@ DoWhile::~DoWhile()
 }
 
 Loop::Loop(Base* code)
-    : Base(AST_Loop, code->token),
-      code(code)
+  : Base(AST_Loop, code->token),
+    code(code)
 {
 }
 
@@ -329,8 +332,8 @@ std::string CallFunc::to_string() const
 }
 
 TypeConstructor::TypeConstructor(Type* type)
-    : Dict(type->token),
-      type(type)
+  : Dict(type->token),
+    type(type)
 {
   this->kind = AST_TypeConstructor;
 }
