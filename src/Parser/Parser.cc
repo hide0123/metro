@@ -158,9 +158,16 @@ AST::Base* Parser::factor()
 
       AST::Type* ast_type = nullptr;
 
-      if (this->found("<")) {
-        this->cur = ident;
-        ast_type = this->expect_typename();
+      auto iter_save = this->cur;
+
+      try {
+        if (this->found("<")) {
+          this->cur = ident;
+          ast_type = this->expect_typename();
+        }
+      }
+      catch (Error& e) {
+        this->cur = iter_save;
       }
 
       //

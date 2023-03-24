@@ -44,6 +44,7 @@ enum ErrorLevel {
 };
 
 class Error;
+class ScriptFileContext;
 struct ErrorLocation {
   ErrorLocationKind loc_kind;
 
@@ -60,7 +61,6 @@ private:
   friend class Error;
 };
 
-class ScriptFileContext;
 class Error {
 public:
   Error(Error&&) = delete;

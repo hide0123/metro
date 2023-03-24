@@ -21,7 +21,7 @@
 using SFContext = ScriptFileContext;
 
 SFContext::SourceData::SourceData(std::string const& path)
-    : _path(path)
+  : _path(path)
 {
 }
 
@@ -30,14 +30,14 @@ SFContext::SourceData::~SourceData()
 }
 
 SFContext::LineView::LineView(size_t index, size_t begin, size_t end)
-    : index(index),
-      begin(begin),
-      end(end)
+  : index(index),
+    begin(begin),
+    end(end)
 {
 }
 
 SFContext::LineView const* SFContext::SourceData::find_line_range(
-    size_t srcpos) const
+  size_t srcpos) const
 {
   for (auto&& range : this->_lines) {
     if (range.begin <= srcpos && srcpos <= range.end)
@@ -48,7 +48,7 @@ SFContext::LineView const* SFContext::SourceData::find_line_range(
 }
 
 std::string_view SFContext::SourceData::get_line(
-    SFContext::LineView const& line) const
+  SFContext::LineView const& line) const
 {
   return {this->_data.data() + line.begin, line.end - line.begin + 1};
 }
@@ -59,11 +59,11 @@ std::string_view SFContext::SourceData::get_line(Token const& token) const
 }
 
 SFContext::ScriptFileContext(std::string const& path)
-    : _is_open(false),
-      _srcdata(std::filesystem::canonical(path).string()),
-      _ast(nullptr),
-      _owner(nullptr),
-      _importer_token(nullptr)
+  : _is_open(false),
+    _srcdata(std::filesystem::canonical(path).string()),
+    _ast(nullptr),
+    _owner(nullptr),
+    _importer_token(nullptr)
 {
   debug(std::cout << this->_srcdata._path << std::endl);
 }
@@ -100,8 +100,8 @@ bool SFContext::open_file()
     this->_srcdata._data += line;
 
     line_pos = this->_srcdata._lines
-                   .emplace_back(index, line_pos, line_pos + line.length() - 1)
-                   .end +
+                 .emplace_back(index, line_pos, line_pos + line.length() - 1)
+                 .end +
                1;
 
     index++;
@@ -134,15 +134,15 @@ bool SFContext::import(std::string const& path, Token const& token,
 
         if (p->_importer_token) {
           Error(*p->_importer_token, "first imported here")
-              .emit(EL_Note)
-              .exit();
+            .emit(EL_Note)
+            .exit();
         }
         else {
           Error(token, "'" + path +
-                           "' is already opened by argument in "
-                           "command line")
-              .emit(EL_Note)
-              .exit();
+                         "' is already opened by argument in "
+                         "command line")
+            .emit(EL_Note)
+            .exit();
         }
       }
     }
@@ -217,18 +217,23 @@ void SFContext::execute_full()
     return;
   }
 
-  if (!this->lex())
-    return;
+  try {
+    if (!this->lex())
+      return;
 
-  if (!this->parse())
-    return;
+    if (!this->parse())
+      return;
 
-  if (!this->check())
-    return;
+    if (!this->check())
+      return;
 
-  auto result = this->evaluate();
+    auto result = this->evaluate();
 
-  delete result;
+    delete result;
+  }
+  catch (Error& e) {
+    e.emit().exit();
+  }
 }
 
 std::string const& SFContext::get_path() const

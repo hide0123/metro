@@ -44,6 +44,8 @@ private:
   bool found(char const* s);
   token_iter expect(char const* s);
 
+  token_iter get(size_t offs);
+
   bool eat_semi();
   token_iter expect_semi();
 
