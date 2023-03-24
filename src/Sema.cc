@@ -316,7 +316,21 @@ std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
 // ------------------------------------------------ //
 TypeInfo Sema::check_indexref(AST::IndexRef* ast)
 {
-  auto type = this->check(ast->expr);
+  TypeInfo type;
+
+  if (AST::Typeable * usr;
+      ast->expr->kind == AST_Variable &&
+      (usr = this->find_usertype(((AST::Variable*)ast->expr)->name)) &&
+      usr->kind == AST_Enum) {
+    type.kind = TYPE_UserDef;
+    type.userdef_type = usr;
+
+    ast->is_enum = true;
+    ast->enum_type = (AST::Enum*)usr;
+  }
+  else {
+    type = this->check(ast->expr);
+  }
 
   for (auto&& index : ast->indexes) {
     switch (index.kind) {
@@ -385,22 +399,19 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
               case AST_Enum: {
                 auto pEnum = (AST::Enum*)type.userdef_type;
 
-                ast->is_enum = true;
-                ast->enum_ast = pEnum;
-
                 // 名前が一致する列挙値を探す
                 for (auto&& E : pEnum->enumerators) {
                   // 一致する名前を見つけた
                   // --> ループ抜ける (--> @found_enumerator)
                   if (E.name == var->name) {
-                    // type = TYPE_Int;
+                    type.kind = TYPE_Enumerator;
+                    assert(type.userdef_type);
+
                     goto found_enumerator;
                   }
 
                   //
-                  // インデックスを足していく
-                  // 実行時、このインデックスを値とした ObjLong を作成する
-                  var->index++;
+                  ast->enum_value++;
                 }
 
                 // 一致するものがない
@@ -616,17 +627,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
     // 変数
     case AST_Variable: {
-      auto var = (AST::Variable*)_ast;
-
-      if (auto usr = this->find_usertype(var->name);
-          usr && usr->kind == AST_Enum) {
-        _ret = TYPE_UserDef;
-        _ret.userdef_type = usr;
-      }
-      else {
-        _ret = this->check_as_left(_ast);
-      }
-
+      _ret = this->check_as_left(_ast);
       break;
     }
 
@@ -877,6 +878,9 @@ TypeInfo Sema::check(AST::Base* _ast)
         //  指定された型と初期化式の型が一致しないならエラー
         if (ast->init && !type.equals(init_expr_type)) {
           Error(ast->init, "mismatched type").emit().exit();
+        }
+        else {
+          type = init_expr_type;
         }
       }
       // 型が指定されてない

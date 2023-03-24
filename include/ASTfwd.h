@@ -51,6 +51,7 @@ struct LoopController;
 
 struct Scope;
 
+struct Enum;
 struct Struct;
 struct Function;
 

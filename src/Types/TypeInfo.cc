@@ -9,10 +9,12 @@
 #include "AST.h"
 
 static std::vector<std::pair<TypeKind, char const*>> const g_kind_and_names{
-  {TYPE_None, "none"},     {TYPE_Int, "int"},     {TYPE_USize, "usize"},
-  {TYPE_Float, "float"},   {TYPE_Bool, "bool"},   {TYPE_Char, "char"},
-  {TYPE_String, "string"}, {TYPE_Range, "range"}, {TYPE_Vector, "vector"},
-  {TYPE_Dict, "dict"},     {TYPE_Args, "args"},
+  {TYPE_None, "none"},   {TYPE_Int, "int"},
+  {TYPE_USize, "usize"}, {TYPE_Enumerator, "enumerator"},
+  {TYPE_Float, "float"}, {TYPE_Bool, "bool"},
+  {TYPE_Char, "char"},   {TYPE_String, "string"},
+  {TYPE_Range, "range"}, {TYPE_Vector, "vector"},
+  {TYPE_Dict, "dict"},   {TYPE_Args, "args"},
 };
 
 //
@@ -89,6 +91,13 @@ std::string TypeInfo::to_string() const
 // 同じかどうか比較する
 bool TypeInfo::equals(TypeInfo const& type) const
 {
+  if ((this->kind == TYPE_Enumerator) != (type.kind == TYPE_Enumerator)) {
+    if (this->kind != TYPE_UserDef && type.kind != TYPE_UserDef)
+      return false;
+
+    return this->userdef_type == type.userdef_type;
+  }
+
   if (this->kind == TYPE_Template || type.kind == TYPE_Template)
     return true;
 

@@ -4,6 +4,7 @@
 #pragma once
 
 #include "TypeInfo.h"
+#include "ASTfwd.h"
 
 struct Object {
   TypeInfo type;
@@ -42,7 +43,7 @@ struct ObjUserType : Object {
   }
 
   explicit ObjUserType(TypeInfo const& type)
-      : Object(type)
+    : Object(type)
   {
   }
 
@@ -59,7 +60,7 @@ struct ObjNone : Object {
   ObjNone* clone() const;
 
   explicit ObjNone()
-      : Object(TYPE_None)
+    : Object(TYPE_None)
   {
   }
 };
@@ -81,8 +82,8 @@ struct ObjLong : Object {
   }
 
   explicit ObjLong(int64_t value = 0)
-      : Object(TYPE_Int),
-        value(value)
+    : Object(TYPE_Int),
+      value(value)
   {
   }
 };
@@ -104,9 +105,33 @@ struct ObjUSize : Object {
   }
 
   ObjUSize(size_t value = 0)
-      : Object(TYPE_USize),
-        value(value)
+    : Object(TYPE_USize),
+      value(value)
   {
+  }
+};
+
+struct ObjEnumerator : Object {
+  size_t value;
+
+  std::string to_string() const;
+  ObjEnumerator* clone() const;
+
+  bool is_numeric() const
+  {
+    return false;
+  }
+
+  bool equals(ObjEnumerator* x) const
+  {
+    return this->value == x->value;
+  }
+
+  ObjEnumerator(AST::Typeable* enum_ast, size_t value = 0)
+    : Object(TYPE_Enumerator),
+      value(value)
+  {
+    this->type.userdef_type = enum_ast;
   }
 };
 
@@ -127,8 +152,8 @@ struct ObjFloat : Object {
   }
 
   explicit ObjFloat(float value = 0)
-      : Object(TYPE_Float),
-        value(value)
+    : Object(TYPE_Float),
+      value(value)
   {
   }
 };
@@ -152,8 +177,8 @@ struct ObjBool : Object {
   }
 
   explicit ObjBool(bool value = 0)
-      : Object(TYPE_Bool),
-        value(value)
+    : Object(TYPE_Bool),
+      value(value)
   {
   }
 };
@@ -170,8 +195,8 @@ struct ObjChar : Object {
   }
 
   explicit ObjChar(wchar_t ch = 0)
-      : Object(TYPE_Char),
-        value(ch)
+    : Object(TYPE_Char),
+      value(ch)
   {
   }
 };
@@ -188,14 +213,14 @@ struct ObjString : Object {
   }
 
   ObjString(std::wstring const& value = L"")
-      : Object(TYPE_String),
-        value(value)
+    : Object(TYPE_String),
+      value(value)
   {
   }
 
   ObjString(std::wstring&& value)
-      : Object(TYPE_String),
-        value(std::move(value))
+    : Object(TYPE_String),
+      value(std::move(value))
   {
   }
 };
@@ -213,9 +238,9 @@ struct ObjRange : Object {
   }
 
   ObjRange(int64_t begin, int64_t end)
-      : Object(TYPE_Range),
-        begin(begin),
-        end(end)
+    : Object(TYPE_Range),
+      begin(begin),
+      end(end)
   {
   }
 };
@@ -226,8 +251,8 @@ struct ObjDict : Object {
     Object* value;
 
     Item(Object* k, Object* v)
-        : key(k),
-          value(v)
+      : key(k),
+        value(v)
     {
     }
   };
@@ -262,13 +287,13 @@ struct ObjDict : Object {
   }
 
   ObjDict()
-      : Object(TYPE_Dict)
+    : Object(TYPE_Dict)
   {
   }
 
   ObjDict(std::vector<Item>&& _items)
-      : Object(TYPE_Dict),
-        items(std::move(_items))
+    : Object(TYPE_Dict),
+      items(std::move(_items))
   {
     for (auto&& item : this->items) {
       item.key->ref_count++;
@@ -314,13 +339,13 @@ struct ObjVector : Object {
   }
 
   ObjVector()
-      : Object(TYPE_Vector)
+    : Object(TYPE_Vector)
   {
   }
 
   ObjVector(std::vector<Object*>&& elems)
-      : Object(TYPE_Vector),
-        elements(std::move(elems))
+    : Object(TYPE_Vector),
+      elements(std::move(elems))
   {
     for (auto&& e : this->elements) {
       e->ref_count++;

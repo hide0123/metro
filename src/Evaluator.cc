@@ -113,26 +113,10 @@ Object* Evaluator::default_constructor(TypeInfo const& type,
     case TYPE_UserDef: {
       auto ret = new ObjUserType(type);
 
-      switch (type.userdef_type->kind) {
-        case AST_Enum:
-          for (int64_t val = 0;
-               val <
-               (signed)((AST::Enum*)type.userdef_type)->enumerators.size();
-               val++) {
-            ret->add_member(new ObjLong(val));
-          }
-
-          break;
-
-        case AST_Struct:
-          if (!construct_member)
-            break;
-
-          for (auto&& member : type.members) {
-            ret->add_member(this->default_constructor(member.second));
-          }
-
-          break;
+      if (construct_member && type.userdef_type->kind == AST_Struct) {
+        for (auto&& member : type.members) {
+          ret->add_member(this->default_constructor(member.second));
+        }
       }
 
       return ret;
@@ -457,8 +441,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       if (ast->is_enum) {
         assert(ast->indexes.size() == 1);
 
-        return new ObjLong(
-          (signed)((AST::Variable*)ast->indexes[0].ast)->index);
+        return new ObjEnumerator(ast->enum_type, ast->enum_value);
       }
 
       auto obj = this->evaluate(ast->expr);

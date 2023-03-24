@@ -18,6 +18,7 @@ enum TypeKind {
   TYPE_None,
   TYPE_Int,
   TYPE_USize,
+  TYPE_Enumerator,
   TYPE_Float,
   TYPE_Bool,
   TYPE_Char,

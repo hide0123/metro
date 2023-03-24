@@ -130,7 +130,8 @@ IndexRef::IndexRef(Token const& t, Base* expr)
   : Base(AST_IndexRef, t),
     expr(expr),
     is_enum(false),
-    enum_ast(nullptr)
+    enum_type(nullptr),
+    enum_value(0)
 {
 }
 

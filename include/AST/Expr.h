@@ -130,7 +130,8 @@ struct IndexRef : Base {
   std::vector<Subscript> indexes;
 
   bool is_enum;
-  Enum* enum_ast;
+  Enum* enum_type;
+  size_t enum_value;
 
   bool is_empty() const
   {
