@@ -19,6 +19,37 @@ class Sema {
 
   using TypeVector = std::vector<TypeInfo>;
 
+  struct ArgumentWrap;
+  using ArgVector = std::vector<ArgumentWrap>;
+
+  struct ArgumentWrap {
+    enum ArgType {
+      ARG_Formal,
+      ARG_Actual
+    };
+
+    ArgType type;
+    TypeInfo typeinfo;
+
+    // if formal
+    AST::Type* defined;  // 定義された型
+    std::string_view name;
+
+    // if actual
+    AST::Base* value;
+
+    explicit ArgumentWrap(ArgType type)
+      : type(type),
+        defined(nullptr),
+        value(nullptr)
+    {
+    }
+
+    static Sema::ArgVector construct_from_call(Sema& S, AST::CallFunc* func);
+    static Sema::ArgVector construct_from_function(Sema& S,
+                                                   AST::Function* func);
+  };
+
   struct LocalVar {
     TypeInfo type;
     std::string_view name;

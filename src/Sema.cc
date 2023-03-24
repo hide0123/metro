@@ -12,6 +12,18 @@
 
 std::map<AST::Base*, TypeInfo> Sema::value_type_cache;
 
+//
+// キャッシュを作成しても問題ない AST かどうかを判別する
+static bool is_cache_allowed(ASTKind kind)
+{
+  switch (kind) {
+    case AST_Value:
+      return true;
+  }
+
+  return false;
+}
+
 Sema::Sema(AST::Scope* root)
   : root(root)
 {
@@ -19,6 +31,36 @@ Sema::Sema(AST::Scope* root)
 
 Sema::~Sema()
 {
+}
+
+Sema::ArgVector Sema::ArgumentWrap::construct_from_call(Sema& S,
+                                                        AST::CallFunc* func)
+{
+  ArgVector ret;
+
+  for (auto&& arg : func->args) {
+    auto& W = ret.emplace_back(ArgumentWrap::ARG_Actual);
+
+    W.typeinfo = S.check(arg);
+    W.value = arg;
+  }
+
+  return ret;
+}
+
+Sema::ArgVector Sema::ArgumentWrap::construct_from_function(Sema& S,
+                                                            AST::Function* func)
+{
+  ArgVector ret;
+
+  for (auto&& arg : func->args) {
+    auto& W = ret.emplace_back(ArgumentWrap::ARG_Formal);
+
+    W.typeinfo = S.check(arg->type);
+    W.defined = arg->type;
+    }
+
+  return ret;
 }
 
 void Sema::do_check()
@@ -46,6 +88,12 @@ void Sema::compare_argument(TypeVector const& formal, TypeVector const& actual)
 
   // actual
   auto a_it = actual.begin();
+
+  if (formal.empty() && !actual.empty()) {
+  }
+
+  while (1) {
+  }
 }
 
 //
@@ -583,8 +631,9 @@ TypeInfo Sema::check(AST::Base* _ast)
     cap.func(_ast);
   }
 
-  if (this->value_type_cache.contains(_ast)) {
-    return this->value_type_cache[_ast];
+  if (is_cache_allowed(_ast->kind)) {
+    if (this->value_type_cache.contains(_ast))
+      return this->value_type_cache[_ast];
   }
 
   auto& _ret = this->value_type_cache[_ast];
