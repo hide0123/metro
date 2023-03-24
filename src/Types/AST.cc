@@ -129,7 +129,8 @@ Vector::Vector(Token const& token)
 IndexRef::IndexRef(Token const& t, Base* expr)
   : Base(AST_IndexRef, t),
     expr(expr),
-    is_enum(false)
+    is_enum(false),
+    enum_ast(nullptr)
 {
 }
 

@@ -454,6 +454,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_IndexRef: {
       astdef(IndexRef);
 
+      if (ast->is_enum) {
+        assert(ast->indexes.size() == 1);
+
+        return new ObjLong(
+          (signed)((AST::Variable*)ast->indexes[0].ast)->index);
+      }
+
       auto obj = this->evaluate(ast->expr);
 
       alert;

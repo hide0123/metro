@@ -368,7 +368,10 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
       // メンバアクセス
       case AST::IndexRef::Subscript::SUB_Member: {
         if (type.kind != TYPE_UserDef) {
-          Error(index.ast, "uwaaaa!!").emit().exit();
+          Error(index.ast,
+                "'" + type.to_string() + "' type object don't have any members")
+            .emit()
+            .exit();
         }
 
         switch (index.ast->kind) {
@@ -382,12 +385,15 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
               case AST_Enum: {
                 auto pEnum = (AST::Enum*)type.userdef_type;
 
+                ast->is_enum = true;
+                ast->enum_ast = pEnum;
+
                 // 名前が一致する列挙値を探す
                 for (auto&& E : pEnum->enumerators) {
                   // 一致する名前を見つけた
                   // --> ループ抜ける (--> @found_enumerator)
                   if (E.name == var->name) {
-                    type = TYPE_Int;
+                    // type = TYPE_Int;
                     goto found_enumerator;
                   }
 
