@@ -114,6 +114,7 @@ struct IndexRef : Base {
     enum Kind {
       SUB_Index,
       SUB_Member,
+      SUB_CallFunc
     };
 
     Kind kind;

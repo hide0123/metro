@@ -192,7 +192,22 @@ AST::Impl* Parser::parse_impl()
   this->expect("{");
 
   do {
-    ast->append(top());
+    auto& e = ast->append(top());
+
+    switch (e->kind) {
+      case AST_Function:
+        break;
+
+      case AST_Impl:
+        Error(ERR_InvalidSyntax, e->token, "impl-block cannot be nested")
+          .emit()
+          .exit();
+
+      default:
+        Error(ERR_InvalidSyntax, e->token, "impl-block must have functions")
+          .emit()
+          .exit();
+    }
   } while (!this->eat("}"));
 
   return (AST::Impl*)this->set_last_token(ast);

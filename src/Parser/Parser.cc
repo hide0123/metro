@@ -278,20 +278,9 @@ AST::Base* Parser::primary()
   return this->factor();
 }
 
-AST::Base* Parser::unary()
-{
-  if (this->eat("-"))
-    return new AST::UnaryOp(AST_UnaryMinus, *this->ate, this->primary());
-
-  if (this->eat("+"))
-    return new AST::UnaryOp(AST_UnaryPlus, *this->ate, this->primary());
-
-  return this->primary();
-}
-
 AST::Base* Parser::indexref()
 {
-  auto x = this->unary();
+  auto x = this->primary();
 
   AST::IndexRef* ast = nullptr;
 
@@ -317,41 +306,20 @@ AST::Base* Parser::indexref()
       }
     }
     else if (this->eat(".")) {
-      alert;
+      auto m = this->primary();
 
-      auto tmp = this->unary();
+      switch (m->kind) {
+        case AST_Variable:
+        case AST_CallFunc:
+          break;
 
-      //
-      // 右辺に関数呼び出しがあった場合、
-      // 式を置き換えて、第一引数に左辺を移動させる
-      if (tmp->kind == AST_CallFunc) {
-        // a.f()    -->  f(a)
-        // a.b.f()  -->  f(a.b)
-
-        auto cf = (AST::CallFunc*)tmp;
-
-        // メンバ参照してなければ、最初の要素だけ追加
-        // if (ast->indexes.empty()) {
-        //   cf->args.insert(cf->args.begin(), ast->expr);
-
-        //   ast->expr = nullptr;
-        //   delete ast;
-        // }
-        // else  // あれば全体を追加
-        cf->args.insert(cf->args.begin(), ast);
-
-        if (!this->found(".")) {
-          return cf;
-        }
-        else {
-          ast = new AST::IndexRef(cf->token, cf);
-        }
-
-        continue;
+        default:
+          Error(ERR_InvalidSyntax, m, "invalid syntax").emit().exit();
       }
 
-      ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Member, tmp);
+      ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Member, m);
     }
+
     else
       break;
   }
@@ -359,17 +327,28 @@ AST::Base* Parser::indexref()
   return this->set_last_token(ast);
 }
 
+AST::Base* Parser::unary()
+{
+  if (this->eat("-"))
+    return new AST::UnaryOp(AST_UnaryMinus, *this->ate, this->indexref());
+
+  if (this->eat("+"))
+    return new AST::UnaryOp(AST_UnaryPlus, *this->ate, this->indexref());
+
+  return this->indexref();
+}
+
 AST::Base* Parser::mul()
 {
-  auto x = this->indexref();
+  auto x = this->unary();
 
   while (this->check()) {
     if (this->eat("*"))
-      AST::Expr::create(x)->append(AST::EX_Mul, *this->ate, this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Mul, *this->ate, this->unary());
     else if (this->eat("/"))
-      AST::Expr::create(x)->append(AST::EX_Div, *this->ate, this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Div, *this->ate, this->unary());
     else if (this->eat("%"))
-      AST::Expr::create(x)->append(AST::EX_Mod, *this->ate, this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Mod, *this->ate, this->unary());
     else
       break;
   }

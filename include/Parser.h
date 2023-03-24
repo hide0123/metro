@@ -20,8 +20,8 @@ public:
 
   AST::Base* factor();
   AST::Base* primary();
-  AST::Base* unary();
   AST::Base* indexref();
+  AST::Base* unary();
   AST::Base* mul();
   AST::Base* add();
   AST::Base* shift();

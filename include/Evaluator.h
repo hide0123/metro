@@ -21,9 +21,9 @@ class Evaluator {
     bool is_returned;
 
     explicit FunctionStack(AST::Function const* ast)
-        : ast(ast),
-          result(nullptr),
-          is_returned(false)
+      : ast(ast),
+        result(nullptr),
+        is_returned(false)
     {
     }
   };
@@ -50,9 +50,9 @@ class Evaluator {
     bool is_continued;
 
     LoopStack(var_storage& vs)
-        : vs(vs),
-          is_breaked(false),
-          is_continued(false)
+      : vs(vs),
+        is_breaked(false),
+        is_continued(false)
     {
     }
   };

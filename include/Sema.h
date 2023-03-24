@@ -92,6 +92,31 @@ class Sema {
     std::vector<AST::Typeable*> stack;
   };
 
+  struct FunctionFindResult {
+    enum FunctionType {
+      FN_Builtin,
+      FN_UserDefined,
+    };
+
+    FunctionType type;
+    BuiltinFunc const* builtin;
+    AST::Function* userdef;
+
+    explicit FunctionFindResult(BuiltinFunc const* b)
+      : type(FN_Builtin),
+        builtin(b),
+        userdef(nullptr)
+    {
+    }
+
+    FunctionFindResult(AST::Function* f)
+      : type(FN_UserDefined),
+        builtin(nullptr),
+        userdef(f)
+    {
+    }
+  };
+
 public:
   Sema(AST::Scope* root);
   ~Sema();
@@ -115,12 +140,10 @@ public:
                                         TypeInfo const& rhs);
 
   //
-  // ユーザー定義関数を探す
-  AST::Function* find_function(std::string_view name);
-
-  //
-  // ユーザー定義構造体を探す
-  AST::Typeable* find_usertype(std::string_view name);
+  // 関数を探す
+  FunctionFindResult find_function(std::string_view name, bool have_self,
+                                   TypeInfo const& self_type,
+                                   std::vector<TypeInfo> const& args);
 
   //
   // ビルトイン関数を探す

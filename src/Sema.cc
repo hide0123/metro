@@ -385,16 +385,16 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
       //
       // メンバアクセス
       case AST::IndexRef::Subscript::SUB_Member: {
-        if (type.kind == TYPE_Enumerator) {
-          if (index.ast->kind == AST_Variable &&
-              ((AST::Variable*)index.ast)->name == "value") {
-            type = this->check(((AST::Enum*)type.userdef_type)
-                                 ->enumerators[ast->enumerator_index]
-                                 .value_type);
+        // if (type.kind == TYPE_Enumerator) {
+        //   if (index.ast->kind == AST_Variable &&
+        //       ((AST::Variable*)index.ast)->name == "value") {
+        //     type = this->check(((AST::Enum*)type.userdef_type)
+        //                          ->enumerators[ast->enumerator_index]
+        //                          .value_type);
 
-            break;
-          }
-        }
+        //     break;
+        //   }
+        // }
 
         if (type.kind != TYPE_UserDef) {
           Error(index.ast,
