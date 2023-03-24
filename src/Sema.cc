@@ -1210,9 +1210,12 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       if (ast->code->return_last_expr) {
         if (!code_type.equals(res_type)) {
-          Error(ERR_TypeMismatch, *ast->code->list.rbegin(), "type mismatch")
-            .emit()
-            .exit();
+          Error(ERR_TypeMismatch, (*ast->code->list.rbegin())->token,
+                "expected '" + res_type.to_string() + "' but found '" +
+                  code_type.to_string() + "'")
+            .emit();
+
+          goto err_specify_ast;
         }
       }
       else if (!res_type.equals(TYPE_None)) {
@@ -1222,6 +1225,7 @@ TypeInfo Sema::check(AST::Base* _ast)
                 "but function return nothing")
             .emit();
 
+        err_specify_ast:
           Error(ast->result_type, "return type specified with '" +
                                     res_type.to_string() + "' here")
             .emit(EL_Note)
