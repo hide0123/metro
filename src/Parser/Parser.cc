@@ -276,29 +276,6 @@ AST::Base* Parser::primary()
     return ast;
   }
 
-  //
-  // Type Constructor
-  if (this->eat("new")) {
-    auto ast = new AST::TypeConstructor(*this->ate, this->expect_typename());
-
-    this->expect("{");
-
-    do {
-      auto period = this->expect(".");
-
-      auto& pair =
-        ast->init_pair_list.emplace_back(&*this->expect_identifier(), nullptr);
-
-      pair.t_assign = &*this->expect("=");
-
-      pair.expr = this->expr();
-    } while (this->eat(","));
-
-    this->expect("}");
-
-    return ast;
-  }
-
   return this->factor();
 }
 
@@ -315,14 +292,8 @@ AST::Base* Parser::indexref()
     return x;
 
   while (this->check()) {
-    alert;
-
     if (this->found("[")) {
-      alert;
-
       while (this->eat("[")) {
-        alert;
-
         ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Index,
                                   this->expr());
 
@@ -358,6 +329,29 @@ AST::Base* Parser::unary()
 
   if (this->eat("+"))
     return new AST::UnaryOp(AST_UnaryPlus, *this->ate, this->indexref());
+
+  //
+  // Type Constructor
+  if (this->eat("new")) {
+    auto ast = new AST::TypeConstructor(*this->ate, this->expect_typename());
+
+    this->expect("{");
+
+    do {
+      auto period = this->expect(".");
+
+      auto& pair =
+        ast->init_pair_list.emplace_back(&*this->expect_identifier(), nullptr);
+
+      pair.t_assign = &*this->expect("=");
+
+      pair.expr = this->expr();
+    } while (this->eat(","));
+
+    this->expect("}");
+
+    return ast;
+  }
 
   return this->indexref();
 }

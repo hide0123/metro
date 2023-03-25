@@ -218,17 +218,19 @@ void SFContext::execute_full()
   }
 
   try {
+    alert;
     if (!this->lex())
       return;
 
+    alert;
     if (!this->parse())
+      return;
+
+    if (!this->check())
       return;
 
     alert;
     return;
-
-    if (!this->check())
-      return;
 
     auto result = this->evaluate();
 

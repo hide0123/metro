@@ -160,17 +160,15 @@ class Sema {
     BuiltinFunc const* builtin;
     AST::Function* userdef;
 
-    explicit FunctionFindResult(BuiltinFunc const* b = nullptr)
-      : type(FN_Builtin),
-        builtin(b),
-        userdef(nullptr)
+    bool found() const
     {
+      return this->type != FN_NotFound;
     }
 
-    FunctionFindResult(AST::Function* f)
-      : type(FN_UserDefined),
+    FunctionFindResult()
+      : type(FN_NotFound),
         builtin(nullptr),
-        userdef(f)
+        userdef(nullptr)
     {
     }
   };

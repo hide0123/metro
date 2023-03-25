@@ -24,6 +24,7 @@ struct Function : Base {
   std::vector<Argument*> args;  // 引数
 
   bool have_self;
+  Type* self_type;
 
   Type* result_type;  // 戻り値の型
   Scope* code;  // 処理
@@ -51,6 +52,7 @@ struct Function : Base {
     : Base(AST_Function, token),
       name(name),
       have_self(false),
+      self_type(nullptr),
       result_type(nullptr)
   {
   }

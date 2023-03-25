@@ -177,15 +177,39 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
 
       if (!func.self_type.equals(self_type))
         continue;
+
+      this->compare_argument(
+        ArgumentWrap::make_vector_from_builtin(*this, &func), args);
+
+      result.type = FunctionFindResult::FN_Builtin;
+      result.builtin = &func;
+
+      return result;
     }
   }
 
   // find user-def
-  for (auto&& item : this->root->list)
-    if (item->kind == AST_Function && ((AST::Function*)item)->name.str == name)
-      return (AST::Function*)item;
+  for (auto&& item : this->root->list) {
+    auto func = (AST::Function*)item;
 
-  return nullptr;
+    if (item->kind == AST_Function && func->name.str == name) {
+      if (func->have_self != have_self)
+        continue;
+
+      if (!this->check(func->self_type).equals(self_type))
+        continue;
+
+      this->compare_argument(
+        ArgumentWrap::make_vector_from_function(*this, func), args);
+
+      result.type = FunctionFindResult::FN_UserDefined;
+      result.userdef = func;
+
+      return result;
+    }
+  }
+
+  return result;
 }
 
 //
@@ -413,19 +437,110 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
 {
   TypeInfo type;
 
-  if (AST::Typeable * usr;
+  alert;
+
+  if (AST::Typeable* usr = nullptr;
       ast->expr->kind == AST_Variable &&
-      (usr = this->find_usertype(((AST::Variable*)ast->expr)->name)) &&
-      usr->kind == AST_Enum) {
+      (usr = this->find_usertype(((AST::Variable*)ast->expr)->name))) {
     type.kind = TYPE_UserDef;
     type.userdef_type = usr;
 
-    ast->is_enum = true;
-    ast->enum_type = (AST::Enum*)usr;
+    alert;
+
+    switch (usr->kind) {
+      case AST_Enum: {
+        auto ast_enum = (AST::Enum*)usr;
+
+        ast->is_enum = true;
+        ast->enum_type = ast_enum;
+
+        if (ast->indexes.empty()) {
+          Error(ERR_InvalidSyntax, ast->expr,
+                "expected enumerator name after this token")
+            .emit()
+            .exit();
+        }
+        else if (ast->indexes.size() > 1) {
+          Error(ERR_InvalidSyntax, ast->indexes[1].ast, "???").emit().exit();
+        }
+
+        auto& sub = ast->indexes[0].ast;
+
+        std::string_view name;
+        AST::Base* init = nullptr;
+        TypeInfo init_type;
+
+        switch (sub->kind) {
+          case AST_Variable:
+            name = ((AST::Variable*)sub)->name;
+            break;
+
+          case AST_CallFunc: {
+            auto x = (AST::CallFunc*)sub;
+
+            name = x->name;
+
+            if (!x->args.empty()) {
+              init = x->args[0];
+              init_type = this->check(init);
+            }
+
+            break;
+          }
+        }
+
+        for (auto&& E : ast_enum->enumerators) {
+          if (E.name == name) {
+            if (E.value_type) {
+              auto deftype = this->check(E.value_type);
+
+              if (!init) {
+                Error(ERR_InvalidSyntax, sub,
+                      "expected initializer of '" + deftype.to_string() +
+                        "' after this token")
+                  .emit()
+                  .exit();
+              }
+              else if (!deftype.equals(init_type)) {
+                Error(ERR_TypeMismatch, init,
+                      "expected '" + deftype.to_string() + "' but found '" +
+                        init_type.to_string() + "'")
+                  .emit()
+                  .exit();
+              }
+            }
+            else if (init) {
+              Error(ERR_InvalidSyntax, sub->token, "dont need initializer")
+                .emit()
+                .exit();
+            }
+
+            return TYPE_Enumerator;
+          }
+
+          ast->enumerator_index++;
+        }
+
+        Error(ERR_Undefined, sub,
+              "enum '" + std::string(ast_enum->name) +
+                "' don't have a enumerator '" + std::string(name) + "'")
+          .emit()
+          .exit();
+
+        break;
+      }
+
+      case AST_Impl:
+        break;
+    }
+
+    todo_impl;
   }
   else {
     type = this->check(ast->expr);
   }
+
+  alert;
 
   for (auto&& index : ast->indexes) {
     switch (index.kind) {
@@ -516,88 +631,11 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
             break;
           }
 
-            /*case AST_TypeConstructor: {
-                        auto typeCtor = (AST::TypeConstructor*)index.ast;
-                        auto ast_type = typeCtor->type;
-
-                        if (!typeCtor->init) {
-                          Error(ERR_InvalidSyntax, typeCtor->elements[0].colon,
-                                "expected '}', but found ':'")
-                            .emit()
-                            .exit();
-                        }
-
-                        name = ast_type->name;
-                        p_params = &ast_type->parameters;
-
-                        init = typeCtor->init;
-                        init_type = this->check(init);
-                        break;
-                      }
-                      */
-
           default:
             Error(ERR_InvalidSyntax, index.ast, "invalid syntax").emit().exit();
         }
 
         switch (type.userdef_type->kind) {
-          //
-          // 列挙型
-          case AST_Enum: {
-            auto pEnum = (AST::Enum*)type.userdef_type;
-
-            // 名前が一致する列挙値を探す
-            for (auto&& E : pEnum->enumerators) {
-              // 一致する名前を見つけた
-              // --> ループ抜ける (--> @found_enumerator)
-              if (E.name == name) {
-                assert(type.userdef_type);
-
-                type.kind = TYPE_Enumerator;
-
-                if (E.value_type) {
-                  auto deftype = this->check(E.value_type);
-
-                  if (!init) {
-                    Error(ERR_InvalidSyntax, index.ast,
-                          "expected initializer of '" + deftype.to_string() +
-                            "' after this token")
-                      .emit()
-                      .exit();
-                  }
-                  else if (!deftype.equals(init_type)) {
-                    Error(ERR_TypeMismatch, init,
-                          "expected '" + deftype.to_string() + "' but found '" +
-                            init_type.to_string() + "'")
-                      .emit()
-                      .exit();
-                  }
-                }
-                else if (init) {
-                  Error(ERR_InvalidSyntax, index.ast->token,
-                        "dont need initializer")
-                    .emit()
-                    .exit();
-                }
-
-                goto found_enumerator;
-              }
-
-              //
-              ast->enumerator_index++;
-            }
-
-            // 一致するものがない
-            Error(ERR_Undefined, index.ast,
-                  "enum '" + std::string(pEnum->name) +
-                    "' don't have a enumerator '" + name + "'")
-              .emit()
-              .exit();
-
-          found_enumerator:
-            break;
-          }
-
           //
           // 構造体
           case AST_Struct: {
@@ -801,7 +839,7 @@ TypeInfo Sema::check(AST::Base* _ast)
     //
     // 関数呼び出し
     case AST_CallFunc: {
-      _ret = this->check_function_call((AST::CallFunc*)_ast);
+      _ret = this->check_function_call((AST::CallFunc*)_ast, false, {});
       break;
     }
 
@@ -819,7 +857,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         Error(ast->type, "aiueo@@@").emit().exit();
       }
 
-      pStruct = (AST::Struct*)ast->type;
+      pStruct = (AST::Struct*)type.userdef_type;
 
       //
       // すべてのメンバを初期化するのが前提なので
@@ -1237,7 +1275,10 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Function: {
       auto ast = (AST::Function*)_ast;
 
-      if (auto f = this->find_function(ast->name.str); f && f != ast) {
+      if (auto f = this->find_function(
+            ast->name.str, ast->have_self, this->check(ast->self_type),
+            ArgumentWrap::make_vector_from_function(*this, ast));
+          f.found() && f.userdef != ast) {
         Error(ast->name,
               "function '" + std::string(ast->name.str) + "' is already found")
           .emit()
@@ -1360,11 +1401,16 @@ TypeInfo Sema::check(AST::Base* _ast)
         this->check(item.type);
       }
 
+      _ret = TYPE_UserDef;
+      _ret.userdef_type = ast;
+
       break;
     }
 
     case AST_Impl: {
       astdef(Impl);
+
+      todo_impl;
 
       break;
     }
@@ -1483,8 +1529,8 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
     ast->is_builtin = true;
     ast->builtin_func = result.builtin;
 
-    this->compare_argument(
-      ArgumentWrap::make_vector_from_builtin(*this, result.builtin), args);
+    // this->compare_argument(
+    //   ArgumentWrap::make_vector_from_builtin(*this, result.builtin), args);
 
     return result.builtin->result_type;
   }
@@ -1493,8 +1539,8 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
   if (result.type == FFResult::FN_UserDefined) {
     ast->callee = result.userdef;
 
-    this->compare_argument(
-      ArgumentWrap::make_vector_from_function(*this, result.userdef), args);
+    // this->compare_argument(
+    //   ArgumentWrap::make_vector_from_function(*this, result.userdef), args);
 
     return this->check(result.userdef->result_type);
   }
