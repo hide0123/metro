@@ -98,7 +98,8 @@ void Sema::do_check()
   this->check(this->root);
 }
 
-void Sema::compare_argument(ArgVector const& formal, ArgVector const& actual)
+Sema::ArgumentsComparationResult Sema::compare_argument(ArgVector const& formal,
+                                                        ArgVector const& actual)
 {
   // formal = 定義側
   // actual = 呼び出し側
@@ -111,19 +112,21 @@ void Sema::compare_argument(ArgVector const& formal, ArgVector const& actual)
 
   while (f_it != formal.end()) {
     if (f_it->typeinfo.kind == TYPE_Args) {
-      return;
+      return ARG_OK;
     }
 
     if (a_it == actual.end()) {
-      Error(actual.caller, "too few arguments").emit().exit();
+      return ARG_Few;
+      // Error(actual.caller, "too few arguments").emit().exit();
     }
 
     if (!f_it->typeinfo.equals(a_it->typeinfo)) {
-      Error(ERR_TypeMismatch, a_it->get_ast(),
-            "expected '" + f_it->typeinfo.to_string() + "' but found '" +
-              a_it->typeinfo.to_string() + "'")
-        .emit()
-        .exit();
+      return ARG_Mismatch;
+      // Error(ERR_TypeMismatch, a_it->get_ast(),
+      //       "expected '" + f_it->typeinfo.to_string() + "' but found '" +
+      //         a_it->typeinfo.to_string() + "'")
+      //   .emit()
+      //   .exit();
     }
 
     f_it++;
@@ -131,8 +134,11 @@ void Sema::compare_argument(ArgVector const& formal, ArgVector const& actual)
   }
 
   if (a_it != actual.end()) {
-    Error(actual.caller, "too many arguments").emit().exit();
+    return ARG_Many;
+    // Error(actual.caller, "too many arguments").emit().exit();
   }
+
+  return ARG_OK;
 }
 
 //
@@ -178,8 +184,10 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
       if (!func.self_type.equals(self_type))
         continue;
 
-      this->compare_argument(
-        ArgumentWrap::make_vector_from_builtin(*this, &func), args);
+      if (this->compare_argument(
+            ArgumentWrap::make_vector_from_builtin(*this, &func), args) !=
+          ARG_OK)
+        continue;
 
       result.type = FunctionFindResult::FN_Builtin;
       result.builtin = &func;
@@ -199,8 +207,10 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
       if (!this->check(func->self_type).equals(self_type))
         continue;
 
-      this->compare_argument(
-        ArgumentWrap::make_vector_from_function(*this, func), args);
+      if (this->compare_argument(
+            ArgumentWrap::make_vector_from_function(*this, func), args) !=
+          ARG_OK)
+        continue;
 
       result.type = FunctionFindResult::FN_UserDefined;
       result.userdef = func;
@@ -1052,12 +1062,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       if (ast->type) {
         type = this->check(ast->type);
 
-        if (type.kind == TYPE_Vector) {
-          if (init_expr_type.kind == TYPE_Vector &&
-              init_expr_type.type_params.empty()) {
-          }
-        }
-
         // 初期化式がある場合
         //  =>
         //  指定された型と初期化式の型が一致しないならエラー
@@ -1536,17 +1540,13 @@ TypeInfo Sema::as_lvalue(AST::Base* ast)
 std::tuple<Sema::LocalVar*, size_t, size_t> Sema::find_variable(
   std::string_view const& name)
 {
-  size_t step = 0, index = 0;
-
-  for (size_t step = 0; auto&& scope : this->scope_list) {
-    for (size_t index = 0; auto&& var : scope.lvar.variables) {
+  for_indexed(step, scope, this->scope_list)
+  {
+    for_indexed(index, var, scope.lvar.variables)
+    {
       if (var.name == name)
         return {&var, step, index};
-
-      index++;
     }
-
-    step++;
   }
 
   return {};
@@ -1589,7 +1589,14 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
     return this->check(result.userdef->result_type);
   }
 
-  Error(ast, "undefined function name").emit().exit();
+  auto func_name = std::string(ast->name) + "(" +
+                   Utils::String::join("", args,
+                                       [](auto& aw) {
+                                         return aw.typeinfo.to_string();
+                                       }) +
+                   ")";
+
+  Error(ast, "function '" + func_name + "' not found").emit().exit();
 }
 
 void Sema::check_struct(AST::Struct* ast)

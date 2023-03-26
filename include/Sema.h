@@ -74,6 +74,13 @@ class Sema {
     using std::vector<ArgumentWrap>::vector;
   };
 
+  enum ArgumentsComparationResult {
+    ARG_OK,  // ok, no problem
+    ARG_Few,  // too few
+    ARG_Many,  // too many
+    ARG_Mismatch,  // type mismatching
+  };
+
   struct LocalVar {
     TypeInfo type;
     std::string_view name;
@@ -179,7 +186,8 @@ public:
 
   void do_check();
 
-  void compare_argument(ArgVector const& formal, ArgVector const& actual);
+  ArgumentsComparationResult compare_argument(ArgVector const& formal,
+                                              ArgVector const& actual);
 
   TypeInfo check(AST::Base* ast);
   TypeInfo check_function_call(AST::CallFunc* ast, bool have_self,

@@ -26,7 +26,6 @@ static std::vector<BuiltinFunc> const _builtin_functions{
   BuiltinFunc{.name = "id",
               .is_template = true,
               .have_self = false,
-              .is_template = true,
               .result_type = TYPE_Int,
               .arg_types = {TYPE_Template},
               .impl = [](std::vector<Object*> const& args) -> Object* {
@@ -38,20 +37,9 @@ static std::vector<BuiltinFunc> const _builtin_functions{
   BuiltinFunc{.name = "length",
               .is_template = true,
               .result_type = TYPE_USize,
-              .arg_types = {TYPE_Template},
+              .arg_types = {TYPE_String},
               .impl = [](std::vector<Object*> const& args) -> Object* {
-                auto obj = args[0];
-
-                switch (obj->type.kind) {
-                  case TYPE_String:
-                    return new ObjUSize(((ObjString*)obj)->characters.size());
-
-                  case TYPE_Vector:
-                    return new ObjUSize(((ObjVector*)obj)->elements.size());
-
-                  case TYPE_Dict:
-                    return new ObjUSize(((ObjDict*)obj)->items.size());
-                }
+                return new ObjUSize(((ObjString*)args[0])->characters.size());
               }},
 
   // print
