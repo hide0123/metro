@@ -42,9 +42,10 @@ struct ObjUserType : Object {
     return ret;
   }
 
-  explicit ObjUserType(TypeInfo const& type)
-    : Object(type)
+  explicit ObjUserType(AST::Typeable* ast)
+    : Object(TYPE_UserDef)
   {
+    this->type.userdef_type = ast;
   }
 
   ~ObjUserType()

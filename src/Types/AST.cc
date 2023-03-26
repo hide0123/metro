@@ -342,17 +342,18 @@ std::string CallFunc::to_string() const
   return ret + ")";
 }
 
-TypeConstructor::TypeConstructor(Token const& token, Type* type)
-  : Base(AST_TypeConstructor, token),
+StructConstructor::StructConstructor(Token const& token, Type* type)
+  : Base(AST_StructConstructor, token),
     type(type),
     p_struct(nullptr)
+
 {
-  this->kind = AST_TypeConstructor;
+  this->kind = AST_StructConstructor;
 }
 
-TypeConstructor ::~TypeConstructor()
+StructConstructor ::~StructConstructor()
 {
-  delete this->p_struct;
+  delete this->type;
 
   for (auto&& pair : this->init_pair_list) {
     delete pair.expr;

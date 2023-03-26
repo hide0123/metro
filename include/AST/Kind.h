@@ -19,7 +19,7 @@ enum ASTKind : uint8_t {
   AST_Variable,
   AST_MemberVariable,
   AST_CallFunc,
-  AST_TypeConstructor,
+  AST_StructConstructor,
 
   AST_IndexRef,
   AST_MemberAccess,

@@ -31,7 +31,7 @@ struct Type : Typeable {
 
 //
 // new T(.a = <expr>, .b = <expr>, ...)
-struct TypeConstructor : Base {
+struct StructConstructor : Base {
   struct Pair {
     Token const* t_period;
     Token const* t_name;
@@ -54,8 +54,8 @@ struct TypeConstructor : Base {
   Struct* p_struct;
   std::vector<Pair> init_pair_list;
 
-  explicit TypeConstructor(Token const& token, Type* type);
-  ~TypeConstructor();
+  explicit StructConstructor(Token const& token, Type* s);
+  ~StructConstructor();
 };
 
 }  // namespace AST

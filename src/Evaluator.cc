@@ -111,7 +111,7 @@ Object* Evaluator::default_constructor(TypeInfo const& type,
     }
 
     case TYPE_UserDef: {
-      auto ret = new ObjUserType(type);
+      auto ret = new ObjUserType(type.userdef_type);
 
       if (construct_member && type.userdef_type->kind == AST_Struct) {
         for (auto&& member : type.members) {
@@ -449,10 +449,9 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
         auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
 
-        if (auto& x = ast->indexes[0]; x.ast->kind == AST_TypeConstructor) {
-          todo_impl;
-          // ret->value =
-          // this->evaluate(((AST::TypeConstructor*)x.ast)->init);
+        if (auto& x = ast->indexes[0];
+            x.kind == AST::IndexRef::Subscript::SUB_CallFunc) {
+          ret->value = this->evaluate(((AST::CallFunc*)x.ast)->args[0]);
         }
 
         return ret;
@@ -549,20 +548,16 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       return result;
     }
 
-    case AST_TypeConstructor: {
-      astdef(TypeConstructor);
+    case AST_StructConstructor: {
+      astdef(StructConstructor);
 
-      // debug(assert(ast->typeinfo.kind == TYPE_UserDef));
+      auto ret = new ObjUserType(ast->p_struct);
 
-      // auto ret = new ObjUserType(ast->typeinfo);
+      for (auto&& pair : ast->init_pair_list) {
+        ret->add_member(this->evaluate(pair.expr));
+      }
 
-      // for (auto&& elem : ast->elements) {
-      //   ret->add_member(this->evaluate(elem.value));
-      // }
-
-      todo_impl;
-
-      // return ret;
+      return ret;
     }
 
     //

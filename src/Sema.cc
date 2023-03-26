@@ -872,8 +872,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
     //
     // Type Constructor
-    case AST_TypeConstructor: {
-      astdef(TypeConstructor);
+    case AST_StructConstructor: {
+      astdef(StructConstructor);
 
       auto& pStruct = ast->p_struct;
 
@@ -881,7 +881,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       type = this->check(ast->type);
 
       if (type.kind != TYPE_UserDef || type.userdef_type->kind != AST_Struct) {
-        Error(ast->type, "aiueo@@@").emit().exit();
+        Error(ast->type, "expected struct name").emit().exit();
       }
 
       pStruct = (AST::Struct*)type.userdef_type;

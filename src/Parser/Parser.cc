@@ -336,7 +336,7 @@ AST::Base* Parser::unary()
   //
   // Type Constructor
   if (this->eat("new")) {
-    auto ast = new AST::TypeConstructor(*this->ate, this->expect_typename());
+    auto ast = new AST::StructConstructor(*this->ate, this->expect_typename());
 
     this->expect("{");
 

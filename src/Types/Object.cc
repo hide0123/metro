@@ -168,7 +168,7 @@ std::string ObjVector::to_string() const
 
 ObjUserType* ObjUserType::clone() const
 {
-  auto obj = new ObjUserType(this->type);
+  auto obj = new ObjUserType(this->type.userdef_type);
 
   for (auto&& member : this->members)
     obj->add_member(member->clone());
