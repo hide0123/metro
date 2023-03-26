@@ -929,6 +929,7 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
 Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
 {
   Object** ret = &obj;
+  Object* tmp = nullptr;
 
   for (auto&& index : ast->indexes) {
     switch (index.kind) {
@@ -1018,15 +1019,23 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
       }
 
       case AST::IndexRef::Subscript::SUB_Member: {
-        switch (index.ast->kind) {
-          case AST_Variable:
-            ret = &((ObjUserType*)*ret)
-                     ->members[((AST::Variable*)index.ast)->index];
+        ret =
+          &((ObjUserType*)*ret)->members[((AST::Variable*)index.ast)->index];
 
-            break;
+        break;
+      }
 
-          default:
-            todo_impl;
+      case AST::IndexRef::Subscript::SUB_CallFunc: {
+        auto cf = (AST::CallFunc*)index.ast;
+
+        std::vector<Object*> args{*ret};
+
+        for (auto&& arg : cf->args) {
+          args.emplace_back(this->evaluate(arg));
+        }
+
+        if (cf->is_builtin) {
+          todo_impl;
         }
 
         break;

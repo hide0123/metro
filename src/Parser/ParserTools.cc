@@ -122,15 +122,11 @@ AST::Function* Parser::parse_function()
         }
 
         func->have_self = true;
-
-        if (this->eat(","))
-          continue;
-
-        break;
       }
-
-      func->append_argument(this->expect_identifier()->str, *this->expect(":"),
-                            this->expect_typename());
+      else {
+        func->append_argument(this->expect_identifier()->str,
+                              *this->expect(":"), this->expect_typename());
+      }
     } while (this->eat(","));  // カンマがあれば続ける
 
     this->expect(")");  // 閉じかっこ

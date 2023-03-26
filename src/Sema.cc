@@ -493,6 +493,7 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
   TypeInfo type;
 
   AST::Typeable* usertype = nullptr;
+  bool is_first_struct = false;
 
   if (ast->expr->kind == AST_Variable)
     usertype = this->find_usertype(((AST::Variable*)ast->expr)->name);
@@ -505,7 +506,9 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
   type.kind = TYPE_UserDef;
   type.userdef_type = usertype;
 
-  if (usertype->kind = AST_Enum) {
+  is_first_struct = usertype->kind == AST_Struct;
+
+  if (usertype->kind == AST_Enum) {
     auto ast_enum = (AST::Enum*)usertype;
 
     ast->is_enum = true;
@@ -639,18 +642,7 @@ check_indexes:
       //
       // メンバアクセス
       case AST::IndexRef::Subscript::SUB_Member: {
-        // if (type.kind == TYPE_Enumerator) {
-        //   if (index.ast->kind == AST_Variable &&
-        //       ((AST::Variable*)index.ast)->name == "value") {
-        //     type = this->check(((AST::Enum*)type.userdef_type)
-        //                          ->enumerators[ast->enumerator_index]
-        //                          .value_type);
-
-        //     break;
-        //   }
-        // }
-
-        if (type.kind != TYPE_UserDef) {
+        if (!type.have_members()) {
           Error(index.ast,
                 "'" + type.to_string() + "' type object don't have any members")
             .emit()
@@ -662,56 +654,46 @@ check_indexes:
         AST::Base* init = nullptr;
         TypeInfo init_type;
 
-        switch (index.ast->kind) {
-          case AST_Variable:
-            name = ((AST::Variable*)index.ast)->name;
-            break;
+        if (type.kind == TYPE_UserDef) {
+          // AST 構造体へのポインタ
+          auto pStruct = (AST::Struct*)type.userdef_type;
 
-          case AST_CallFunc: {
-            auto cf = (AST::CallFunc*)index.ast;
-
-            name = cf->name;
-
-            break;
-          }
-
-          default:
-            Error(ERR_InvalidSyntax, index.ast, "invalid syntax").emit().exit();
-        }
-
-        switch (type.userdef_type->kind) {
-          //
-          // 構造体
-          case AST_Struct: {
-            // AST 構造体へのポインタ
-            auto pStruct = (AST::Struct*)type.userdef_type;
-
-            // 名前が一致するメンバを探す
-            for (auto&& M : pStruct->members) {
-              // 一致する名前を発見
-              //  --> ループ抜ける (--> @found_member)
-              if (M.name == name) {
-                type = this->check(M.type);
-                goto found_member;
-              }
-
-              ((AST::Variable*)index.ast)->index++;
+          // 名前が一致するメンバを探す
+          for (auto&& M : pStruct->members) {
+            // 一致する名前を発見
+            //  --> ループ抜ける (--> @found_member)
+            if (M.name == index.ast->token.str) {
+              type = this->check(M.type);
+              goto found_member;
             }
 
-            // 一致するものがない
-            Error(ERR_Undefined, index.ast,
-                  "struct '" + std::string(pStruct->name) +
-                    "' don't have a member '" + name + "'")
-              .emit()
-              .exit();
-
-          found_member:
-            break;
+            ((AST::Variable*)index.ast)->index++;
           }
 
-          default:
-            todo_impl;
+          // 一致するものがない
+          Error(ERR_Undefined, index.ast,
+                "struct '" + std::string(pStruct->name) +
+                  "' don't have a member '" + name + "'")
+            .emit()
+            .exit();
+
+        found_member:;
         }
+        else {
+          // find member of builtin type
+          todo_impl;
+        }
+
+        break;
+      }
+
+      case AST::IndexRef::Subscript::SUB_CallFunc: {
+        auto cf = (AST::CallFunc*)index.ast;
+
+        type = this->check_function_call(cf, is_first_struct, type);
+
+        if (is_first_struct)
+          is_first_struct = false;
 
         break;
       }
@@ -1319,7 +1301,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto ast = (AST::Function*)_ast;
 
       if (auto f = this->find_function(
-            nullptr, ast->name.str, ast->have_self, this->check(ast->self_type),
+            nullptr, ast->name.str, ast->have_self, this->check(this->impl_of),
             ArgumentWrap::make_vector_from_function(*this, ast));
           f.found() && f.userdef != ast) {
         Error(ast->name,
@@ -1474,6 +1456,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
 
       this->cur_impl = ast;
+      this->impl_of = target;
 
       for (auto&& x : ast->list) {
         this->check(x);
@@ -1490,8 +1473,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto ast = (AST::Type*)_ast;
 
       auto& ret = _ret;
-
-      this->type_check_stack.emplace_back(ast);
 
       if (auto res = this->get_type_from_name(ast->name); res) {
         ret = res.value();
@@ -1526,9 +1507,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       // is_const
       ret.is_const = ast->is_const;
 
-      this->type_check_stack.pop_back();
-
-      _ret = ret;
       break;
     }
 
@@ -1614,9 +1592,6 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
     ast->is_builtin = true;
     ast->builtin_func = result.builtin;
 
-    // this->compare_argument(
-    //   ArgumentWrap::make_vector_from_builtin(*this, result.builtin), args);
-
     return result.builtin->result_type;
   }
 
@@ -1624,13 +1599,11 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
   if (result.type == FFResult::FN_UserDefined) {
     ast->callee = result.userdef;
 
-    // this->compare_argument(
-    //   ArgumentWrap::make_vector_from_function(*this, result.userdef), args);
-
     return this->check(result.userdef->result_type);
   }
 
-  auto func_name = std::string(ast->name) + "(" +
+  auto func_name = (have_self ? self_type.to_string() : "") +
+                   std::string(ast->name) + "(" +
                    Utils::String::join("", args,
                                        [](auto& aw) {
                                          return aw.typeinfo.to_string();

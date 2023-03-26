@@ -306,16 +306,13 @@ AST::Base* Parser::indexref()
     else if (this->eat(".")) {
       auto m = this->primary();
 
-      switch (m->kind) {
-        case AST_Variable:
-        case AST_CallFunc:
-          break;
+      auto& sub =
+        ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Member, m);
 
-        default:
-          Error(ERR_InvalidSyntax, m, "invalid syntax").emit().exit();
-      }
-
-      ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Member, m);
+      if (m->kind == AST_CallFunc)
+        sub.kind = AST::IndexRef::Subscript::SUB_CallFunc;
+      else if (m->kind != AST_Variable)
+        Error(ERR_InvalidSyntax, m, "invalid syntax").emit().exit();
     }
 
     else
