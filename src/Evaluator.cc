@@ -675,7 +675,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       Object* obj{};
 
-      if (!ast->init) {
+      if (!ast->init || ast->ignore_initializer) {
         obj = this->default_constructor(Sema::value_type_cache[ast->type]);
       }
       else {
@@ -797,10 +797,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_For: {
       astdef(For);
 
+      auto& v = this->push_vst();
+
       auto _obj = this->evaluate(ast->iterable);
       _obj->ref_count++;
-
-      auto& v = this->push_vst();
 
       auto& loop = this->loop_stack.emplace_front(v);
 

@@ -855,8 +855,6 @@ TypeInfo Sema::check(AST::Base* _ast)
 
         ast->step = s;
         ast->index = i;
-
-        alertmsg(ast->name << " " << s << ", " << i);
       }
       else {
         Error(ERR_Undefined, ast, "undefined variable name").emit().exit();
@@ -1054,7 +1052,14 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       // 型が指定されてる
       if (ast->type) {
-        type = this->expect(this->check(ast->type), ast->init);
+        type = this->check(ast->type);
+
+        auto tmp = this->check(ast->init);
+
+        if (!tmp.equals(type))
+          ast->ignore_initializer = true;
+
+        type = this->expect(type, ast->init);
       }
       // 型が指定されてない
       else {
@@ -1305,10 +1310,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto& S = this->enter_scope(fn_scope);
 
       // 引数追加
-      for (size_t ww = 0; auto&& arg : ast->args) {
-        auto& V = S.lvar.append(this->check(arg->type), arg->name);
-
-        // V.index = ww++;
+      for (auto&& arg : ast->args) {
+        S.lvar.append(this->check(arg->type), arg->name);
       }
 
       auto res_type = this->check(ast->result_type);

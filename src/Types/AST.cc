@@ -183,7 +183,8 @@ VariableDeclaration::VariableDeclaration(Token const& token)
     type(nullptr),
     init(nullptr),
     is_shadowing(false),
-    index(0)
+    index(0),
+    ignore_initializer(false)
 {
 }
 
