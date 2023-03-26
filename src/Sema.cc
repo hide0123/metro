@@ -111,7 +111,7 @@ void Sema::compare_argument(ArgVector const& formal, ArgVector const& actual)
 
   while (f_it != formal.end()) {
     if (f_it->typeinfo.kind == TYPE_Args) {
-      break;
+      return;
     }
 
     if (a_it == actual.end()) {
@@ -536,11 +536,9 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
 
     todo_impl;
   }
-  else {
-    type = this->check(ast->expr);
-  }
 
   alert;
+  type = this->check(ast->expr);
 
   for (auto&& index : ast->indexes) {
     switch (index.kind) {
@@ -832,7 +830,15 @@ TypeInfo Sema::check(AST::Base* _ast)
 
     // 変数
     case AST_Variable: {
-      _ret = this->check_as_left(_ast);
+      astdef(Variable);
+
+      if (auto p = this->find_variable(ast->name); p) {
+        _ret = p->type;
+      }
+      else {
+        Error(ERR_Undefined, ast, "undefined variable name").emit().exit();
+      }
+
       break;
     }
 
@@ -900,9 +906,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       astdef(Dict);
 
       _ret = TYPE_Dict;
-
-      if (ast->elements.empty())
-        break;
 
       TypeInfo key_type;
       TypeInfo value_type;
@@ -980,7 +983,7 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Assign: {
       astdef(Assign);
 
-      auto dest = this->check_as_left(ast->dest);
+      auto dest = this->as_lvalue(ast->dest);
 
       if (dest.is_const) {
         Error(ast, "destination is not mutable").emit().exit();
@@ -1189,10 +1192,6 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto iterable = this->check(ast->iterable);
 
-      if (!iterable.is_iterable()) {
-        Error(ast->iterable, "expected iterable expression").emit().exit();
-      }
-
       TypeInfo iter;
 
       switch (iterable.kind) {
@@ -1204,12 +1203,19 @@ TypeInfo Sema::check(AST::Base* _ast)
         case TYPE_Dict:
           iter = iterable.type_params[0];
           break;
+
+        default:
+          Error(ast->iterable, "expected iterable expression").emit().exit();
       }
 
+      //
+      // イテレータが変数だったら自動で定義
       if (ast->iter->kind == AST_Variable) {
         e.lvar.append(iter, ast->iter->token.str);
       }
-      else if (auto x = this->check_as_left(ast->iter); !x.equals(iter)) {
+      // 変数でなければ
+      //  --> 左辺値でない あるいは 型が合わないならエラー
+      else if (!this->as_lvalue(ast->iter).equals(iter)) {
         Error(ast->iter, "type mismatch").emit().exit();
       }
 
@@ -1496,17 +1502,24 @@ void Sema::expect_lvalue(AST::Base* _ast)
     }
 
     default:
-      S Error(_ast, "expected lvalue expression").emit().exit();
+      Error(_ast, "expected lvalue expression").emit().exit();
   }
 }
 
 TypeInfo Sema::as_lvalue(AST::Base* ast)
 {
+  this->expect_lvalue(ast);
+  return this->check(ast);
 }
 
 Sema::LocalVar* Sema::find_variable(std::string_view const& name)
 {
-  return this->get_cur_scope().lvar.find_var(name);
+  for (auto&& scope : this->scope_list) {
+    if (auto p = scope.lvar.find_var(name); p)
+      return p;
+  }
+
+  return nullptr;
 }
 
 // ------------------------------------------------ //
