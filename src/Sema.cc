@@ -886,6 +886,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
         // 型
         this->expect(this->check(ast_member.type), pair.expr);
+
+        ast_member_index++;
       }
 
       break;
@@ -1333,8 +1335,10 @@ TypeInfo Sema::check(AST::Base* _ast)
             .emit();
 
         err_specify_ast:
-          Error(ast->result_type, "return type specified with '" +
-                                    res_type.to_string() + "' here")
+          Error(ast->result_type ? ast->result_type->token : ast->token,
+                std::string("return type ") +
+                  (ast->result_type ? "" : "implicitly ") + "specified with '" +
+                  res_type.to_string() + "' here")
             .emit(EL_Note)
             .exit();
         }
