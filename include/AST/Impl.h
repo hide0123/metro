@@ -2,26 +2,16 @@
 
 namespace AST {
 
-struct Impl : ListBase {
+struct Impl : Scope {
   Token const& name_token;
   std::string_view name;
-  ASTVector impls;
-
-  bool is_empty() const override
-  {
-    return this->impls.empty();
-  }
-
-  Base*& append(Base* x) override
-  {
-    return this->impls.emplace_back(x);
-  }
 
   Impl(Token const& token, Token const& name_token)
-    : ListBase(AST_Impl, token),
+    : Scope(token),
       name_token(name_token),
       name(name_token.str)
   {
+    this->kind = AST_Impl;
   }
 
   ~Impl()

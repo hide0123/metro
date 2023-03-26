@@ -208,19 +208,20 @@ AST::Impl* Parser::parse_impl()
   this->expect("{");
 
   while (!this->eat("}")) {
-    auto& e = ast->append(top());
+    auto x = top();
 
-    switch (e->kind) {
+    switch (x->kind) {
       case AST_Function:
+        ast->append((AST::Function*)x);
         break;
 
       case AST_Impl:
-        Error(ERR_InvalidSyntax, e->token, "impl-block cannot be nested")
+        Error(ERR_InvalidSyntax, x->token, "impl-block cannot be nested")
           .emit()
           .exit();
 
       default:
-        Error(ERR_InvalidSyntax, e->token, "impl-block must have functions")
+        Error(ERR_InvalidSyntax, x->token, "impl-block must have functions")
           .emit()
           .exit();
     }

@@ -178,6 +178,30 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
 {
   FunctionFindResult result;
 
+  if (have_self) {
+    auto ast_struct = (AST::Struct*)self_type.userdef_type;
+
+    for (auto&& impl : ast_struct->implements) {
+      for (auto&& x : impl->list) {
+        auto func = (AST::Function*)x;
+
+        if (func->name.str != name)
+          continue;
+
+        auto cmp = this->compare_argument(
+          ArgumentWrap::make_vector_from_function(*this, func), args);
+
+        if (cmp != ARG_OK) {
+          return result;
+        }
+
+        result.type = FunctionFindResult::FN_UserDefined;
+        result.userdef = func;
+        return result;
+      }
+    }
+  }
+
   auto const& builtins = BuiltinFunc::get_builtin_list();
 
   // find builtin
@@ -554,7 +578,7 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
       }
 
       case AST_Struct: {
-        auto& cf = ast->indexes[0].ast;
+        auto& cf = (AST::CallFunc*&)ast->indexes[0].ast;
         auto ast_struct = (AST::Struct*)usertype;
 
         if (cf->kind != AST_CallFunc) {
@@ -563,17 +587,36 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
             .exit();
         }
 
-        for (auto&& impl :)
+        auto args = ArgumentWrap::make_vector_from_call(*this, cf);
 
-          break;
+        for (auto&& impl : ast_struct->implements) {
+          for (auto&& x : impl->list) {
+            auto func = (AST::Function*)x;
+
+            if (func->name.str != cf->name)
+              continue;
+
+            if (func->have_self) {
+              Error(cf->token, "cannot call a member function without instance")
+                .emit()
+                .exit();
+            }
+
+            auto cmp = this->compare_argument(
+              ArgumentWrap::make_vector_from_function(*this, func), args);
+          }
+        }
+
+        break;
       }
     }
 
     todo_impl;
   }
-
-  alert;
-  type = this->check(ast->expr);
+  else {
+    alert;
+    type = this->check(ast->expr);
+  }
 
   for (auto&& index : ast->indexes) {
     switch (index.kind) {
@@ -1464,7 +1507,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       this->cur_impl = ast;
 
-      for (auto&& x : ast->impls) {
+      for (auto&& x : ast->list) {
         this->check(x);
       }
 
