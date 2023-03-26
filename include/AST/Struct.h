@@ -10,13 +10,14 @@ struct Struct : Typeable {
     std::string_view name;
 
     Member(Token const& token, Type* type)
-        : token(token),
-          type(type),
-          name(token.str)
+      : token(token),
+        type(type),
+        name(token.str)
     {
     }
   };
 
+  std::vector<Impl*> implements;
   std::vector<Member> members;
 
   Member& append(Token const& token, Type* type)
@@ -25,7 +26,7 @@ struct Struct : Typeable {
   }
 
   Struct(Token const& token)
-      : Typeable(AST_Struct, token)
+    : Typeable(AST_Struct, token)
   {
   }
 

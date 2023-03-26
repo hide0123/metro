@@ -281,10 +281,15 @@ private:
 
   AST::Scope* root;
 
+  AST::Impl* cur_impl;
+  AST::Struct* impl_of;
+
   std::list<SemaScope> scope_list;
   std::list<AST::Function*> function_history;
 
   std::vector<AST::Typeable*> type_check_stack;
+
+  std::vector<AST::Impl*> all_impl_blocks;
 
   // captures
   std::vector<CaptureContext> captures;

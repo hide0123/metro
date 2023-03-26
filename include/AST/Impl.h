@@ -3,6 +3,7 @@
 namespace AST {
 
 struct Impl : ListBase {
+  Token const& name_token;
   std::string_view name;
   ASTVector impls;
 
@@ -16,8 +17,10 @@ struct Impl : ListBase {
     return this->impls.emplace_back(x);
   }
 
-  Impl(Token const& token)
-      : ListBase(AST_Impl, token)
+  Impl(Token const& token, Token const& name_token)
+    : ListBase(AST_Impl, token),
+      name_token(name_token),
+      name(name_token.str)
   {
   }
 

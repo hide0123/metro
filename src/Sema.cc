@@ -25,7 +25,9 @@ static bool is_cache_allowed(ASTKind kind)
 }
 
 Sema::Sema(AST::Scope* root)
-  : root(root)
+  : root(root),
+    cur_impl(nullptr),
+    impl_of(nullptr)
 {
 }
 
@@ -92,6 +94,9 @@ void Sema::do_check()
       case AST_Struct:
         tr.walk((AST::Typeable*)x);
         break;
+
+      case AST_Impl:
+        this->all_impl_blocks.emplace_back((AST::Impl*)x);
     }
   }
 
@@ -457,17 +462,17 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
 
   alert;
 
-  if (AST::Typeable* usr = nullptr;
+  if (AST::Typeable* usertype = nullptr;
       ast->expr->kind == AST_Variable &&
-      (usr = this->find_usertype(((AST::Variable*)ast->expr)->name))) {
+      (usertype = this->find_usertype(((AST::Variable*)ast->expr)->name))) {
     type.kind = TYPE_UserDef;
-    type.userdef_type = usr;
+    type.userdef_type = usertype;
 
     alert;
 
-    switch (usr->kind) {
+    switch (usertype->kind) {
       case AST_Enum: {
-        auto ast_enum = (AST::Enum*)usr;
+        auto ast_enum = (AST::Enum*)usertype;
 
         ast->is_enum = true;
         ast->enum_type = ast_enum;
@@ -548,8 +553,20 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
         break;
       }
 
-      case AST_Impl:
-        break;
+      case AST_Struct: {
+        auto& cf = ast->indexes[0].ast;
+        auto ast_struct = (AST::Struct*)usertype;
+
+        if (cf->kind != AST_CallFunc) {
+          Error(ERR_InvalidSyntax, cf, "expected function-call expression")
+            .emit()
+            .exit();
+        }
+
+        for (auto&& impl :)
+
+          break;
+      }
     }
 
     todo_impl;
@@ -1308,6 +1325,13 @@ TypeInfo Sema::check(AST::Base* _ast)
       // スコープ追加
       auto& S = this->enter_scope(fn_scope);
 
+      // self
+      if (ast->have_self) {
+        assert(this->cur_impl);
+
+        S.lvar.append(this->check(this->impl_of), "self");
+      }
+
       // 引数追加
       for (auto&& arg : ast->args) {
         S.lvar.append(this->check(arg->type), arg->name);
@@ -1425,7 +1449,26 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Impl: {
       astdef(Impl);
 
-      todo_impl;
+      AST::Struct* target = nullptr;
+
+      if (auto ut = this->find_usertype(ast->name);
+          !ut || ut->kind != AST_Struct) {
+        Error(ERR_Undefined, ast->name_token, "undefined struct name")
+          .emit()
+          .exit();
+      }
+      else {
+        target = (AST::Struct*)ut;
+        target->implements.emplace_back(ast);
+      }
+
+      this->cur_impl = ast;
+
+      for (auto&& x : ast->impls) {
+        this->check(x);
+      }
+
+      this->cur_impl = nullptr;
 
       break;
     }

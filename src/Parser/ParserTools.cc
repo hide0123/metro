@@ -23,6 +23,7 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
     case AST_Enum:
     case AST_Struct:
     case AST_Function:
+    case AST_Impl:
       return true;
   }
 
@@ -202,13 +203,11 @@ AST::Impl* Parser::parse_impl()
 {
   this->in_impl = true;
 
-  auto ast = new AST::Impl(*this->expect("impl"));
-
-  ast->name = this->expect_identifier()->str;
+  auto ast = new AST::Impl(*this->expect("impl"), *this->expect_identifier());
 
   this->expect("{");
 
-  do {
+  while (!this->eat("}")) {
     auto& e = ast->append(top());
 
     switch (e->kind) {
@@ -225,7 +224,7 @@ AST::Impl* Parser::parse_impl()
           .emit()
           .exit();
     }
-  } while (!this->eat("}"));
+  }
 
   this->in_impl = false;
 

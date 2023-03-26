@@ -361,6 +361,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Function:
     case AST_Enum:
     case AST_Struct:
+    case AST_Impl:
       break;
 
     case AST_True:
