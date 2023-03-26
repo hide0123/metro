@@ -1054,12 +1054,14 @@ TypeInfo Sema::check(AST::Base* _ast)
       if (ast->type) {
         type = this->check(ast->type);
 
-        auto tmp = this->check(ast->init);
+        if (ast->init) {
+          auto tmp = this->check(ast->init);
 
-        if (!tmp.equals(type))
-          ast->ignore_initializer = true;
+          if (!tmp.equals(type))
+            ast->ignore_initializer = true;
 
-        type = this->expect(type, ast->init);
+          type = this->expect(type, ast->init);
+        }
       }
       // 型が指定されてない
       else {
@@ -1080,13 +1082,10 @@ TypeInfo Sema::check(AST::Base* _ast)
         pvar->type = type;
 
         ast->is_shadowing = true;
-        // ast->index = pvar->index;
       }
       // そうでなければ新規追加
       else {
-        auto& var = scope_emu.lvar.append(type, ast->name);
-
-        // ast->index = var.index = scope_emu.lvar.variables.size() - 1;
+        scope_emu.lvar.append(type, ast->name);
       }
 
       break;

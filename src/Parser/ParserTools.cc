@@ -239,18 +239,30 @@ AST::Impl* Parser::parse_impl()
  */
 AST::Type* Parser::parse_typename()
 {
+  static int depth = 0;
+  static bool pass_rbrace = 0;
+
   auto ast = new AST::Type(*this->expect_identifier());
 
   if (this->eat("<")) {
+    depth++;
+
     do {
       ast->parameters.emplace_back(this->expect_typename());
     } while (this->eat(","));
 
-    if (this->cur->str == ">>") {
-      this->cur->str = ">";
+    if (pass_rbrace) {
+      pass_rbrace = false;
     }
-    else
+    else if (depth >= 2 && this->eat(">>")) {
+      depth--;
+      pass_rbrace = true;
+    }
+    else {
       this->expect(">");
+    }
+
+    depth--;
   }
 
   if (this->eat("const")) {
