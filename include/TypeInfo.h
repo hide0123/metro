@@ -70,10 +70,8 @@ struct TypeInfo {
 
   bool have_members() const
   {
-    switch (this->kind) {
-      case TYPE_UserDef:
-        return true;
-    }
+    if (this->kind == TYPE_UserDef)
+      return true;
 
     return false;
   }

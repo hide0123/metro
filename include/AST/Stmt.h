@@ -12,6 +12,8 @@ struct VariableDeclaration : Base {
   bool is_shadowing;
   size_t index;
 
+  bool ignore_initializer;
+
   VariableDeclaration(Token const& token);
   ~VariableDeclaration();
 };

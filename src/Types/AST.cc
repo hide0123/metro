@@ -6,12 +6,22 @@ Base::Base(ASTKind kind, Token const& token)
   : kind(kind),
     token(token),
     end_token(nullptr),
-    is_left(false)
+    use_default(false)
 {
 }
 
 Base::~Base()
 {
+}
+
+bool Base::is_empty_scope() const
+{
+  return this->kind == AST_Scope && ((AST::Scope*)this)->is_empty();
+}
+
+bool Base::is_empty_vector() const
+{
+  return this->kind == AST_Vector && ((AST::Vector*)this)->is_empty();
 }
 
 ListBase::ASTVector::~ASTVector()
@@ -51,7 +61,6 @@ Variable::Variable(Token const& tok)
     index(0),
     name(tok.str)
 {
-  this->is_left = true;
 }
 
 CallFunc::CallFunc(Token const& name)
@@ -59,7 +68,9 @@ CallFunc::CallFunc(Token const& name)
     name(name.str),
     is_builtin(false),
     builtin_func(nullptr),
-    callee(nullptr)
+    callee(nullptr),
+    selftype(nullptr),
+    is_membercall(false)
 {
 }
 
@@ -131,7 +142,8 @@ IndexRef::IndexRef(Token const& t, Base* expr)
     expr(expr),
     is_enum(false),
     enum_type(nullptr),
-    enumerator_index(0)
+    enumerator_index(0),
+    ignore_first(false)
 {
 }
 
@@ -175,7 +187,8 @@ VariableDeclaration::VariableDeclaration(Token const& token)
     type(nullptr),
     init(nullptr),
     is_shadowing(false),
-    index(0)
+    index(0),
+    ignore_initializer(false)
 {
 }
 
@@ -333,17 +346,22 @@ std::string CallFunc::to_string() const
   return ret + ")";
 }
 
-TypeConstructor::TypeConstructor(Type* type)
-  : Dict(type->token),
+StructConstructor::StructConstructor(Token const& token, Type* type)
+  : Base(AST_StructConstructor, token),
     type(type),
-    init(nullptr)
+    p_struct(nullptr)
+
 {
-  this->kind = AST_TypeConstructor;
+  this->kind = AST_StructConstructor;
 }
 
-TypeConstructor ::~TypeConstructor()
+StructConstructor ::~StructConstructor()
 {
   delete this->type;
+
+  for (auto&& pair : this->init_pair_list) {
+    delete pair.expr;
+  }
 }
 
 }  // namespace AST

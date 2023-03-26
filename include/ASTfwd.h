@@ -55,6 +55,6 @@ struct Enum;
 struct Struct;
 struct Function;
 
-struct Ipml;
+struct Impl;
 
 }  // namespace AST

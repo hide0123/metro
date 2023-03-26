@@ -8,7 +8,8 @@
 #include "ScriptFileContext.h"
 
 Parser::Parser(ScriptFileContext& context, std::list<Token>& token_list)
-  : _context(context),
+  : in_impl(false),
+    _context(context),
     _token_list(token_list)
 {
   this->cur = this->_token_list.begin();
@@ -85,6 +86,9 @@ AST::Base* Parser::factor()
     return new AST::ConstKeyword(AST_False, *this->ate);
 
   if (this->eat("{")) {
+    if (auto tok = this->ate; this->eat("}"))
+      return this->set_last_token(new AST::Scope(*tok));
+
     auto token = this->cur;
 
     auto x = this->expr();
@@ -156,44 +160,44 @@ AST::Base* Parser::factor()
         return ast;
       }
 
-      AST::Type* ast_type = nullptr;
+      // AST::Type* ast_type = nullptr;
 
-      auto iter_save = this->cur;
+      // auto iter_save = this->cur;
 
-      try {
-        if (this->found("<")) {
-          this->cur = ident;
-          ast_type = this->expect_typename();
-        }
-      }
-      catch (Error& e) {
-        this->cur = iter_save;
-      }
+      // try {
+      //   if (this->found("<")) {
+      //     this->cur = ident;
+      //     ast_type = this->expect_typename();
+      //   }
+      // }
+      // catch (Error& e) {
+      //   this->cur = iter_save;
+      // }
 
       //
       // type constructor
-      if (this->eat("{")) {
-        if (!ast_type) {
-          ast_type = new AST::Type(*ident);
-        }
+      // if (this->eat("{")) {
+      //   if (!ast_type) {
+      //     ast_type = new AST::Type(*ident);
+      //   }
 
-        auto ast = new AST::TypeConstructor(ast_type);
+      //   auto ast = new AST::TypeConstructor(ast_type);
 
-        do {
-          auto x = this->expr();
+      //   do {
+      //     auto x = this->expr();
 
-          if (this->found("}")) {
-            ast->init = x;
-            break;
-          }
+      //     if (this->found("}")) {
+      //       ast->init = x;
+      //       break;
+      //     }
 
-          ast->append(x, *this->expect(":"), this->expr());
-        } while (this->eat(","));
+      //     ast->append(x, *this->expect(":"), this->expr());
+      //   } while (this->eat(","));
 
-        ast->end_token = this->expect("}");
+      //   ast->end_token = this->expect("}");
 
-        return ast;
-      }
+      //   return ast;
+      // }
 
       //
       // 変数
@@ -278,20 +282,9 @@ AST::Base* Parser::primary()
   return this->factor();
 }
 
-AST::Base* Parser::unary()
-{
-  if (this->eat("-"))
-    return new AST::UnaryOp(AST_UnaryMinus, *this->ate, this->primary());
-
-  if (this->eat("+"))
-    return new AST::UnaryOp(AST_UnaryPlus, *this->ate, this->primary());
-
-  return this->primary();
-}
-
 AST::Base* Parser::indexref()
 {
-  auto x = this->unary();
+  auto x = this->primary();
 
   AST::IndexRef* ast = nullptr;
 
@@ -302,14 +295,8 @@ AST::Base* Parser::indexref()
     return x;
 
   while (this->check()) {
-    alert;
-
     if (this->found("[")) {
-      alert;
-
       while (this->eat("[")) {
-        alert;
-
         ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Index,
                                   this->expr());
 
@@ -317,41 +304,17 @@ AST::Base* Parser::indexref()
       }
     }
     else if (this->eat(".")) {
-      alert;
+      auto m = this->primary();
 
-      auto tmp = this->unary();
+      auto& sub =
+        ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Member, m);
 
-      //
-      // 右辺に関数呼び出しがあった場合、
-      // 式を置き換えて、第一引数に左辺を移動させる
-      if (tmp->kind == AST_CallFunc) {
-        // a.f()    -->  f(a)
-        // a.b.f()  -->  f(a.b)
-
-        auto cf = (AST::CallFunc*)tmp;
-
-        // メンバ参照してなければ、最初の要素だけ追加
-        // if (ast->indexes.empty()) {
-        //   cf->args.insert(cf->args.begin(), ast->expr);
-
-        //   ast->expr = nullptr;
-        //   delete ast;
-        // }
-        // else  // あれば全体を追加
-        cf->args.insert(cf->args.begin(), ast);
-
-        if (!this->found(".")) {
-          return cf;
-        }
-        else {
-          ast = new AST::IndexRef(cf->token, cf);
-        }
-
-        continue;
-      }
-
-      ast->indexes.emplace_back(AST::IndexRef::Subscript::SUB_Member, tmp);
+      if (m->kind == AST_CallFunc)
+        sub.kind = AST::IndexRef::Subscript::SUB_CallFunc;
+      else if (m->kind != AST_Variable)
+        Error(ERR_InvalidSyntax, m, "invalid syntax").emit().exit();
     }
+
     else
       break;
   }
@@ -359,17 +322,51 @@ AST::Base* Parser::indexref()
   return this->set_last_token(ast);
 }
 
+AST::Base* Parser::unary()
+{
+  if (this->eat("-"))
+    return new AST::UnaryOp(AST_UnaryMinus, *this->ate, this->indexref());
+
+  if (this->eat("+"))
+    return new AST::UnaryOp(AST_UnaryPlus, *this->ate, this->indexref());
+
+  //
+  // Type Constructor
+  if (this->eat("new")) {
+    auto ast = new AST::StructConstructor(*this->ate, this->expect_typename());
+
+    this->expect("{");
+
+    do {
+      auto period = this->expect(".");
+
+      auto& pair =
+        ast->init_pair_list.emplace_back(&*this->expect_identifier(), nullptr);
+
+      pair.t_assign = &*this->expect("=");
+
+      pair.expr = this->expr();
+    } while (this->eat(","));
+
+    this->expect("}");
+
+    return ast;
+  }
+
+  return this->indexref();
+}
+
 AST::Base* Parser::mul()
 {
-  auto x = this->indexref();
+  auto x = this->unary();
 
   while (this->check()) {
     if (this->eat("*"))
-      AST::Expr::create(x)->append(AST::EX_Mul, *this->ate, this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Mul, *this->ate, this->unary());
     else if (this->eat("/"))
-      AST::Expr::create(x)->append(AST::EX_Div, *this->ate, this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Div, *this->ate, this->unary());
     else if (this->eat("%"))
-      AST::Expr::create(x)->append(AST::EX_Mod, *this->ate, this->indexref());
+      AST::Expr::create(x)->append(AST::EX_Mod, *this->ate, this->unary());
     else
       break;
   }

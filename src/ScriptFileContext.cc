@@ -218,9 +218,11 @@ void SFContext::execute_full()
   }
 
   try {
+    alert;
     if (!this->lex())
       return;
 
+    alert;
     if (!this->parse())
       return;
 

@@ -42,9 +42,10 @@ struct ObjUserType : Object {
     return ret;
   }
 
-  explicit ObjUserType(TypeInfo const& type)
-    : Object(type)
+  explicit ObjUserType(AST::Typeable* ast)
+    : Object(TYPE_UserDef)
   {
+    this->type.userdef_type = ast;
   }
 
   ~ObjUserType()
@@ -129,6 +130,12 @@ struct ObjEnumerator : Object {
            (this->value ? this->value->equals(x->value) : true);
   }
 
+  Object*& set_value(Object* val)
+  {
+    val->ref_count++;
+    return this->value = val;
+  }
+
   ObjEnumerator(AST::Typeable* enum_ast, size_t index = 0,
                 Object* value = nullptr)
     : Object(TYPE_Enumerator),
@@ -136,6 +143,12 @@ struct ObjEnumerator : Object {
       value(value)
   {
     this->type.userdef_type = enum_ast;
+  }
+
+  ~ObjEnumerator()
+  {
+    if (this->value)
+      this->value->ref_count--;
   }
 };
 

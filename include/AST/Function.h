@@ -7,9 +7,9 @@ struct Argument : Base {
   AST::Type* type;
 
   Argument(std::string_view const& name, Token const& colon, AST::Type* type)
-      : Base(AST_Argument, colon),
-        name(name),
-        type(type)
+    : Base(AST_Argument, colon),
+      name(name),
+      type(type)
   {
   }
 
@@ -22,6 +22,9 @@ struct Argument : Base {
 struct Function : Base {
   Token const& name;  // 名前
   std::vector<Argument*> args;  // 引数
+
+  bool have_self;
+  Typeable* self_type;
 
   Type* result_type;  // 戻り値の型
   Scope* code;  // 処理
@@ -46,9 +49,11 @@ struct Function : Base {
    * @param name
    */
   explicit Function(Token const& token, Token const& name)
-      : Base(AST_Function, token),
-        name(name),
-        result_type(nullptr)
+    : Base(AST_Function, token),
+      name(name),
+      have_self(false),
+      self_type(nullptr),
+      result_type(nullptr)
   {
   }
 

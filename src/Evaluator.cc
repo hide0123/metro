@@ -111,7 +111,7 @@ Object* Evaluator::default_constructor(TypeInfo const& type,
     }
 
     case TYPE_UserDef: {
-      auto ret = new ObjUserType(type);
+      auto ret = new ObjUserType(type.userdef_type);
 
       if (construct_member && type.userdef_type->kind == AST_Struct) {
         for (auto&& member : type.members) {
@@ -350,11 +350,21 @@ Object* Evaluator::evaluate(AST::Base* _ast)
   if (!_ast)
     return new ObjNone();
 
+#if METRO_DEBUG
+  if (!_ast->__checked) {
+    Error(_ast, "@@@ didnt checked").emit();
+  }
+#endif
+
+  if (_ast->use_default)
+    return this->default_constructor(Sema::value_type_cache[_ast]);
+
   switch (_ast->kind) {
     case AST_None:
     case AST_Function:
     case AST_Enum:
     case AST_Struct:
+    case AST_Impl:
       break;
 
     case AST_True:
@@ -411,6 +421,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     //
     // 即値
     case AST_Value: {
+      alert;
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
@@ -441,10 +452,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       if (ast->is_enum) {
         assert(ast->indexes.size() == 1);
 
+        alert;
         auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
 
-        if (auto& x = ast->indexes[0]; x.ast->kind == AST_TypeConstructor) {
-          ret->value = this->evaluate(((AST::TypeConstructor*)x.ast)->init);
+        if (auto& x = ast->indexes[0];
+            x.kind == AST::IndexRef::Subscript::SUB_CallFunc) {
+          alert;
+          ret->set_value(this->evaluate(((AST::CallFunc*)x.ast)->args[0]));
         }
 
         return ret;
@@ -452,7 +466,11 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto obj = this->evaluate(ast->expr);
 
-      alert;
+      if (ast->indexes.empty()) {
+        alert;
+        return obj;
+      }
+
       return this->eval_index_ref(obj, ast);
     }
 
@@ -541,17 +559,18 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       return result;
     }
 
-    case AST_TypeConstructor: {
-      astdef(TypeConstructor);
+    case AST_StructConstructor: {
+      astdef(StructConstructor);
 
-      debug(assert(ast->typeinfo.kind == TYPE_UserDef));
+      alert;
+      auto ret = new ObjUserType(ast->p_struct);
 
-      auto ret = new ObjUserType(ast->typeinfo);
-
-      for (auto&& elem : ast->elements) {
-        ret->add_member(this->evaluate(elem.value));
+      for (auto&& pair : ast->init_pair_list) {
+        alert;
+        ret->add_member(this->evaluate(pair.expr));
       }
 
+      alert;
       return ret;
     }
 
@@ -560,14 +579,17 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Expr: {
       auto x = (AST::Expr*)_ast;
 
+      alert;
       auto ret = this->evaluate(x->first)->clone();
 
+      alert;
       ret->no_delete = true;
 
       for (auto&& elem : x->elements) {
         this->eval_expr_elem(elem, ret);
       }
 
+      alert;
       ret->no_delete = false;
 
       return ret;
@@ -578,13 +600,18 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Assign: {
       astdef(Assign);
 
+      alert;
       auto& dest = this->eval_left(ast->dest);
 
+      alert;
       dest->ref_count--;
 
+      alert;
       dest = this->evaluate(ast->expr);
+      alert;
       dest->ref_count++;
 
+      alert;
       return dest;
     }
 
@@ -625,13 +652,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       Object* obj{};
 
       for (auto&& item : ast->list) {
+        obj = this->evaluate(*iter++);
+
         if (item == last) {
-          obj = this->evaluate(*iter++);
           this->return_binds[obj] = ast;
-          break;
-        }
-        else {
-          this->evaluate(*iter++);
         }
 
         if (vst.is_skipped)
@@ -668,7 +692,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       Object* obj{};
 
-      if (!ast->init) {
+      if (!ast->init || ast->ignore_initializer) {
         obj = this->default_constructor(Sema::value_type_cache[ast->type]);
       }
       else {
@@ -790,21 +814,24 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_For: {
       astdef(For);
 
+      auto& v = this->push_vst();
+
       auto _obj = this->evaluate(ast->iterable);
       _obj->ref_count++;
-
-      auto& v = this->push_vst();
 
       auto& loop = this->loop_stack.emplace_front(v);
 
       Object** p_iter = nullptr;
 
       if (ast->iter->kind == AST_Variable) {
-        p_iter = &v.append_lvar(nullptr);
+        v.append_lvar(nullptr);
       }
-      else {
-        p_iter = &this->eval_left(ast->iter);
-      }
+
+      //      else {
+      p_iter = &this->eval_left(ast->iter);
+      //      }
+
+      assert(p_iter);
 
       switch (_obj->type.kind) {
         case TYPE_Range: {
@@ -827,7 +854,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
           // delete iter;
           iter->ref_count = 0;
-          this->delete_object(iter);
+          // this->delete_object(iter);
 
           break;
         }
@@ -836,8 +863,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           todo_impl;
       }
 
-      this->loop_stack.pop_front();
       this->pop_vst();
+      this->clean_obj();
+
+      this->loop_stack.pop_front();
 
       _obj->ref_count--;
       break;
@@ -897,6 +926,11 @@ Object* Evaluator::evaluate(AST::Base* _ast)
   return new ObjNone;
 }
 
+Object*& Evaluator::get_var(AST::Variable* ast)
+{
+  return std::next(this->vst_list.begin(), ast->step)->get_lvar(ast->index);
+}
+
 Object*& Evaluator::eval_left(AST::Base* _ast)
 {
   switch (_ast->kind) {
@@ -916,10 +950,11 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
 Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
 {
   Object** ret = &obj;
+  Object* tmp = nullptr;
 
   alert;
-
   for (auto&& index : ast->indexes) {
+    alert;
     switch (index.kind) {
       case AST::IndexRef::Subscript::SUB_Index: {
         auto obj_index = this->evaluate(index.ast);
@@ -983,19 +1018,24 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
             for (auto&& item : obj_dict->items) {
               if (item.key->equals(obj_index)) {
                 ret = &item.value;
+                alert;
                 goto _dict_value_found;
               }
             }
 
             {
+              alert;
               auto& item = obj_dict->append(
                 obj_index,
                 this->default_constructor(obj_dict->type.type_params[1]));
 
+              alert;
               ret = &item.value;
             }
 
+            alert;
           _dict_value_found:
+            alert;
             break;
           }
 
@@ -1007,17 +1047,69 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
       }
 
       case AST::IndexRef::Subscript::SUB_Member: {
-        switch (index.ast->kind) {
-          case AST_Variable:
-            ret = &((ObjUserType*)*ret)
-                     ->members[((AST::Variable*)index.ast)->index];
+        alert;
+        ret =
+          &((ObjUserType*)*ret)->members[((AST::Variable*)index.ast)->index];
 
-            break;
+        break;
+      }
 
-          default:
-            todo_impl;
+      case AST::IndexRef::Subscript::SUB_CallFunc: {
+        alert;
+        auto cf_ast = (AST::CallFunc*)index.ast;
+        auto func = cf_ast->callee;
+
+        std::vector<Object*> args{*ret};
+
+        for (auto&& arg : cf_ast->args) {
+          args.emplace_back(this->evaluate(arg));
         }
 
+        if (cf_ast->is_builtin) {
+          todo_impl;
+        }
+
+        // コールスタック作成
+        auto& cf = this->enter_function(func);
+
+        // 引数
+        auto& vst = this->push_vst();
+
+        for (auto&& obj : args) {
+          alert;
+          vst.append_lvar(obj)->ref_count++;
+        }
+
+        // 関数実行
+        alert;
+        auto res = this->evaluate(func->code);
+
+        // 戻り値を取得
+        alert;
+        auto result = cf.result;
+
+        if (!cf.is_returned) {
+          assert(func->code->return_last_expr);
+
+          result = res;
+        }
+
+        assert(result != nullptr);
+
+        for (auto&& obj : args) {
+          obj->ref_count--;
+        }
+
+        this->pop_vst();
+
+        // コールスタック削除
+        this->leave_function();
+
+        this->return_binds[result] = nullptr;
+
+        alert;
+        tmp = result;
+        ret = &tmp;
         break;
       }
 

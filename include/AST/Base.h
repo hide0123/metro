@@ -11,14 +11,42 @@ struct Base {
   Token const& token;
   std::list<Token>::const_iterator end_token;
 
-  bool is_left;
+#if METRO_DEBUG
+  bool __checked = false;
+#endif
+
+  bool use_default;  // empty scope or vector
 
   virtual ~Base();
 
   virtual std::string to_string() const;
 
+  //
+  // 空のスコープであるかどうか調べる
+  bool is_empty_scope() const;
+
+  //
+  // 空の vector であるか
+  bool is_empty_vector() const;
+
 protected:
   Base(ASTKind kind, Token const& token);
+};
+
+//
+struct Mutable : Base {
+  ASTKind new_kind;
+
+  ~Mutable()
+  {
+  }
+
+protected:
+  Mutable(ASTKind kind, Token const& token)
+    : Base(kind, token),
+      new_kind(kind)
+  {
+  }
 };
 
 struct ListBase : Base {
@@ -44,9 +72,9 @@ struct ExprBase : Base {
     Base* ast;
 
     explicit Element(Kind kind, Token const& op, Base* ast)
-        : kind(kind),
-          op(op),
-          ast(ast)
+      : kind(kind),
+        op(op),
+        ast(ast)
     {
     }
 
@@ -59,8 +87,8 @@ struct ExprBase : Base {
   std::vector<Element> elements;
 
   ExprBase(Base* first)
-      : Base(_self_kind, first->token),
-        first(first)
+    : Base(_self_kind, first->token),
+      first(first)
   {
   }
 

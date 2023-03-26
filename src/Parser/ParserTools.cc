@@ -23,6 +23,7 @@ bool Parser::is_ended_with_scope(AST::Base* ast)
     case AST_Enum:
     case AST_Struct:
     case AST_Function:
+    case AST_Impl:
       return true;
   }
 
@@ -113,8 +114,19 @@ AST::Function* Parser::parse_function()
   // 閉じかっこがなければ、引数を読み取っていく
   if (!this->eat(")")) {
     do {
-      func->append_argument(this->expect_identifier()->str, *this->expect(":"),
-                            this->expect_typename());
+      if (this->eat("self")) {
+        if (!this->in_impl) {
+          Error(ERR_InvalidSyntax, *this->ate, "used 'self' without impl-block")
+            .emit()
+            .exit();
+        }
+
+        func->have_self = true;
+      }
+      else {
+        func->append_argument(this->expect_identifier()->str,
+                              *this->expect(":"), this->expect_typename());
+      }
     } while (this->eat(","));  // カンマがあれば続ける
 
     this->expect(")");  // 閉じかっこ
@@ -185,15 +197,33 @@ AST::Struct* Parser::parse_struct()
 
 AST::Impl* Parser::parse_impl()
 {
-  auto ast = new AST::Impl(*this->expect("impl"));
+  this->in_impl = true;
 
-  ast->name = this->expect_identifier()->str;
+  auto ast = new AST::Impl(*this->expect("impl"), this->expect_typename());
 
   this->expect("{");
 
-  do {
-    ast->append(top());
-  } while (!this->eat("}"));
+  while (!this->eat("}")) {
+    auto x = top();
+
+    switch (x->kind) {
+      case AST_Function:
+        ast->append((AST::Function*)x);
+        break;
+
+      case AST_Impl:
+        Error(ERR_InvalidSyntax, x->token, "impl-block cannot be nested")
+          .emit()
+          .exit();
+
+      default:
+        Error(ERR_InvalidSyntax, x->token, "impl-block must have functions")
+          .emit()
+          .exit();
+    }
+  }
+
+  this->in_impl = false;
 
   return (AST::Impl*)this->set_last_token(ast);
 }
@@ -205,18 +235,30 @@ AST::Impl* Parser::parse_impl()
  */
 AST::Type* Parser::parse_typename()
 {
+  static int depth = 0;
+  static bool pass_rbrace = 0;
+
   auto ast = new AST::Type(*this->expect_identifier());
 
   if (this->eat("<")) {
+    depth++;
+
     do {
       ast->parameters.emplace_back(this->expect_typename());
     } while (this->eat(","));
 
-    if (this->cur->str == ">>") {
-      this->cur->str = ">";
+    if (pass_rbrace) {
+      pass_rbrace = false;
     }
-    else
+    else if (depth >= 2 && this->eat(">>")) {
+      depth--;
+      pass_rbrace = true;
+    }
+    else {
       this->expect(">");
+    }
+
+    depth--;
   }
 
   if (this->eat("const")) {

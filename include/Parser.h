@@ -20,8 +20,8 @@ public:
 
   AST::Base* factor();
   AST::Base* primary();
-  AST::Base* unary();
   AST::Base* indexref();
+  AST::Base* unary();
   AST::Base* mul();
   AST::Base* add();
   AST::Base* shift();
@@ -81,6 +81,8 @@ private:
   {
     return ast = (AST::Base*)this->new_return_stmt(ast);
   }
+
+  bool in_impl;
 
   token_iter cur;
   token_iter ate;
