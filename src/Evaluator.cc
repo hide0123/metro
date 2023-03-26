@@ -909,6 +909,11 @@ Object* Evaluator::evaluate(AST::Base* _ast)
   return new ObjNone;
 }
 
+Object*& Evaluator::get_var(AST::Variable* ast)
+{
+  return std::next(this->vst_list.begin(), ast->step)->get_lvar(ast->index);
+}
+
 Object*& Evaluator::eval_left(AST::Base* _ast)
 {
   switch (_ast->kind) {

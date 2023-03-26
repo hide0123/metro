@@ -150,15 +150,7 @@ private:
     return &*this->loop_stack.begin();
   }
 
-  Object*& get_var(AST::Variable* ast)
-  {
-    auto it = this->vst_list.begin();
-
-    for (size_t i = 0; i < ast->step; i++)
-      it++;
-
-    return it->get_lvar(ast->index);
-  }
+  Object*& get_var(AST::Variable* ast);
 
   static void gc_stop();
   static void gc_resume();

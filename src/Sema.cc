@@ -855,6 +855,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
         ast->step = s;
         ast->index = i;
+
+        alertmsg(ast->name << " " << s << ", " << i);
       }
       else {
         Error(ERR_Undefined, ast, "undefined variable name").emit().exit();
