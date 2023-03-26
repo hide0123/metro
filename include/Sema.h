@@ -185,9 +185,12 @@ public:
   TypeInfo check_function_call(AST::CallFunc* ast, bool have_self,
                                TypeInfo const& self_type);
 
-  TypeInfo& check_as_left(AST::Base* ast);
+  void expect_lvalue(AST::Base* ast);
+  TypeInfo as_lvalue(AST::Base* ast);
 
   TypeInfo check_indexref(AST::IndexRef* ast);
+
+  LocalVar* find_variable(std::string_view const& name);
 
   //
   // 構造体

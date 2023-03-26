@@ -910,21 +910,20 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto item_iter = ast->elements.begin();
 
       if (ast->key_type) {
-        key_type = this->check(ast->key_type);
-        value_type = this->check(ast->value_type);
+        _ret.type_params = {this->check(ast->key_type),
+                            this->check(ast->value_type)};
       }
       else {
-        key_type = this->check(item_iter->key);
-        value_type = this->check(item_iter->value);
+        _ret.type_params = {this->check(item_iter->key),
+                            this->check(item_iter->value)};
+
+        item_iter++;
       }
 
       for (; item_iter != ast->elements.end(); item_iter++) {
         this->expect(key_type, item_iter->key);
         this->expect(value_type, item_iter->value);
       }
-
-      _ret.type_params.emplace_back(std::move(key_type));
-      _ret.type_params.emplace_back(std::move(value_type));
 
       break;
     }
@@ -1482,34 +1481,32 @@ TypeInfo Sema::check(AST::Base* _ast)
 // ------------------------------------------------ //
 //  check_as_left
 // ------------------------------------------------ //
-TypeInfo& Sema::check_as_left(AST::Base* _ast)
+void Sema::expect_lvalue(AST::Base* _ast)
 {
   switch (_ast->kind) {
-    case AST_Variable: {
-      astdef(Variable);
+    case AST_Variable:
+      break;
 
-      for (size_t step = 0; auto&& S : this->scope_list) {
-        for (auto it = S.lvar.variables.rbegin(); it != S.lvar.variables.rend();
-             it++) {
-          if (it->name == ast->token.str) {
-            ast->step = step;
-            ast->index = it->index;
+    case AST_IndexRef: {
+      astdef(IndexRef);
 
-            return it->type;
-          }
-        }
+      this->expect_lvalue(ast->expr);
 
-        step++;
-      }
-
-      Error(ast->token, "undefined variable name").emit().exit();
+      break;
     }
 
-    case AST_IndexRef:
-      return this->check_as_left(((AST::IndexRef*)_ast)->expr);
+    default:
+      S Error(_ast, "expected lvalue expression").emit().exit();
   }
+}
 
-  Error(_ast, "expected lvalue expression").emit().exit();
+TypeInfo Sema::as_lvalue(AST::Base* ast)
+{
+}
+
+Sema::LocalVar* Sema::find_variable(std::string_view const& name)
+{
+  return this->get_cur_scope().lvar.find_var(name);
 }
 
 // ------------------------------------------------ //
