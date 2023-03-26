@@ -78,16 +78,16 @@ class Sema {
     TypeInfo type;
     std::string_view name;
 
-    size_t step;
-    size_t index;
+    // size_t step;
+    // size_t index;
 
     bool is_global = 0;
 
     explicit LocalVar(TypeInfo const& type, std::string_view name)
       : type(type),
-        name(name),
-        step(0),
-        index(0)
+        name(name)
+    // step(0),
+    // index(0)
     {
     }
   };
@@ -190,7 +190,8 @@ public:
 
   TypeInfo check_indexref(AST::IndexRef* ast);
 
-  LocalVar* find_variable(std::string_view const& name);
+  std::tuple<LocalVar*, size_t, size_t> find_variable(
+    std::string_view const& name);
 
   //
   // 構造体

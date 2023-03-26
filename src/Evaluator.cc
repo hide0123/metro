@@ -350,6 +350,12 @@ Object* Evaluator::evaluate(AST::Base* _ast)
   if (!_ast)
     return new ObjNone();
 
+#if METRO_DEBUG
+  if (!_ast->__checked) {
+    Error(_ast->token, "@@@ didnt checked").emit();
+  }
+#endif
+
   switch (_ast->kind) {
     case AST_None:
     case AST_Function:
@@ -445,7 +451,8 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
         if (auto& x = ast->indexes[0]; x.ast->kind == AST_TypeConstructor) {
           todo_impl;
-          // ret->value = this->evaluate(((AST::TypeConstructor*)x.ast)->init);
+          // ret->value =
+          // this->evaluate(((AST::TypeConstructor*)x.ast)->init);
         }
 
         return ret;
@@ -628,13 +635,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       Object* obj{};
 
       for (auto&& item : ast->list) {
+        obj = this->evaluate(*iter++);
+
         if (item == last) {
-          obj = this->evaluate(*iter++);
           this->return_binds[obj] = ast;
-          break;
-        }
-        else {
-          this->evaluate(*iter++);
         }
 
         if (vst.is_skipped)
@@ -803,11 +807,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       Object** p_iter = nullptr;
 
       if (ast->iter->kind == AST_Variable) {
-        p_iter = &v.append_lvar(nullptr);
+        v.append_lvar(nullptr);
       }
-      else {
-        p_iter = &this->eval_left(ast->iter);
-      }
+
+      //      else {
+      p_iter = &this->eval_left(ast->iter);
+      //      }
+
+      assert(p_iter);
 
       switch (_obj->type.kind) {
         case TYPE_Range: {
@@ -830,7 +837,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
           // delete iter;
           iter->ref_count = 0;
-          this->delete_object(iter);
+          // this->delete_object(iter);
 
           break;
         }
@@ -839,8 +846,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           todo_impl;
       }
 
-      this->loop_stack.pop_front();
       this->pop_vst();
+      this->clean_obj();
+
+      this->loop_stack.pop_front();
 
       _obj->ref_count--;
       break;
@@ -919,8 +928,6 @@ Object*& Evaluator::eval_left(AST::Base* _ast)
 Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
 {
   Object** ret = &obj;
-
-  alert;
 
   for (auto&& index : ast->indexes) {
     switch (index.kind) {

@@ -246,10 +246,14 @@ AST::Function* Sema::get_cur_func()
   return *this->function_history.begin();
 }
 
+// ----------
+//  Expect value to ast
+// ----------------
 TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
 {
   auto type = this->check(ast);
 
+  // 同じならそのまま返す
   if (type.equals(expected))
     return expected;
 
@@ -257,26 +261,30 @@ TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
     case TYPE_Vector: {
       auto x = (AST::Vector*)ast;
 
-      if (x->elements.empty())
-        return expected;
+      //
+      if (ast->is_empty_vector())
+        goto matched;
 
       break;
     }
 
     case TYPE_Dict: {
-      if (ast->kind == AST_Scope && ((AST::Scope*)ast)->list.empty())
-        return expected;
+      if (ast->is_empty_scope())
+        goto matched;
 
       auto x = (AST::Dict*)ast;
 
-      if (!!x->key_type && x->elements.empty())
-        return expected;
+      if (ast->kind == AST_Dict && !x->key_type && x->elements.empty())
+        goto matched;
 
       break;
     }
   }
 
+  //
+  // ast がスコープ
   if (ast->kind == AST_Scope) {
+    // 最後の要素を評価結果とする場合、エラー指摘場所をそれに変更する
     if (auto x = (AST::Scope*)ast; x->return_last_expr)
       ast = *x->list.rbegin();
   }
@@ -285,6 +293,9 @@ TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
                type.to_string() + "'")
     .emit()
     .exit();
+
+matched:
+  return this->value_type_cache[ast] = expected;
 }
 
 void Sema::TypeRecursionDetector::walk(AST::Typeable* ast)
@@ -832,8 +843,11 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Variable: {
       astdef(Variable);
 
-      if (auto p = this->find_variable(ast->name); p) {
+      if (auto [p, s, i] = this->find_variable(ast->name); p) {
         _ret = p->type;
+
+        ast->step = s;
+        ast->index = i;
       }
       else {
         Error(ERR_Undefined, ast, "undefined variable name").emit().exit();
@@ -1073,13 +1087,13 @@ TypeInfo Sema::check(AST::Base* _ast)
         pvar->type = type;
 
         ast->is_shadowing = true;
-        ast->index = pvar->index;
+        // ast->index = pvar->index;
       }
       // そうでなければ新規追加
       else {
         auto& var = scope_emu.lvar.append(type, ast->name);
 
-        ast->index = var.index = scope_emu.lvar.variables.size() - 1;
+        // ast->index = var.index = scope_emu.lvar.variables.size() - 1;
       }
 
       break;
@@ -1211,11 +1225,13 @@ TypeInfo Sema::check(AST::Base* _ast)
       //
       // イテレータが変数だったら自動で定義
       if (ast->iter->kind == AST_Variable) {
+        alertmsg(ast->iter->token.str);
+
         e.lvar.append(iter, ast->iter->token.str);
       }
-      // 変数でなければ
+
       //  --> 左辺値でない あるいは 型が合わないならエラー
-      else if (!this->as_lvalue(ast->iter).equals(iter)) {
+      if (!this->as_lvalue(ast->iter).equals(iter)) {
         Error(ast->iter, "type mismatch").emit().exit();
       }
 
@@ -1304,7 +1320,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       for (size_t ww = 0; auto&& arg : ast->args) {
         auto& V = S.lvar.append(this->check(arg->type), arg->name);
 
-        V.index = ww++;
+        // V.index = ww++;
       }
 
       auto res_type = this->check(ast->result_type);
@@ -1481,6 +1497,11 @@ TypeInfo Sema::check(AST::Base* _ast)
     retcap(_ret, _ast);
   }
 
+#if METRO_DEBUG
+  _ast->__checked = true;
+
+#endif
+
   return _ret;
 }
 
@@ -1512,14 +1533,23 @@ TypeInfo Sema::as_lvalue(AST::Base* ast)
   return this->check(ast);
 }
 
-Sema::LocalVar* Sema::find_variable(std::string_view const& name)
+std::tuple<Sema::LocalVar*, size_t, size_t> Sema::find_variable(
+  std::string_view const& name)
 {
-  for (auto&& scope : this->scope_list) {
-    if (auto p = scope.lvar.find_var(name); p)
-      return p;
+  size_t step = 0, index = 0;
+
+  for (size_t step = 0; auto&& scope : this->scope_list) {
+    for (size_t index = 0; auto&& var : scope.lvar.variables) {
+      if (var.name == name)
+        return {&var, step, index};
+
+      index++;
+    }
+
+    step++;
   }
 
-  return nullptr;
+  return {};
 }
 
 // ------------------------------------------------ //

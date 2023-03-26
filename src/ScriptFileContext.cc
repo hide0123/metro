@@ -229,9 +229,6 @@ void SFContext::execute_full()
     if (!this->check())
       return;
 
-    alert;
-    return;
-
     auto result = this->evaluate();
 
     delete result;

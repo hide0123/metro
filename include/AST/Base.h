@@ -11,11 +11,23 @@ struct Base {
   Token const& token;
   std::list<Token>::const_iterator end_token;
 
+#if METRO_DEBUG
+  bool __checked = false;
+#endif
+
   bool is_mutable;
 
   virtual ~Base();
 
   virtual std::string to_string() const;
+
+  //
+  // 空のスコープであるかどうか調べる
+  bool is_empty_scope() const;
+
+  //
+  // 空の vector であるか
+  bool is_empty_vector() const;
 
 protected:
   Base(ASTKind kind, Token const& token);

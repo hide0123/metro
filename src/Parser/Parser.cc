@@ -157,19 +157,19 @@ AST::Base* Parser::factor()
         return ast;
       }
 
-      AST::Type* ast_type = nullptr;
+      // AST::Type* ast_type = nullptr;
 
-      auto iter_save = this->cur;
+      // auto iter_save = this->cur;
 
-      try {
-        if (this->found("<")) {
-          this->cur = ident;
-          ast_type = this->expect_typename();
-        }
-      }
-      catch (Error& e) {
-        this->cur = iter_save;
-      }
+      // try {
+      //   if (this->found("<")) {
+      //     this->cur = ident;
+      //     ast_type = this->expect_typename();
+      //   }
+      // }
+      // catch (Error& e) {
+      //   this->cur = iter_save;
+      // }
 
       //
       // type constructor

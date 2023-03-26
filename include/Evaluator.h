@@ -35,6 +35,7 @@ class Evaluator {
 
     Object*& get_lvar(size_t index)
     {
+      assert(index < this->lvar_list.size());
       return this->lvar_list[index];
     }
 
@@ -128,17 +129,17 @@ private:
 
   var_storage& push_vst()
   {
-    return this->vst_list.emplace_back();
+    return this->vst_list.emplace_front();
   }
 
   void pop_vst()
   {
-    this->vst_list.pop_back();
+    this->vst_list.pop_front();
   }
 
   var_storage& get_vst()
   {
-    return *this->vst_list.rbegin();
+    return *this->vst_list.begin();
   }
 
   LoopStack* get_cur_loop()
@@ -151,7 +152,7 @@ private:
 
   Object*& get_var(AST::Variable* ast)
   {
-    auto it = this->vst_list.rbegin();
+    auto it = this->vst_list.begin();
 
     for (size_t i = 0; i < ast->step; i++)
       it++;
