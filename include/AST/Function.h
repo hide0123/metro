@@ -24,7 +24,7 @@ struct Function : Base {
   std::vector<Argument*> args;  // 引数
 
   bool have_self;
-  Type* self_type;
+  Typeable* self_type;
 
   Type* result_type;  // 戻り値の型
   Scope* code;  // 処理

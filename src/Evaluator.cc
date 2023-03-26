@@ -352,9 +352,12 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
 #if METRO_DEBUG
   if (!_ast->__checked) {
-    Error(_ast->token, "@@@ didnt checked").emit();
+    Error(_ast, "@@@ didnt checked").emit();
   }
 #endif
+
+  if (_ast->use_default)
+    return this->default_constructor(Sema::value_type_cache[_ast]);
 
   switch (_ast->kind) {
     case AST_None:
@@ -418,6 +421,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     //
     // 即値
     case AST_Value: {
+      alert;
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
@@ -448,11 +452,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       if (ast->is_enum) {
         assert(ast->indexes.size() == 1);
 
+        alert;
         auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
 
         if (auto& x = ast->indexes[0];
             x.kind == AST::IndexRef::Subscript::SUB_CallFunc) {
-          ret->value = this->evaluate(((AST::CallFunc*)x.ast)->args[0]);
+          alert;
+          ret->set_value(this->evaluate(((AST::CallFunc*)x.ast)->args[0]));
         }
 
         return ret;
@@ -460,7 +466,11 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto obj = this->evaluate(ast->expr);
 
-      alert;
+      if (ast->indexes.empty()) {
+        alert;
+        return obj;
+      }
+
       return this->eval_index_ref(obj, ast);
     }
 
@@ -552,12 +562,15 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_StructConstructor: {
       astdef(StructConstructor);
 
+      alert;
       auto ret = new ObjUserType(ast->p_struct);
 
       for (auto&& pair : ast->init_pair_list) {
+        alert;
         ret->add_member(this->evaluate(pair.expr));
       }
 
+      alert;
       return ret;
     }
 
@@ -566,14 +579,17 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Expr: {
       auto x = (AST::Expr*)_ast;
 
+      alert;
       auto ret = this->evaluate(x->first)->clone();
 
+      alert;
       ret->no_delete = true;
 
       for (auto&& elem : x->elements) {
         this->eval_expr_elem(elem, ret);
       }
 
+      alert;
       ret->no_delete = false;
 
       return ret;
@@ -584,13 +600,18 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Assign: {
       astdef(Assign);
 
+      alert;
       auto& dest = this->eval_left(ast->dest);
 
+      alert;
       dest->ref_count--;
 
+      alert;
       dest = this->evaluate(ast->expr);
+      alert;
       dest->ref_count++;
 
+      alert;
       return dest;
     }
 
@@ -931,7 +952,9 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
   Object** ret = &obj;
   Object* tmp = nullptr;
 
+  alert;
   for (auto&& index : ast->indexes) {
+    alert;
     switch (index.kind) {
       case AST::IndexRef::Subscript::SUB_Index: {
         auto obj_index = this->evaluate(index.ast);
@@ -995,19 +1018,24 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
             for (auto&& item : obj_dict->items) {
               if (item.key->equals(obj_index)) {
                 ret = &item.value;
+                alert;
                 goto _dict_value_found;
               }
             }
 
             {
+              alert;
               auto& item = obj_dict->append(
                 obj_index,
                 this->default_constructor(obj_dict->type.type_params[1]));
 
+              alert;
               ret = &item.value;
             }
 
+            alert;
           _dict_value_found:
+            alert;
             break;
           }
 
@@ -1019,6 +1047,7 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
       }
 
       case AST::IndexRef::Subscript::SUB_Member: {
+        alert;
         ret =
           &((ObjUserType*)*ret)->members[((AST::Variable*)index.ast)->index];
 
@@ -1026,18 +1055,61 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
       }
 
       case AST::IndexRef::Subscript::SUB_CallFunc: {
-        auto cf = (AST::CallFunc*)index.ast;
+        alert;
+        auto cf_ast = (AST::CallFunc*)index.ast;
+        auto func = cf_ast->callee;
 
         std::vector<Object*> args{*ret};
 
-        for (auto&& arg : cf->args) {
+        for (auto&& arg : cf_ast->args) {
           args.emplace_back(this->evaluate(arg));
         }
 
-        if (cf->is_builtin) {
+        if (cf_ast->is_builtin) {
           todo_impl;
         }
 
+        // コールスタック作成
+        auto& cf = this->enter_function(func);
+
+        // 引数
+        auto& vst = this->push_vst();
+
+        for (auto&& obj : args) {
+          alert;
+          vst.append_lvar(obj)->ref_count++;
+        }
+
+        // 関数実行
+        alert;
+        auto res = this->evaluate(func->code);
+
+        // 戻り値を取得
+        alert;
+        auto result = cf.result;
+
+        if (!cf.is_returned) {
+          assert(func->code->return_last_expr);
+
+          result = res;
+        }
+
+        assert(result != nullptr);
+
+        for (auto&& obj : args) {
+          obj->ref_count--;
+        }
+
+        this->pop_vst();
+
+        // コールスタック削除
+        this->leave_function();
+
+        this->return_binds[result] = nullptr;
+
+        alert;
+        tmp = result;
+        ret = &tmp;
         break;
       }
 

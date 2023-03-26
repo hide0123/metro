@@ -5,7 +5,8 @@ namespace AST {
 Base::Base(ASTKind kind, Token const& token)
   : kind(kind),
     token(token),
-    end_token(nullptr)
+    end_token(nullptr),
+    use_default(false)
 {
 }
 
@@ -67,7 +68,9 @@ CallFunc::CallFunc(Token const& name)
     name(name.str),
     is_builtin(false),
     builtin_func(nullptr),
-    callee(nullptr)
+    callee(nullptr),
+    selftype(nullptr),
+    is_membercall(false)
 {
 }
 
@@ -139,7 +142,8 @@ IndexRef::IndexRef(Token const& t, Base* expr)
     expr(expr),
     is_enum(false),
     enum_type(nullptr),
-    enumerator_index(0)
+    enumerator_index(0),
+    ignore_first(false)
 {
 }
 

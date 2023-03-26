@@ -199,7 +199,7 @@ AST::Impl* Parser::parse_impl()
 {
   this->in_impl = true;
 
-  auto ast = new AST::Impl(*this->expect("impl"), *this->expect_identifier());
+  auto ast = new AST::Impl(*this->expect("impl"), this->expect_typename());
 
   this->expect("{");
 

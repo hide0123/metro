@@ -15,7 +15,7 @@ struct Base {
   bool __checked = false;
 #endif
 
-  bool is_mutable;
+  bool use_default;  // empty scope or vector
 
   virtual ~Base();
 

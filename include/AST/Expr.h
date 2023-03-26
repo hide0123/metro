@@ -30,6 +30,9 @@ struct CallFunc : ListBase {
   BuiltinFunc const* builtin_func;
   Function* callee;
 
+  Typeable* selftype;
+  bool is_membercall;
+
   std::string to_string() const override;
 
   bool is_empty() const override
@@ -133,6 +136,10 @@ struct IndexRef : Base {
   bool is_enum;
   Enum* enum_type;
   size_t enumerator_index;
+
+  //
+  // if call a static member function, 'expr' is a struct name
+  bool ignore_first;
 
   bool is_empty() const
   {

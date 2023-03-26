@@ -3,19 +3,21 @@
 namespace AST {
 
 struct Impl : Scope {
-  Token const& name_token;
+  Typeable* type;
+
   std::string_view name;
 
-  Impl(Token const& token, Token const& name_token)
+  Impl(Token const& token, Typeable* type)
     : Scope(token),
-      name_token(name_token),
-      name(name_token.str)
+      type(type),
+      name(type->token.str)
   {
     this->kind = AST_Impl;
   }
 
   ~Impl()
   {
+    delete type;
   }
 };
 

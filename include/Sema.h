@@ -191,7 +191,7 @@ public:
 
   TypeInfo check(AST::Base* ast);
   TypeInfo check_function_call(AST::CallFunc* ast, bool have_self,
-                               TypeInfo const& self_type);
+                               AST::Typeable* self);
 
   void expect_lvalue(AST::Base* ast);
   TypeInfo as_lvalue(AST::Base* ast);
@@ -212,9 +212,8 @@ public:
 
   //
   // 関数を探す
-  FunctionFindResult find_function(AST::Scope* scope, std::string_view name,
-                                   bool have_self, TypeInfo const& self_type,
-                                   ArgVector const& args);
+  FunctionFindResult find_function(std::string_view name, bool have_self,
+                                   AST::Typeable* self, ArgVector const& args);
 
   AST::Typeable* find_usertype(std::string_view name);
 
@@ -289,7 +288,7 @@ private:
 
   std::vector<AST::Typeable*> type_check_stack;
 
-  std::vector<AST::Impl*> all_impl_blocks;
+  std::vector<AST::Impl*> all_impl_list;
 
   // captures
   std::vector<CaptureContext> captures;
