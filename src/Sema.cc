@@ -264,14 +264,11 @@ TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
   auto type = this->check(ast);
 
   // 同じならそのまま返す
-  if (type.equals(expected))
+  if (expected.equals(type))
     return expected;
 
-  switch (type.kind) {
+  switch (expected.kind) {
     case TYPE_Vector: {
-      auto x = (AST::Vector*)ast;
-
-      //
       if (ast->is_empty_vector())
         goto matched;
 
@@ -279,10 +276,10 @@ TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
     }
 
     case TYPE_Dict: {
+      auto x = (AST::Dict*)ast;
+
       if (ast->is_empty_scope())
         goto matched;
-
-      auto x = (AST::Dict*)ast;
 
       if (ast->kind == AST_Dict && !x->key_type && x->elements.empty())
         goto matched;
@@ -1052,25 +1049,10 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto& scope_emu = this->get_cur_scope();
 
       TypeInfo type;
-      TypeInfo init_expr_type;
-
-      if (ast->init) {
-        init_expr_type = this->check(ast->init);
-      }
 
       // 型が指定されてる
       if (ast->type) {
-        type = this->check(ast->type);
-
-        // 初期化式がある場合
-        //  =>
-        //  指定された型と初期化式の型が一致しないならエラー
-        if (ast->init && !type.equals(init_expr_type)) {
-          Error(ast->init, "mismatched type").emit().exit();
-        }
-        else {
-          type = init_expr_type;
-        }
+        type = this->expect(this->check(ast->type), ast->init);
       }
       // 型が指定されてない
       else {
@@ -1079,7 +1061,7 @@ TypeInfo Sema::check(AST::Base* _ast)
           Error(ast, "cannot deduction variable type").emit().exit();
         }
 
-        type = std::move(init_expr_type);
+        type = this->check(ast->init);
       }
 
       // 同スコープ内で同じ名前の変数を探す

@@ -86,8 +86,8 @@ AST::Base* Parser::factor()
     return new AST::ConstKeyword(AST_False, *this->ate);
 
   if (this->eat("{")) {
-    if (this->eat("}"))
-      return new AST::Scope(*this->ate);
+    if (auto tok = this->ate; this->eat("}"))
+      return this->set_last_token(new AST::Scope(*tok));
 
     auto token = this->cur;
 

@@ -15,12 +15,12 @@ Base::~Base()
 
 bool Base::is_empty_scope() const
 {
-  return this->kind == AST_Scope && ((AST::ListBase*)this)->is_empty();
+  return this->kind == AST_Scope && ((AST::Scope*)this)->is_empty();
 }
 
 bool Base::is_empty_vector() const
 {
-  return this->kind == AST_Vector && ((AST::ListBase*)this)->is_empty();
+  return this->kind == AST_Vector && ((AST::Vector*)this)->is_empty();
 }
 
 ListBase::ASTVector::~ASTVector()
