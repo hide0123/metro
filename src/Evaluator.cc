@@ -508,7 +508,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       std::vector<Object*> args;
 
       // 引数
-      for (auto&& arg : ast->args) {
+      for_indexed(i, arg, ast->args)
+      {
+        if (ast->is_membercall && arg->is_lvalue) {
+          args.emplace_back(this->eval_left(arg));
+          continue;
+        }
+
         args.emplace_back(this->evaluate(arg));
       }
 

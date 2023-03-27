@@ -13,10 +13,15 @@
 #include "Application.h"
 #include "Error.h"
 
+static char const* g_help_string = R"(
+usage:
+  metro [options] [input files]
+)";
+
 static Application* _g_inst;
 
 Application::Application()
-    : _cur_ctx(nullptr)
+  : _cur_ctx(nullptr)
 {
   _g_inst = this;
 }
@@ -30,25 +35,41 @@ int Application::main(int argc, char** argv)
 {
   Application::initialize();
 
+  // no arguments
+  if (argc == 1) {
+    std::cout << g_help_string;
+    return 0;
+  }
+
   // parse arguments
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
 
-    if (arg == "-help") {
-      std::cout << "usage: metro <input file>\n";
-    }
-    else if (arg.ends_with(".metro")) {
-      if (!std::ifstream(arg).good()) {
-        std::cerr << "fatal: cannot open file '" << arg << "'" << std::endl;
-        return -1;
+    // option
+    if (arg.starts_with("--")) {
+      arg = arg.substr(2);
+
+      if (arg.empty()) {
+        Error::fatal_error("missing option name");
       }
 
-      this->_contexts.emplace_back(arg);
+      if (arg == "help") {
+        std::cout << g_help_string;
+        return 0;
+      }
+      else {
+        Error::fatal_error("unknown option name: '", arg, "'");
+      }
     }
-    else {
-      std::cerr << "fatal: unknown argument: " << arg << std::endl;
 
-      return -1;
+    // script file
+    else if (arg.ends_with(".metro")) {
+      this->add_context(arg);
+    }
+
+    // other
+    else {
+      Error::fatal_error("unknown argument: ", arg);
     }
   }
 
@@ -94,4 +115,13 @@ void Application::initialize()
 Application* Application::get_instance()
 {
   return _g_inst;
+}
+
+ScriptFileContext& Application::add_context(std::string const& path)
+{
+  if (!std::ifstream(path).good()) {
+    Error::fatal_error("cannot open file '", path, "'");
+  }
+
+  return this->_contexts.emplace_back(path);
 }

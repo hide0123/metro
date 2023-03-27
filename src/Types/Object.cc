@@ -101,7 +101,7 @@ std::string ObjFloat::to_string() const
 {
   auto ret = std::to_string(this->value);
 
-  while (ret.size() > 1 && *ret.rbegin() == '0') {
+  while (ret.size() > 3 && *ret.rbegin() == '0') {
     ret.pop_back();
   }
 

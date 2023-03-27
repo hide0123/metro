@@ -343,6 +343,7 @@ AST::Base* Parser::unary()
       auto& pair =
         ast->init_pair_list.emplace_back(&*this->expect_identifier(), nullptr);
 
+      pair.t_period = &*period;
       pair.t_assign = &*this->expect("=");
 
       pair.expr = this->expr();

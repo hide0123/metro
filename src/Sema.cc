@@ -38,44 +38,41 @@ Sema::~Sema()
 {
 }
 
-Sema::ArgVector Sema::ArgumentWrap::make_vector_from_call(Sema& S,
-                                                          AST::CallFunc* ast)
+Sema::ArgumentVector Sema::make_arg_vector(AST::CallFunc* ast)
 {
-  ArgVector ret;
+  ArgumentVector ret;
 
   ret.caller = ast;
 
   for (auto&& arg : ast->args) {
     auto& W = ret.emplace_back(ArgumentWrap::ARG_Actual);
 
-    W.typeinfo = S.check(arg);
+    W.typeinfo = this->check(arg);
     W.value = arg;
   }
 
   return ret;
 }
 
-Sema::ArgVector Sema::ArgumentWrap::make_vector_from_function(
-  Sema& S, AST::Function* ast)
+Sema::ArgumentVector Sema::make_arg_vector(AST::Function* ast)
 {
-  ArgVector ret;
+  ArgumentVector ret;
 
   ret.userdef_func = ast;
 
   for (auto&& arg : ast->args) {
     auto& W = ret.emplace_back(ArgumentWrap::ARG_Formal);
 
-    W.typeinfo = S.check(arg->type);
+    W.typeinfo = this->check(arg->type);
     W.defined = arg->type;
   }
 
   return ret;
 }
 
-Sema::ArgVector Sema::ArgumentWrap::make_vector_from_builtin(
-  Sema& S, BuiltinFunc const* func)
+Sema::ArgumentVector Sema::make_arg_vector(BuiltinFunc const* func)
 {
-  ArgVector ret;
+  ArgumentVector ret;
 
   ret.builtin = func;
 
@@ -107,8 +104,8 @@ void Sema::do_check()
   this->check(this->root);
 }
 
-Sema::ArgumentsComparationResult Sema::compare_argument(ArgVector const& formal,
-                                                        ArgVector const& actual)
+Sema::ArgumentsComparationResult Sema::compare_argument(
+  ArgumentVector const& formal, ArgumentVector const& actual)
 {
   // formal = 定義側
   // actual = 呼び出し側
@@ -178,7 +175,7 @@ std::optional<TypeInfo> Sema::get_type_from_name(std::string_view name)
 Sema::FunctionFindResult Sema::find_function(std::string_view name,
                                              bool have_self,
                                              AST::Typeable* self,
-                                             ArgVector const& args)
+                                             ArgumentVector const& args)
 {
   FunctionFindResult result;
 
@@ -203,8 +200,7 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
           continue;
 
         alert;
-        auto cmp = this->compare_argument(
-          ArgumentWrap::make_vector_from_function(*this, func), args);
+        auto cmp = this->compare_argument(this->make_arg_vector(func), args);
 
         alert;
         if (cmp != ARG_OK) {
@@ -233,9 +229,7 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
       if (!func.self_type.equals(self_type))
         continue;
 
-      if (this->compare_argument(
-            ArgumentWrap::make_vector_from_builtin(*this, &func), args) !=
-          ARG_OK)
+      if (this->compare_argument(make_arg_vector(&func), args) != ARG_OK)
         continue;
 
       result.type = FunctionFindResult::FN_Builtin;
@@ -256,9 +250,7 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
       if (!this->check(func->self_type).equals(self_type))
         continue;
 
-      if (this->compare_argument(
-            ArgumentWrap::make_vector_from_function(*this, func), args) !=
-          ARG_OK)
+      if (this->compare_argument(make_arg_vector(func), args) != ARG_OK)
         continue;
 
       result.type = FunctionFindResult::FN_UserDefined;
@@ -682,11 +674,6 @@ check_indexes:
             .exit();
         }
 
-        std::string name;
-        std::vector<AST::Type*>* p_params = nullptr;
-        AST::Base* init = nullptr;
-        TypeInfo init_type;
-
         if (type.kind == TYPE_UserDef) {
           // AST 構造体へのポインタ
           auto pStruct = (AST::Struct*)type.userdef_type;
@@ -706,7 +693,8 @@ check_indexes:
           // 一致するものがない
           Error(ERR_Undefined, index.ast,
                 "struct '" + std::string(pStruct->name) +
-                  "' don't have a member '" + name + "'")
+                  "' don't have a member '" +
+                  std::string(index.ast->token.str) + "'")
             .emit()
             .exit();
 
@@ -723,12 +711,10 @@ check_indexes:
       case AST::IndexRef::Subscript::SUB_CallFunc: {
         auto cf = (AST::CallFunc*)index.ast;
 
-        // if (!with_instance) {
-        //   ast->ignore_first = true;
-        //   with_instance = false;
-        // }
-
         cf->selftype = type.userdef_type;
+
+        //
+        // if ast->expr is a type name, it's static member-function call.
         cf->is_membercall = i > 0 || !usertype;
 
         type = this->check(cf);
@@ -741,13 +727,18 @@ check_indexes:
     }
   }
 
-  if (usertype) {
+  if (usertype || type.userdef_type) {
     auto x = ast->expr;
 
     ast->expr = ast->indexes[0].ast;
-    ast->indexes.erase(ast->indexes.begin());
 
-    delete x;
+    if (usertype) {
+      ast->indexes.erase(ast->indexes.begin());
+      delete x;
+    }
+    else {
+      ast->indexes[0].ast = x;
+    }
   }
 
   return type;
@@ -1348,10 +1339,13 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Function: {
       auto ast = (AST::Function*)_ast;
 
-      if (auto f = this->find_function(
-            ast->name.str, ast->have_self, this->impl_of,
-            ArgumentWrap::make_vector_from_function(*this, ast));
-          f.found() && f.userdef != ast) {
+      auto fresult =
+        this->find_function(ast->name.str, ast->have_self, this->impl_of,
+                            this->make_arg_vector(ast));
+
+      //
+      // error: already exists function with same name
+      if (fresult.found() && fresult.userdef != ast) {
         Error(ast->name,
               "function '" + std::string(ast->name.str) + "' is already found")
           .emit()
@@ -1594,6 +1588,8 @@ void Sema::expect_lvalue(AST::Base* _ast)
     default:
       Error(_ast, "expected lvalue expression").emit().exit();
   }
+
+  _ast->is_lvalue = true;
 }
 
 TypeInfo Sema::as_lvalue(AST::Base* ast)
@@ -1633,7 +1629,7 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
 
   //
   // 引数
-  auto args = ArgumentWrap::make_vector_from_call(*this, ast);
+  auto args = this->make_arg_vector(ast);
 
   // 同じ名前の関数を探す
   auto result = this->find_function(ast->name, have_self, self, args);
@@ -1702,4 +1698,31 @@ void Sema::begin_return_capture(Sema::ReturnCaptureFunction cap_func)
 void Sema::end_return_capture()
 {
   this->return_captures.pop_back();
+}
+
+int Sema::find_member(TypeInfo const& type, std::string_view name)
+{
+  for (int i = 0; auto&& m : ((AST::Struct*)type.userdef_type)->members) {
+    if (m.name == name)
+      return i;
+
+    i++;
+  }
+
+  return -1;
+}
+
+Sema::SemaScope& Sema::get_cur_scope()
+{
+  return *this->scope_list.begin();
+}
+
+Sema::SemaScope& Sema::enter_scope(AST::Scope* ast)
+{
+  return this->scope_list.emplace_front(ast);
+}
+
+void Sema::leave_scope()
+{
+  this->scope_list.pop_front();
 }

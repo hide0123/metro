@@ -11,6 +11,8 @@ struct Base {
   Token const& token;
   std::list<Token>::const_iterator end_token;
 
+  bool is_lvalue;
+
 #if METRO_DEBUG
   bool __checked = false;
 #endif

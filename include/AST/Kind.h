@@ -3,8 +3,8 @@
 enum ASTKind : uint8_t {
   AST_Type,
 
-  AST_UserTypeName,
-  AST_ImplName,
+  // AST_UserTypeName,
+  // AST_ImplName,
 
   AST_None,
   AST_True,
