@@ -220,6 +220,8 @@ ObjDict* ObjDict::clone() const
 {
   auto ret = new ObjDict;
 
+  ret->type = this->type;
+
   for (auto&& item : this->items) {
     ret->append(item.key->clone(), item.value->clone());
   }
