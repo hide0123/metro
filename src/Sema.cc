@@ -505,6 +505,8 @@ std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
 // ------------------------------------------------ //
 TypeInfo Sema::check_indexref(AST::IndexRef* ast)
 {
+  using SubscriptKind = AST::IndexRef::Subscript::Kind;
+
   TypeInfo type;
 
   AST::Typeable* usertype = nullptr;
@@ -618,7 +620,7 @@ check_indexes:
     switch (index.kind) {
       //
       // 配列添字
-      case AST::IndexRef::Subscript::SUB_Index: {
+      case SubscriptKind::SUB_Index: {
         auto index_type = this->check(index.ast);
 
         switch (type.kind) {
@@ -666,7 +668,7 @@ check_indexes:
 
       //
       // メンバアクセス
-      case AST::IndexRef::Subscript::SUB_Member: {
+      case SubscriptKind::SUB_Member: {
         if (!type.have_members()) {
           Error(index.ast,
                 "'" + type.to_string() + "' type object don't have any members")
@@ -708,7 +710,7 @@ check_indexes:
         break;
       }
 
-      case AST::IndexRef::Subscript::SUB_CallFunc: {
+      case SubscriptKind::SUB_CallFunc: {
         auto cf = (AST::CallFunc*)index.ast;
 
         cf->selftype = type.userdef_type;
@@ -727,18 +729,23 @@ check_indexes:
     }
   }
 
-  if (usertype || type.userdef_type) {
+  if (usertype) {
     auto x = ast->expr;
 
     ast->expr = ast->indexes[0].ast;
+    ast->indexes.erase(ast->indexes.begin());
 
-    if (usertype) {
-      ast->indexes.erase(ast->indexes.begin());
-      delete x;
-    }
-    else {
-      ast->indexes[0].ast = x;
-    }
+    delete x;
+  }
+
+  while (!ast->indexes.empty() &&
+         ast->indexes[0].kind == SubscriptKind::SUB_CallFunc) {
+    auto cf = (AST::CallFunc*)ast->indexes[0].ast;
+
+    cf->args.insert(cf->args.begin(), ast->expr);
+
+    ast->expr = cf;
+    ast->indexes.erase(ast->indexes.begin());
   }
 
   return type;
