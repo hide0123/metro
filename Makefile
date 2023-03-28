@@ -1,5 +1,15 @@
 TARGET	:= metro
 
+EXT_DEBUG			:= -debug
+EXT_DEBUG_NOALERT	:= -debug-noalert
+
+EXTENSIONS		:= \
+	$(EXT_DEBUG) \
+	$(EXT_DEBUG_NOALERT)
+
+ALL_OUTPUT_FILES	:= \
+	$(foreach e,$(EXTENSIONS),$(TARGET)$(e))
+
 CC		= clang
 CXX		= clang++
 LD		= $(CXX)
@@ -46,7 +56,7 @@ export OFILES		= $(CFILES:.c=.o) $(CXXFILES:.cc=.o)
 
 DEBUGDIR	= $(BUILD)-debug
 
-all: release debug
+all: release debug debug_no_alert
 
 release: $(BUILD)
 	@echo release-build
@@ -55,20 +65,35 @@ release: $(BUILD)
 debug: $(DEBUGDIR)
 	@echo debug-build
 	@$(MAKE) --no-print-directory \
-		OUTPUT="$(OUTPUT)-debug" BUILD=$(DEBUGDIR) OPTFLAGS="-O0 -g" \
+		OUTPUT="$(OUTPUT)$(EXT_DEBUG)" BUILD=$(DEBUGDIR) OPTFLAGS="-O0 -g" \
 		DBGFLAGS="-DMETRO_DEBUG -gdwarf-4" LDFLAGS="" \
 		-C $(DEBUGDIR) -f $(CURDIR)/Makefile
 
+debug_no_alert: $(DEBUGDIR_NO_ALERT)
+	@echo debug-build \(no-alert\)
+	@$(MAKE) --no-print-directory \
+		OUTPUT="$(OUTPUT)$(EXT_DEBUG_NOALERT)" BUILD=$(DEBUGDIR) OPTFLAGS="-O0 -g" \
+		DBGFLAGS="-DMETRO_DEBUG -DMETRO_NO_ALERT=1 -gdwarf-4" LDFLAGS="" \
+		-C $(DEBUGDIR) -f $(CURDIR)/Makefile
+
 $(BUILD):
-	@[ -d $@ ] || mkdir -p $@
+	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
 
 $(DEBUGDIR):
-	@[ -d $@ ] || mkdir -p $@
+	@[ -d $(DEBUGDIR) ] || mkdir -p $(DEBUGDIR)
+
+$(DEBUGDIR_NO_ALERT):
+	@[ -d $(DEBUGDIR_NO_ALERT) ] || mkdir -p $(DEBUGDIR_NO_ALERT)
+
+allbuilddir: $(BUILD) $(DEBUGDIR) $(DEBUGDIR_NO_ALERT)
 
 clean:
 	rm -rf $(BUILD) $(DEBUGDIR) $(TARGET)
 
-re: clean $(BUILD) all
+clean-debug:
+	rm -rf $(DEBUGDIR) $(TARGET)
+
+re: clean all
 
 run: cclear all
 	@clear

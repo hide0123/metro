@@ -740,11 +740,16 @@ check_indexes:
 
   while (!ast->indexes.empty() &&
          ast->indexes[0].kind == SubscriptKind::SUB_CallFunc) {
+    alert;
     auto cf = (AST::CallFunc*)ast->indexes[0].ast;
 
+    alert;
     cf->args.insert(cf->args.begin(), ast->expr);
 
+    alert;
     ast->expr = cf;
+
+    alert;
     ast->indexes.erase(ast->indexes.begin());
   }
 
@@ -1608,13 +1613,18 @@ TypeInfo Sema::as_lvalue(AST::Base* ast)
 std::tuple<Sema::LocalVar*, size_t, size_t> Sema::find_variable(
   std::string_view const& name)
 {
-  for_indexed(step, scope, this->scope_list)
-  {
-    for_indexed(index, var, scope.lvar.variables)
-    {
+  size_t step = 0, index = 0;
+
+  for (auto&& scope : this->scope_list) {
+    index = 0;
+
+    for (auto&& var : scope.lvar.variables) {
       if (var.name == name)
         return {&var, step, index};
+
+      index++;
     }
+    step++;
   }
 
   return {};
@@ -1632,18 +1642,23 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
   ast->__checked = true;
 #endif
 
+  alert;
   auto selftype = this->check(self);
 
   //
   // 引数
+  alert;
   auto args = this->make_arg_vector(ast);
 
   // 同じ名前の関数を探す
+  alert;
   auto result = this->find_function(ast->name, have_self, self, args);
 
   //
   // ビルトイン
   if (result.type == FFResult::FN_Builtin) {
+    alert;
+
     ast->is_builtin = true;
     ast->builtin_func = result.builtin;
 
@@ -1652,10 +1667,13 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
 
   // ユーザー定義関数
   if (result.type == FFResult::FN_UserDefined) {
+    alert;
     ast->callee = result.userdef;
 
     return this->check(result.userdef->result_type);
   }
+
+  alert;
 
   auto func_name = (self ? selftype.to_string() + "." : "") +
                    std::string(ast->name) + "(" +
