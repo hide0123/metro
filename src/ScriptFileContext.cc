@@ -60,7 +60,8 @@ std::string_view SFContext::SourceData::get_line(Token const& token) const
 
 SFContext::ScriptFileContext(std::string const& path)
   : _is_open(false),
-    _srcdata(std::filesystem::canonical(path).string()),
+    // _srcdata(std::filesystem::canonical(path).string()),
+    _srcdata(path),
     _ast(nullptr),
     _owner(nullptr),
     _importer_token(nullptr)
@@ -122,6 +123,10 @@ bool SFContext::import(std::string const& path, Token const& token,
 {
   auto& ctx = this->_imported.emplace_back(path);
 
+  if (!ctx.open_file()) {
+    Error(token, "cannot open file '" + path + "'").emit().exit();
+  }
+
   ctx._owner = this;
   ctx._importer_token = &token;
 
@@ -148,12 +153,6 @@ bool SFContext::import(std::string const& path, Token const& token,
     }
 
     Error(token, "cannot import self").emit().exit();
-  }
-
-  if (!ctx.open_file()) {
-    Error(token, "cannot open file '" + path + "'").emit();
-
-    return false;
   }
 
   if (!ctx.lex())
@@ -229,9 +228,7 @@ void SFContext::execute_full()
     if (!this->check())
       return;
 
-    auto result = this->evaluate();
-
-    delete result;
+    this->evaluate();
   }
   catch (Error& e) {
     e.emit().exit();

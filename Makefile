@@ -1,5 +1,15 @@
 TARGET	:= metro
 
+EXT_DEBUG			:= -debug
+EXT_DEBUG_NOALERT	:= -debug-noalert
+
+EXTENSIONS		:= \
+	$(EXT_DEBUG) \
+	$(EXT_DEBUG_NOALERT)
+
+ALL_OUTPUT_FILES	:= \
+	$(TARGET) $(foreach e,$(EXTENSIONS),$(TARGET)$(e))
+
 CC		= clang
 CXX		= clang++
 LD		= $(CXX)
@@ -42,9 +52,13 @@ CXXFILES		= $(notdir $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cc)))
 
 export OFILES		= $(CFILES:.c=.o) $(CXXFILES:.cc=.o)
 
-.PHONY: $(BUILD) all debug release clean re install
+DEBUGDIR			= $(BUILD)$(EXT_DEBUG)
+DEBUGDIR_NO_ALERT	= $(BUILD)$(EXT_DEBUG_NOALERT)
 
-DEBUGDIR	= $(BUILD)-debug
+.PHONY: \
+	all release debug debug_no_alert \
+	$(BUILD) $(DEBUGDIR) $(DEBUGDIR_NO_ALERT) \
+	allbuilddir clean clean-debug re run run-debug install cclear
 
 all: release debug
 
@@ -55,26 +69,50 @@ release: $(BUILD)
 debug: $(DEBUGDIR)
 	@echo debug-build
 	@$(MAKE) --no-print-directory \
-		OUTPUT="$(OUTPUT)-debug" BUILD=$(DEBUGDIR) OPTFLAGS="-O0 -g" \
+		OUTPUT="$(OUTPUT)$(EXT_DEBUG)" BUILD=$(DEBUGDIR) OPTFLAGS="-O0 -g" \
 		DBGFLAGS="-DMETRO_DEBUG -gdwarf-4" LDFLAGS="" \
 		-C $(DEBUGDIR) -f $(CURDIR)/Makefile
 
+debug_no_alert: $(DEBUGDIR_NO_ALERT)
+	@echo debug-build \(no-alert\)
+	@$(MAKE) --no-print-directory \
+		OUTPUT="$(OUTPUT)$(EXT_DEBUG_NOALERT)" BUILD=$(DEBUGDIR_NO_ALERT) OPTFLAGS="-O0 -g" \
+		DBGFLAGS="-DMETRO_DEBUG -DMETRO_NO_ALERT=1 -gdwarf-4" LDFLAGS="" \
+		-C $(DEBUGDIR_NO_ALERT) -f $(CURDIR)/Makefile
+
 $(BUILD):
-	@[ -d $@ ] || mkdir -p $@
+	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
 
 $(DEBUGDIR):
-	@[ -d $@ ] || mkdir -p $@
+	@[ -d $(DEBUGDIR) ] || mkdir -p $(DEBUGDIR)
+
+$(DEBUGDIR_NO_ALERT):
+	@[ -d $(DEBUGDIR_NO_ALERT) ] || mkdir -p $(DEBUGDIR_NO_ALERT)
+
+allbuilddir: $(BUILD) $(DEBUGDIR) $(DEBUGDIR_NO_ALERT)
 
 clean:
-	rm -rf $(BUILD) $(DEBUGDIR) $(TARGET)
+	rm -rf $(BUILD) $(foreach e,$(EXTENSIONS),$(BUILD)$(e)) $(ALL_OUTPUT_FILES)
 
-re: clean $(BUILD) all
+clean-debug:
+	rm -rf \
+		$(DEBUGDIR) $(DEBUGDIR_NO_ALERT) \
+		$(TARGET)$(EXT_DEBUG) $(TARGET)$(EXT_DEBUG_NOALERT)
+
+re: clean allbuilddir all
 
 run: cclear all
 	@clear
 	@echo run $(TARGET)
 	@echo ----------------------------------------------------------------
-	@./metro
+	@./metro test.metro
+
+run-debug: allbuilddir
+	@make debug -j
+	@clear
+	@echo ./$(TARGET)$(EXT_DEBUG) test.metro
+	@echo ----------------------------------------------------------------
+	@./$(TARGET)$(EXT_DEBUG) test.metro
 
 install: all
 	@echo install...

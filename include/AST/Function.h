@@ -29,6 +29,8 @@ struct Function : Base {
   Type* result_type;  // 戻り値の型
   Scope* code;  // 処理
 
+  Base* return_binder;
+
   /**
    * @brief 引数を追加する
    *
@@ -53,7 +55,8 @@ struct Function : Base {
       name(name),
       have_self(false),
       self_type(nullptr),
-      result_type(nullptr)
+      result_type(nullptr),
+      return_binder(nullptr)
   {
   }
 

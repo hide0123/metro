@@ -24,6 +24,8 @@ public:
   static Application* get_instance();
 
 private:
+  ScriptFileContext& add_context(std::string const& path);
+
   ScriptFileContext const* _cur_ctx;
   std::vector<ScriptFileContext> _contexts;
 };

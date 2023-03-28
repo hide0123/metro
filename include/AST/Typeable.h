@@ -5,6 +5,8 @@ namespace AST {
 struct Typeable : Base {
   std::string_view name;
 
+  std::vector<Impl*> implements;
+
   ~Typeable();
 
 protected:

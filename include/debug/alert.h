@@ -15,6 +15,7 @@
 
 #define TAG_ALERT COL_YELLOW "#alert"
 #define TAG_ALERTMSG COL_MAGENTA "#alertmsg "
+#define TAG_ALERTFMT COL_CYAN "#alertfmt "
 #define TAG_ALERTCTOR _RGB(100, 200, 255) "#Contruct"
 #define TAG_ALERTDTOR _RGB(200, 150, 60) "#Destruct"
 #define TAG_TODOIMPL _RGB(50, 255, 255) "#not implemented here"
@@ -27,13 +28,19 @@
     _alert_impl(tag, ss.str().c_str(), __FILE__, __LINE__); \
   })
 
-#if METRO_DEBUG
+#if METRO_DEBUG && !METRO_NO_ALERT
 
 #define debug(...) __VA_ARGS__
 
 #define alert _alert_impl(TAG_ALERT, nullptr, __FILE__, __LINE__)
 
 #define alertmsg(e...) _streamalert(TAG_ALERTMSG, COL_WHITE << e)
+#define alertfmt(e...)                             \
+  ({                                               \
+    static char _buf[0x200];                       \
+    sprintf(_buf, e);                              \
+    _streamalert(TAG_ALERTFMT, COL_WHITE << _buf); \
+  })
 
 #if ENABLE_CDSTRUCT
 #define alert_ctor _streamalert(TAG_ALERTCTOR, __func__ << "  " << this)
@@ -49,6 +56,7 @@
 #define debug(...) (void)0;
 #define alert (void)0
 #define alertmsg(...) (void)0
+#define alertfmt(...) (void)0
 #define alert_ctor (void)0
 #define alert_dtor (void)0
 
@@ -74,10 +82,23 @@ inline void _alert_impl(char const* tag, char const* msg, char const* file,
 {
   char buf[0x100];
   char buf2[0x400]{' '};
+  char colstr[50];
+
+  uint8_t col[3];
+
+  for (auto&& c : col) {
+    constexpr auto begin = 100;
+    constexpr auto unit = 10;
+    constexpr auto range = (255 - begin) / unit;
+
+    c = begin + (rand() % range) * unit;
+  }
 
   _make_location_str(buf, file, line);
-  auto len = sprintf(buf2, COL_BOLD _BRGB(20, 20, 20) "        %s%-30s %s %s",
-                     _RGB(150, 255, 0), buf, tag, msg ? msg : "");
+  sprintf(colstr, "\033[38;2;%d;%d;%dm", col[0], col[1], col[2]);
+
+  auto len = sprintf(buf2, COL_BOLD _BRGB(10, 10, 10) "        %s%-30s %s %s",
+                     colstr, buf, tag, msg ? msg : "");
 
   size_t endpos = 200;
 

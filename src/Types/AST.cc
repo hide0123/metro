@@ -5,7 +5,8 @@ namespace AST {
 Base::Base(ASTKind kind, Token const& token)
   : kind(kind),
     token(token),
-    end_token(nullptr),
+    // end_token(nullptr),
+    is_lvalue(false),
     use_default(false)
 {
 }
@@ -61,6 +62,7 @@ Variable::Variable(Token const& tok)
     index(0),
     name(tok.str)
 {
+  this->is_lvalue = true;
 }
 
 CallFunc::CallFunc(Token const& name)
@@ -220,7 +222,8 @@ LoopController ::LoopController(Token const& token, ASTKind kind)
 
 Scope::Scope(Token const& token)
   : ListBase(AST_Scope, token),
-    return_last_expr(false)
+    return_last_expr(false),
+    of_function(false)
 {
 }
 

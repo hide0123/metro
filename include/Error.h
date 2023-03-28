@@ -5,6 +5,7 @@
 
 #include <memory>
 #include "AST.h"
+#include "color.h"
 
 enum ErrorKind {
   ERR_None,
@@ -79,6 +80,16 @@ public:
   [[noreturn]] void exit(int code = 1);
 
   static bool was_emitted();
+
+  template <class... Args>
+  static void fatal_error(Args&&... args)
+  {
+    std::cerr << COL_RED << "fatal error: " << COL_WHITE;
+
+    (std::cerr << ... << std::forward<Args>(args)) << COL_DEFAULT << std::endl;
+
+    std::exit(1);
+  }
 
 private:
   std::pair<Token const*, Token const*> get_token_range() const;

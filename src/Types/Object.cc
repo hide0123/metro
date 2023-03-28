@@ -101,7 +101,7 @@ std::string ObjFloat::to_string() const
 {
   auto ret = std::to_string(this->value);
 
-  while (ret.size() > 1 && *ret.rbegin() == '0') {
+  while (ret.size() > 3 && *ret.rbegin() == '0') {
     ret.pop_back();
   }
 
@@ -115,7 +115,7 @@ std::string ObjChar::to_string() const
 
 std::string ObjString::to_string() const
 {
-  auto str = Utils::String::to_str(this->get_wstring());
+  auto str = this->get_string().to_string();
 
   if (nested) {
     return '"' + str + '"';
@@ -219,6 +219,8 @@ ObjRange* ObjRange::clone() const
 ObjDict* ObjDict::clone() const
 {
   auto ret = new ObjDict;
+
+  ret->type = this->type;
 
   for (auto&& item : this->items) {
     ret->append(item.key->clone(), item.value->clone());

@@ -43,6 +43,8 @@ class Evaluator {
     {
       return this->lvar_list.emplace_back(obj);
     }
+
+    std::string to_string() const;
   };
 
   struct LoopStack {
@@ -63,6 +65,7 @@ public:
   ~Evaluator();
 
   Object* evaluate(AST::Base* ast);
+  Object* eval_callfunc(AST::CallFunc* ast);
 
   Object* eval_stmt(AST::Base* ast);
 
@@ -127,28 +130,11 @@ private:
 
   void clean_obj();
 
-  var_storage& push_vst()
-  {
-    return this->vst_list.emplace_front();
-  }
+  var_storage& get_vst();
+  var_storage& push_vst();
+  void pop_vst();
 
-  void pop_vst()
-  {
-    this->vst_list.pop_front();
-  }
-
-  var_storage& get_vst()
-  {
-    return *this->vst_list.begin();
-  }
-
-  LoopStack* get_cur_loop()
-  {
-    if (this->loop_stack.empty())
-      return nullptr;
-
-    return &*this->loop_stack.begin();
-  }
+  LoopStack* get_cur_loop();
 
   Object*& get_var(AST::Variable* ast);
 

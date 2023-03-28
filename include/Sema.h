@@ -19,7 +19,6 @@ class Sema {
 
   using TypeVector = std::vector<TypeInfo>;
 
-  class ArgVector;
   struct ArgumentWrap {
     enum ArgType {
       ARG_Formal,
@@ -57,15 +56,9 @@ class Sema {
 
       return nullptr;
     }
-
-    static Sema::ArgVector make_vector_from_call(Sema& S, AST::CallFunc* ast);
-    static Sema::ArgVector make_vector_from_function(Sema& S,
-                                                     AST::Function* ast);
-    static Sema::ArgVector make_vector_from_builtin(Sema& S,
-                                                    BuiltinFunc const* func);
   };
 
-  class ArgVector : public std::vector<ArgumentWrap> {
+  class ArgumentVector : public std::vector<ArgumentWrap> {
   public:
     BuiltinFunc const* builtin = nullptr;
     AST::Function* userdef_func = nullptr;
@@ -186,8 +179,8 @@ public:
 
   void do_check();
 
-  ArgumentsComparationResult compare_argument(ArgVector const& formal,
-                                              ArgVector const& actual);
+  ArgumentsComparationResult compare_argument(ArgumentVector const& formal,
+                                              ArgumentVector const& actual);
 
   TypeInfo check(AST::Base* ast);
   TypeInfo check_function_call(AST::CallFunc* ast, bool have_self,
@@ -213,7 +206,9 @@ public:
   //
   // 関数を探す
   FunctionFindResult find_function(std::string_view name, bool have_self,
-                                   AST::Typeable* self, ArgVector const& args);
+                                   AST::Typeable* self,
+                                   ArgumentVector const& args,
+                                   AST::Function* ignore = nullptr);
 
   AST::Typeable* find_usertype(std::string_view name);
 
@@ -245,32 +240,16 @@ private:
   void begin_return_capture(ReturnCaptureFunction func);
   void end_return_capture();
 
-  int find_member(TypeInfo const& type, std::string_view name)
-  {
-    for (int i = 0; auto&& m : ((AST::Struct*)type.userdef_type)->members) {
-      if (m.name == name)
-        return i;
+  int find_member(TypeInfo const& type, std::string_view name);
 
-      i++;
-    }
+  SemaScope& get_cur_scope();
 
-    return -1;
-  }
+  SemaScope& enter_scope(AST::Scope* ast);
+  void leave_scope();
 
-  SemaScope& get_cur_scope()
-  {
-    return *this->scope_list.begin();
-  }
-
-  SemaScope& enter_scope(AST::Scope* ast)
-  {
-    return this->scope_list.emplace_front(ast);
-  }
-
-  void leave_scope()
-  {
-    this->scope_list.pop_front();
-  }
+  ArgumentVector make_arg_vector(AST::CallFunc* ast);
+  ArgumentVector make_arg_vector(AST::Function* ast);
+  ArgumentVector make_arg_vector(BuiltinFunc const* func);
 
   // 今いる関数を返す
   // 関数の中にいなければ nullptr を返す
@@ -281,7 +260,7 @@ private:
   AST::Scope* root;
 
   AST::Impl* cur_impl;
-  AST::Struct* impl_of;
+  AST::Typeable* impl_of;
 
   std::list<SemaScope> scope_list;
   std::list<AST::Function*> function_history;
