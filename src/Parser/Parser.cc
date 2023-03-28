@@ -163,45 +163,6 @@ AST::Base* Parser::factor()
         return ast;
       }
 
-      // AST::Type* ast_type = nullptr;
-
-      // auto iter_save = this->cur;
-
-      // try {
-      //   if (this->found("<")) {
-      //     this->cur = ident;
-      //     ast_type = this->expect_typename();
-      //   }
-      // }
-      // catch (Error& e) {
-      //   this->cur = iter_save;
-      // }
-
-      //
-      // type constructor
-      // if (this->eat("{")) {
-      //   if (!ast_type) {
-      //     ast_type = new AST::Type(*ident);
-      //   }
-
-      //   auto ast = new AST::TypeConstructor(ast_type);
-
-      //   do {
-      //     auto x = this->expr();
-
-      //     if (this->found("}")) {
-      //       ast->init = x;
-      //       break;
-      //     }
-
-      //     ast->append(x, *this->expect(":"), this->expr());
-      //   } while (this->eat(","));
-
-      //   ast->end_token = this->expect("}");
-
-      //   return ast;
-      // }
-
       //
       // 変数
       return this->set_last_token(new AST::Variable(*ident));
@@ -338,21 +299,14 @@ AST::Base* Parser::unary()
   if (this->eat("new")) {
     auto ast = new AST::StructConstructor(*this->ate, this->expect_typename());
 
-    this->expect("{");
+    this->expect("(");
 
     do {
-      auto period = this->expect(".");
-
-      auto& pair =
-        ast->init_pair_list.emplace_back(&*this->expect_identifier(), nullptr);
-
-      pair.t_period = &*period;
-      pair.t_assign = &*this->expect("=");
-
-      pair.expr = this->expr();
+      ast->init_pair_list.emplace_back(*this->expect_identifier(),
+                                       *this->expect(":"), this->expr());
     } while (this->eat(","));
 
-    this->expect("}");
+    this->expect(")");
 
     return ast;
   }

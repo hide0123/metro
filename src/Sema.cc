@@ -977,7 +977,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
         // 名前
         if (pair.name != ast_member.name) {
-          Error(*pair.t_name, "no match member name").emit().exit();
+          Error(pair.t_name, "no match member name").emit().exit();
         }
 
         // 型
