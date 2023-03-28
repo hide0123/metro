@@ -292,6 +292,8 @@ struct ObjString : Object {
     : Object(TYPE_String),
       characters(vec)
   {
+    for (auto&& c : this->characters)
+      c->ref_count--;
   }
 };
 

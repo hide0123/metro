@@ -21,8 +21,6 @@ struct Base {
 
   virtual ~Base();
 
-  virtual std::string to_string() const;
-
   //
   // 空のスコープであるかどうか調べる
   bool is_empty_scope() const;
@@ -30,6 +28,8 @@ struct Base {
   //
   // 空の vector であるか
   bool is_empty_vector() const;
+
+  static std::string to_string(Base* ast);
 
 protected:
   Base(ASTKind kind, Token const& token);
@@ -107,18 +107,6 @@ struct ExprBase : Base {
   {
     return this->elements.emplace_back(kind, op, ast);
   }
-
-  std::string to_string() const
-  {
-    auto s = this->first->to_string();
-
-    for (auto&& elem : this->elements) {
-      s += " " + std::string(elem.op.str) + " " + elem.ast->to_string();
-    }
-
-    return s;
-  }
-
   static ExprBase* create(Base*& ast)
   {
     if (ast->kind != _self_kind)

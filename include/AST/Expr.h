@@ -9,8 +9,6 @@ struct ConstKeyword : Base {
 struct Value : Base {
   Object* object;
 
-  std::string to_string() const;
-
   Value(Token const& tok);
 };
 
@@ -30,10 +28,8 @@ struct CallFunc : ListBase {
   BuiltinFunc const* builtin_func;
   Function* callee;
 
-  Typeable* selftype;
+  // Typeable* selftype;
   bool is_membercall;
-
-  std::string to_string() const override;
 
   bool is_empty() const override
   {
@@ -163,6 +159,8 @@ struct IndexRef : Base {
   {
     return this->indexes.emplace_back(kind, x);
   }
+
+  std::string to_string() const;
 
   IndexRef(Token const& t, Base* expr);
   ~IndexRef();
