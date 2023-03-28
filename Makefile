@@ -8,7 +8,7 @@ EXTENSIONS		:= \
 	$(EXT_DEBUG_NOALERT)
 
 ALL_OUTPUT_FILES	:= \
-	$(foreach e,$(EXTENSIONS),$(TARGET)$(e))
+	$(TARGET) $(foreach e,$(EXTENSIONS),$(TARGET)$(e))
 
 CC		= clang
 CXX		= clang++
@@ -52,9 +52,13 @@ CXXFILES		= $(notdir $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cc)))
 
 export OFILES		= $(CFILES:.c=.o) $(CXXFILES:.cc=.o)
 
-.PHONY: $(BUILD) all debug release clean re install
+DEBUGDIR			= $(BUILD)$(EXT_DEBUG)
+DEBUGDIR_NO_ALERT	= $(BUILD)$(EXT_DEBUG_NOALERT)
 
-DEBUGDIR	= $(BUILD)-debug
+.PHONY: \
+	all release debug debug_no_alert \
+	$(BUILD) $(DEBUGDIR) $(DEBUGDIR_NO_ALERT) \
+	allbuilddir clean clean-debug re run run-debug install cclear
 
 all: release debug debug_no_alert
 
@@ -88,18 +92,27 @@ $(DEBUGDIR_NO_ALERT):
 allbuilddir: $(BUILD) $(DEBUGDIR) $(DEBUGDIR_NO_ALERT)
 
 clean:
-	rm -rf $(BUILD) $(DEBUGDIR) $(TARGET)
+	rm -rf $(BUILD) $(DEBUGDIR) $(ALL_OUTPUT_FILES)
 
 clean-debug:
-	rm -rf $(DEBUGDIR) $(TARGET)
+	rm -rf \
+		$(DEBUGDIR) $(DEBUGDIR_NO_ALERT) \
+		$(TARGET)$(EXT_DEBUG) $(TARGET)$(EXT_DEBUG_NOALERT)
 
-re: clean all
+re: clean allbuilddir all
 
 run: cclear all
 	@clear
 	@echo run $(TARGET)
 	@echo ----------------------------------------------------------------
-	@./metro
+	@./metro test.metro
+
+run-debug: allbuilddir
+	@make debug -j
+	@clear
+	@echo ./$(TARGET)$(EXT_DEBUG) test.metro
+	@echo ----------------------------------------------------------------
+	@./$(TARGET)$(EXT_DEBUG) test.metro
 
 install: all
 	@echo install...

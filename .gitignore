@@ -6,6 +6,7 @@
 # binary
 metro
 metro-debug
+metro-debug-noalert
 *.exe
 
 /*.txt
