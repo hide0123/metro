@@ -970,10 +970,11 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       //
       // 要素を全部チェック
-      for (size_t ast_member_index = 0; auto&& pair : ast->init_pair_list) {
+      for (auto member = pStruct->members.begin();
+           auto&& pair : ast->init_pair_list) {
         //
         // メンバ
-        auto const& ast_member = pStruct->members[ast_member_index];
+        auto const& ast_member = *member++;
 
         // 名前
         if (pair.name != ast_member.name) {
@@ -982,8 +983,6 @@ TypeInfo Sema::check(AST::Base* _ast)
 
         // 型
         this->expect(this->check(ast_member.type), pair.expr);
-
-        ast_member_index++;
       }
 
       _ret = type;
