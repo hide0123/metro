@@ -1,4 +1,5 @@
 #include "AST.h"
+#include "Utils.h"
 
 namespace AST {
 
@@ -323,30 +324,182 @@ Loop::~Loop()
   delete this->code;
 }
 
-std::string Base::to_string() const
+std::string Base::to_string(Base* _ast)
 {
-  return std::string(this->token.str);
-}
+#define astdef(T) auto ast = (AST::T*)_ast
 
-std::string Value::to_string() const
-{
-  if (this->token.kind == TOK_String)
-    return '"' + std::string(this->token.str) + '"';
+  switch (_ast->kind) {
+    case AST_None:
+    case AST_Value:
+    case AST_Variable:
+    case AST_True:
+    case AST_False:
+      break;
 
-  return std::string(this->token.str);
-}
+    case AST_CallFunc: {
+      astdef(CallFunc);
 
-std::string CallFunc::to_string() const
-{
-  auto ret = std::string(this->name) + "(";
+      std::string ret;
 
-  for (auto&& arg : this->args) {
-    ret += arg->to_string();
-    if (arg != *this->args.rbegin())
-      ret += ",";
+      if (ast->selftype) {
+        ret = std::string(ast->selftype->name) + ".";
+      }
+
+      ret += std::string(ast->name) + "(";
+
+      for (auto&& arg : ast->args) {
+        ret += to_string(arg);
+        if (arg != *ast->args.rbegin())
+          ret += ",";
+      }
+
+      return ret + ")";
+    }
+
+    case AST_StructConstructor: {
+      astdef(StructConstructor);
+
+      return "new " + to_string(ast->type) + "{" +
+             Utils::String::join(", ", ast->init_pair_list,
+                                 [](StructConstructor::Pair& pair) {
+                                   return "." + std::string(pair.name) + ": " +
+                                          to_string(pair.expr);
+                                 }) +
+             "}";
+    }
+
+    case AST_IndexRef: {
+      astdef(IndexRef);
+
+      std::string ret = to_string(ast->expr);
+
+      for (auto&& index : ast->indexes) {
+        switch (index.kind) {
+          case IndexRef::Subscript::SUB_Index:
+            ret += "[" + to_string(index.ast) + "]";
+            break;
+
+          case IndexRef::Subscript::SUB_Member:
+          case IndexRef::Subscript::SUB_CallFunc:
+            ret += "." + to_string(index.ast);
+            break;
+        }
+      }
+
+      return ret;
+    }
+
+    case AST_Assign: {
+      astdef(Assign);
+
+      return to_string(ast->dest) + " = " + to_string(ast->expr);
+    }
+
+    case AST_Let: {
+      astdef(VariableDeclaration);
+
+      std::string ret = "let " + std::string(ast->name);
+
+      if (ast->type)
+        ret += " : " + to_string(ast->type);
+
+      if (ast->init)
+        ret += " = " + to_string(ast->init);
+
+      return ret;
+    }
+
+    case AST_Return: {
+      astdef(Return);
+
+      if (ast->expr)
+        return "return " + to_string(ast->expr);
+
+      return "return";
+    }
+
+    case AST_Scope: {
+      astdef(Scope);
+
+      std::string ret =
+        "{ " + Utils::String::join(";\n", ast->list, [](auto& x) {
+          return to_string(x);
+        });
+
+      if (!ast->return_last_expr)
+        ret += ";";
+
+      return ret + "}";
+    }
+
+    case AST_Argument: {
+      astdef(Argument);
+
+      return std::string(ast->name) + ": " + to_string(ast->type);
+    }
+
+    case AST_Function: {
+      astdef(Function);
+
+      std::string ret = "fn " + std::string(ast->name.str) + "(";
+
+      if (ast->have_self) {
+        ret += "self";
+
+        if (!ast->args.empty())
+          ret += ", ";
+      }
+
+      ret += Utils::String::join(", ", ast->args, to_string) + ")";
+
+      if (ast->result_type)
+        ret += " -> " + to_string(ast->result_type) + " ";
+
+      return ret + to_string(ast->code);
+    }
+
+    case AST_Enum: {
+      astdef(Enum);
+
+      std::string ret = "enum " + std::string(ast->name) + " {";
+
+      for (auto&& e : ast->enumerators) {
+        ret += std::string(e.name);
+
+        if (e.value_type)
+          ret += "(" + to_string(e.value_type) + ")";
+
+        if (&e != &*ast->enumerators.rbegin())
+          ret += ", ";
+      }
+
+      return ret + "}";
+    }
+
+    case AST_Struct: {
+      astdef(Struct);
+
+      std::string ret = "struct " + std::string(ast->name) + " {";
+
+      for (auto&& m : ast->members) {
+        ret += std::string(m.name) + ": " + to_string(m.type);
+
+        if (&m != &*ast->members.rbegin())
+          ret += ", ";
+      }
+
+      return ret + "}";
+    }
+
+    case AST_Impl: {
+      astdef(Impl);
+
+      return "impl " + to_string(ast->type) + "{" +
+             Utils::String::join(" ", ast->list, to_string) + "}";
+    }
   }
 
-  return ret + ")";
+  return std::string(_ast->token.str);
 }
 
 StructConstructor::StructConstructor(Token const& token, Type* type)

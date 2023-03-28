@@ -30,7 +30,7 @@ DBGFLAGS		:=
 COMMONFLAGS	= $(DBGFLAGS) $(INCLUDES) $(OPTFLAGS) $(WARNFLAGS)
 CFLAGS			:= $(COMMONFLAGS)
 CXXFLAGS		:= $(CFLAGS) -std=c++20
-LDFLAGS			:= -Wl,--gc-sections,-s
+LDFLAGS			:= -Wl,--gc-sections
 
 %.o: %.c
 	@echo $(notdir $<)

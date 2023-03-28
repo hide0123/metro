@@ -195,6 +195,10 @@ bool SFContext::check()
 
   sema.do_check();
 
+  debug(std::cout << AST::Base::to_string(this->_ast)
+                  << "\n------------------------------------------"
+                  << std::endl);
+
   return !Error::was_emitted();
 }
 

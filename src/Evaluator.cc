@@ -385,13 +385,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
   if (!_ast)
     return new ObjNone();
 
-#if METRO_DEBUG
-  if (!_ast->__checked) {
-    Error(_ast, "@@@ didnt checked").emit();
-  }
-
-#endif
-
   if (_ast->use_default)
     return this->default_constructor(Sema::value_type_cache[_ast]);
 
@@ -620,7 +613,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
         obj = this->evaluate(x);
 
         if (ast->return_last_expr && ast->of_function) {
-          this->return_binds[obj] = ast;
+          // this->return_binds[obj] = ast;
           obj->no_delete = 1;
         }
 
@@ -645,6 +638,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       this->clean_obj();
 
       if (obj) {
+        obj->no_delete = false;
         return obj;
       }
 
@@ -736,8 +730,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto item = this->evaluate(ast->expr);
 
       for (auto&& c : ast->cases) {
-        alert;
-
         auto cond = this->evaluate(c->cond);
 
         if (cond->type.equals(TYPE_Bool)) {
@@ -824,12 +816,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
           todo_impl;
       }
 
+      iterable->ref_count--;
+
       this->pop_vst();
       this->clean_obj();
 
       this->loop_stack.pop_front();
 
-      iterable->ref_count--;
       break;
     }
 
@@ -976,9 +969,7 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
   Object** ret = &obj;
   Object* tmp = nullptr;
 
-  alert;
   for (auto&& index : ast->indexes) {
-    alert;
     switch (index.kind) {
       case AST::IndexRef::Subscript::SUB_Index: {
         auto obj_index = this->evaluate(index.ast);
@@ -1042,7 +1033,6 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
             for (auto&& item : obj_dict->items) {
               if (item.key->equals(obj_index)) {
                 ret = &item.value;
-                alert;
                 goto _dict_value_found;
               }
             }
@@ -1052,9 +1042,7 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
                                            obj_dict->type.type_params[1]))
                      .value;
 
-            alert;
           _dict_value_found:
-            alert;
             break;
           }
 
@@ -1066,7 +1054,6 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
       }
 
       case AST::IndexRef::Subscript::SUB_Member: {
-        alert;
         ret =
           &((ObjUserType*)*ret)->members[((AST::Variable*)index.ast)->index];
 

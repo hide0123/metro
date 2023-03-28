@@ -616,7 +616,11 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
         if (init)
           tmp->args.emplace_back(init);
 
+        auto x = ast->expr;
+
         ast->expr = tmp;
+        delete x;
+
         ast->indexes.erase(ast->indexes.begin());
 
         goto check_indexes;
@@ -758,16 +762,11 @@ check_indexes:
 
   while (!ast->indexes.empty() &&
          ast->indexes[0].kind == SubscriptKind::SUB_CallFunc) {
-    alert;
     auto cf = (AST::CallFunc*)ast->indexes[0].ast;
 
-    alert;
     cf->args.insert(cf->args.begin(), ast->expr);
 
-    alert;
     ast->expr = cf;
-
-    alert;
     ast->indexes.erase(ast->indexes.begin());
   }
 
@@ -1305,8 +1304,6 @@ TypeInfo Sema::check(AST::Base* _ast)
       //
       // イテレータが変数だったら自動で定義
       if (ast->iter->kind == AST_Variable) {
-        alertmsg(ast->iter->token.str);
-
         e.lvar.append(iter, ast->iter->token.str);
       }
 
@@ -1531,24 +1528,27 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Impl: {
       astdef(Impl);
 
-      AST::Typeable* target = nullptr;
+      // AST::Typeable* target = nullptr;
 
-      if (auto ut = this->find_usertype(ast->name); !ut) {
-        Error(ERR_Undefined, ast->type, "undefined type name").emit().exit();
-      }
-      else {
-        target = (AST::Struct*)ut;
-        target->implements.emplace_back(ast);
-      }
+      // if (auto ut = this->find_usertype(ast->name); !ut) {
+      //   Error(ERR_Undefined, ast->type, "undefined type name").emit().exit();
+      // }
+      // else {
+      //   target = (AST::Struct*)ut;
+      //   target->implements.emplace_back(ast);
+      // }
+
+      this->check(ast->type);
 
       this->cur_impl = ast;
-      this->impl_of = target;
+      this->impl_of = ast->type;
 
       for (auto&& x : ast->list) {
         this->check(x);
       }
 
       this->cur_impl = nullptr;
+      this->impl_of = nullptr;
 
       break;
     }
@@ -1675,23 +1675,18 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
   ast->__checked = true;
 #endif
 
-  alert;
   auto selftype = this->check(self);
 
   //
   // 引数
-  alert;
   auto args = this->make_arg_vector(ast);
 
   // 同じ名前の関数を探す
-  alert;
   auto result = this->find_function(ast->name, have_self, self, args);
 
   //
   // ビルトイン
   if (result.type == FFResult::FN_Builtin) {
-    alert;
-
     ast->is_builtin = true;
     ast->builtin_func = result.builtin;
 
@@ -1700,13 +1695,10 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
 
   // ユーザー定義関数
   if (result.type == FFResult::FN_UserDefined) {
-    alert;
     ast->callee = result.userdef;
 
     return this->check(result.userdef->result_type);
   }
-
-  alert;
 
   auto func_name = (self ? selftype.to_string() + "." : "") +
                    std::string(ast->name) + "(" +
