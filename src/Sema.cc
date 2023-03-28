@@ -538,9 +538,9 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
         .emit()
         .exit();
     }
-    else if (ast->indexes.size() > 1) {
-      Error(ERR_InvalidSyntax, ast->indexes[1].ast, "???").emit().exit();
-    }
+    // else if (ast->indexes.size() > 1) {
+    //   Error(ERR_InvalidSyntax, ast->indexes[1].ast, "???").emit().exit();
+    // }
 
     auto& sub = ast->indexes[0].ast;
 
@@ -596,7 +596,8 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
         type = TYPE_Enumerator;
         type.userdef_type = ast_enum;
 
-        return type;
+        // return type;
+        goto check_indexes;
       }
 
       ast->enumerator_index++;
@@ -608,11 +609,6 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
       .emit()
       .exit();
   }
-
-  // ast->expr = ast->indexes[0].ast;
-  // ast->indexes.erase(ast->indexes.begin());
-
-  // this->check(ast->expr);
 
 check_indexes:
   for_indexed(i, index, ast->indexes)

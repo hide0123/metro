@@ -124,9 +124,7 @@ bool SFContext::import(std::string const& path, Token const& token,
   auto& ctx = this->_imported.emplace_back(path);
 
   if (!ctx.open_file()) {
-    Error(token, "cannot open file '" + path + "'").emit();
-
-    return false;
+    Error(token, "cannot open file '" + path + "'").emit().exit();
   }
 
   ctx._owner = this;
