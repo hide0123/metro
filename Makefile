@@ -76,9 +76,9 @@ debug: $(DEBUGDIR)
 debug_no_alert: $(DEBUGDIR_NO_ALERT)
 	@echo debug-build \(no-alert\)
 	@$(MAKE) --no-print-directory \
-		OUTPUT="$(OUTPUT)$(EXT_DEBUG_NOALERT)" BUILD=$(DEBUGDIR) OPTFLAGS="-O0 -g" \
+		OUTPUT="$(OUTPUT)$(EXT_DEBUG_NOALERT)" BUILD=$(DEBUGDIR_NO_ALERT) OPTFLAGS="-O0 -g" \
 		DBGFLAGS="-DMETRO_DEBUG -DMETRO_NO_ALERT=1 -gdwarf-4" LDFLAGS="" \
-		-C $(DEBUGDIR) -f $(CURDIR)/Makefile
+		-C $(DEBUGDIR_NO_ALERT) -f $(CURDIR)/Makefile
 
 $(BUILD):
 	@[ -d $(BUILD) ] || mkdir -p $(BUILD)
@@ -92,7 +92,7 @@ $(DEBUGDIR_NO_ALERT):
 allbuilddir: $(BUILD) $(DEBUGDIR) $(DEBUGDIR_NO_ALERT)
 
 clean:
-	rm -rf $(BUILD) $(DEBUGDIR) $(ALL_OUTPUT_FILES)
+	rm -rf $(BUILD) $(foreach e,$(EXTENSIONS),$(BUILD)$(e)) $(ALL_OUTPUT_FILES)
 
 clean-debug:
 	rm -rf \

@@ -1,6 +1,6 @@
 /build
-/build-release
 /build-debug
+/build-debug-noalert
 /__pychache__
 
 # binary
