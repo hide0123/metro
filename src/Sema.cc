@@ -924,20 +924,8 @@ TypeInfo Sema::check(AST::Base* _ast)
     //
     // 関数呼び出し
     case AST_CallFunc: {
-      astdef(CallFunc);
-
-      alert;
-
-      if (!ast->is_membercall) {
-        alert;
-        _ret = this->check_function_call(ast, false, std::nullopt);
-        break;
-      }
-
-      // std::optional<TypeInfo> self;
-      // _ret = this->check_function_call(ast, true, self);
-
-      panic("oo");
+      _ret =
+        this->check_function_call((AST::CallFunc*)_ast, false, std::nullopt);
 
       break;
     }
@@ -1394,10 +1382,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       // self
       if (ast->have_self) {
-        assert(this->cur_impl);
-
         S.lvar.append(this->check(this->impl_of), "self");
-        ast->self_type = this->impl_of;
       }
 
       // 引数追加
@@ -1522,16 +1507,6 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Impl: {
       astdef(Impl);
 
-      // AST::Typeable* target = nullptr;
-
-      // if (auto ut = this->find_usertype(ast->name); !ut) {
-      //   Error(ERR_Undefined, ast->type, "undefined type name").emit().exit();
-      // }
-      // else {
-      //   target = (AST::Struct*)ut;
-      //   target->implements.emplace_back(ast);
-      // }
-
       this->check(ast->type);
 
       this->cur_impl = ast;
@@ -1605,7 +1580,6 @@ TypeInfo Sema::check(AST::Base* _ast)
 
 #if METRO_DEBUG
   _ast->__checked = true;
-
 #endif
 
   return _ret;
@@ -1644,18 +1618,13 @@ TypeInfo Sema::as_lvalue(AST::Base* ast)
 std::tuple<Sema::LocalVar*, size_t, size_t> Sema::find_variable(
   std::string_view const& name)
 {
-  size_t step = 0, index = 0;
-
-  for (auto&& scope : this->scope_list) {
-    index = 0;
-
-    for (auto&& var : scope.lvar.variables) {
+  for_indexed(step, scope, this->scope_list)
+  {
+    for_indexed(index, var, scope.lvar.variables)
+    {
       if (var.name == name)
         return {&var, step, index};
-
-      index++;
     }
-    step++;
   }
 
   return {};
