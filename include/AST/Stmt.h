@@ -32,6 +32,7 @@ struct LoopController : Base {
 struct Scope : ListBase {
   ASTVector list;
   bool return_last_expr;
+  bool of_function;
 
   bool is_empty() const override
   {

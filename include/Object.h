@@ -5,6 +5,7 @@
 
 #include "TypeInfo.h"
 #include "ASTfwd.h"
+#include "String.h"
 
 struct Object {
   TypeInfo type;
@@ -26,6 +27,13 @@ struct Object {
 protected:
   Object(TypeInfo type);
 };
+
+template <std::derived_from<Object> T>
+T*& add_refcount(T*& obj)
+{
+  obj->ref_count++;
+  return obj;
+}
 
 struct ObjUserType : Object {
   std::vector<Object*> members;
@@ -201,7 +209,7 @@ struct ObjBool : Object {
 };
 
 struct ObjChar : Object {
-  wchar_t value;
+  metro_char_t value;
 
   std::string to_string() const;
   ObjChar* clone() const;
@@ -235,20 +243,22 @@ struct ObjString : Object {
     return false;
   }
 
-  ObjChar* append(ObjChar* c)
+  ObjChar*& append(ObjChar* c)
   {
-    return this->characters.emplace_back(c);
+    return add_refcount(this->characters.emplace_back(c));
   }
 
-  ObjChar* append(wchar_t c)
+  ObjChar*& append(metro_char_t c)
   {
-    return this->characters.emplace_back(new ObjChar(c));
+    return add_refcount(this->characters.emplace_back(new ObjChar(c)));
   }
 
+  // copy
   ObjString& append(ObjString* str)
   {
-    for (auto&& c : str->characters)
-      this->append(c);
+    for (auto&& c : str->characters) {
+      this->append(c->clone());
+    }
 
     return *this;
   }
@@ -261,9 +271,9 @@ struct ObjString : Object {
     return *this;
   }
 
-  std::wstring get_wstring() const
+  metro_string_t get_string() const
   {
-    std::wstring ret;
+    metro_string_t ret;
 
     for (auto&& c : this->characters)
       ret += c->value;
@@ -314,6 +324,14 @@ struct ObjDict : Object {
       : key(k),
         value(v)
     {
+      this->key->ref_count++;
+      this->value->ref_count++;
+    }
+
+    ~Item()
+    {
+      this->key->ref_count--;
+      this->value->ref_count--;
     }
   };
 
@@ -327,8 +345,8 @@ struct ObjDict : Object {
     if (this->items.size() != x->items.size())
       return false;
 
-    for (auto xx = x->items.begin(); auto&& aa : this->items) {
-      if (!aa.key->equals(xx->key) || !aa.value->equals(xx->value))
+    for (auto xx = x->items.begin(); auto&& self : this->items) {
+      if (!self.key->equals(xx->key) || !self.value->equals(xx->value))
         return false;
       xx++;
     }
@@ -338,12 +356,7 @@ struct ObjDict : Object {
 
   Item& append(Object* key, Object* value)
   {
-    auto& item = this->items.emplace_back(key, value);
-
-    item.key->ref_count++;
-    item.value->ref_count++;
-
-    return item;
+    return this->items.emplace_back(key, value);
   }
 
   ObjDict()
@@ -355,18 +368,10 @@ struct ObjDict : Object {
     : Object(TYPE_Dict),
       items(std::move(_items))
   {
-    for (auto&& item : this->items) {
-      item.key->ref_count++;
-      item.value->ref_count++;
-    }
   }
 
   ~ObjDict()
   {
-    for (auto&& item : this->items) {
-      item.key->ref_count--;
-      item.value->ref_count--;
-    }
   }
 };
 

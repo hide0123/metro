@@ -6,8 +6,7 @@
 
 namespace Utils::String {
 
-static std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t>
-    conv;
+static std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>, wchar_t> conv;
 
 std::wstring to_wstr(std::string const& str)
 {

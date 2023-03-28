@@ -60,7 +60,7 @@ DEBUGDIR_NO_ALERT	= $(BUILD)$(EXT_DEBUG_NOALERT)
 	$(BUILD) $(DEBUGDIR) $(DEBUGDIR_NO_ALERT) \
 	allbuilddir clean clean-debug re run run-debug install cclear
 
-all: release debug debug_no_alert
+all: release debug
 
 release: $(BUILD)
 	@echo release-build

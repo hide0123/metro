@@ -27,11 +27,12 @@ AST::Scope* Parser::parse()
   while (this->check()) {
     if (this->eat("import")) {
       auto const& token = *this->ate;
-      std::string path;
 
-      do {
-        path += this->expect_identifier()->str;
-      } while (this->eat("/"));
+      auto path = std::string(this->expect_identifier()->str);
+
+      while (this->eat("/")) {
+        path += "/" + std::string(this->expect_identifier()->str);
+      }
 
       path += ".metro";
 
@@ -47,6 +48,8 @@ AST::Scope* Parser::parse()
     if (this->check() && !this->is_ended_with_scope(x))
       this->expect_semi();
   }
+
+  root_scope->end_token = --this->cur;
 
   return root_scope;
 }

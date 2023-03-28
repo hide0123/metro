@@ -82,10 +82,23 @@ inline void _alert_impl(char const* tag, char const* msg, char const* file,
 {
   char buf[0x100];
   char buf2[0x400]{' '};
+  char colstr[50];
+
+  uint8_t col[3];
+
+  for (auto&& c : col) {
+    constexpr auto begin = 100;
+    constexpr auto unit = 10;
+    constexpr auto range = (255 - begin) / unit;
+
+    c = begin + (rand() % range) * unit;
+  }
 
   _make_location_str(buf, file, line);
-  auto len = sprintf(buf2, COL_BOLD _BRGB(20, 20, 20) "        %s%-30s %s %s",
-                     _RGB(150, 255, 0), buf, tag, msg ? msg : "");
+  sprintf(colstr, "\033[38;2;%d;%d;%dm", col[0], col[1], col[2]);
+
+  auto len = sprintf(buf2, COL_BOLD _BRGB(10, 10, 10) "        %s%-30s %s %s",
+                     colstr, buf, tag, msg ? msg : "");
 
   size_t endpos = 200;
 

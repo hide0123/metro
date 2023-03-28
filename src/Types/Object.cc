@@ -115,7 +115,7 @@ std::string ObjChar::to_string() const
 
 std::string ObjString::to_string() const
 {
-  auto str = Utils::String::to_str(this->get_wstring());
+  auto str = this->get_string().to_string();
 
   if (nested) {
     return '"' + str + '"';

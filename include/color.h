@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string>
+#include <cstring>
+
 #define COL_DEFAULT "\033[0m"
 #define COL_BOLD "\033[1m"
 
@@ -22,5 +25,12 @@
 #define COL_BK_WHITE "\033[47m"
 
 #define MAKE_COLOR(r, g, b) "\033[38;2;" #r ";" #g ";" #b "m"
-
 #define MAKE_BK_COLOR(r, g, b) "\033[48;2;" #r ";" #g ";" #b "m"
+
+inline std::string make_color_string(uint8_t r, uint8_t g, uint8_t b,
+                                     bool is_bk = false)
+{
+  char buf[100];
+  sprintf(buf, "\033[%s;2;%d;%d;%dm", is_bk ? "48" : "38", r, g, b);
+  return buf;
+}

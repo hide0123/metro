@@ -86,6 +86,8 @@ void Evaluator::clean_obj()
   for (auto&& [p, b] : allocated_objects) {
     delete_object(p);
   }
+
+  allocated_objects.clear();
 }
 
 Object* Evaluator::default_constructor(TypeInfo const& type,
@@ -388,7 +390,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     Error(_ast, "@@@ didnt checked").emit();
   }
 
-  alertmsg("eval kind=" << (int)_ast->kind);
 #endif
 
   if (_ast->use_default)
@@ -456,7 +457,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     //
     // 即値
     case AST_Value: {
-      alert;
       return Evaluator::create_object((AST::Value*)_ast);
     }
 
@@ -479,7 +479,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     //
     // 変数
     case AST_Variable: {
-      alert;
       return this->eval_left(_ast)->clone();
     }
 
@@ -487,14 +486,10 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       astdef(IndexRef);
 
       if (ast->is_enum) {
-        assert(ast->indexes.size() == 1);
-
-        alert;
         auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
 
         if (auto& x = ast->indexes[0];
             x.kind == AST::IndexRef::Subscript::SUB_CallFunc) {
-          alert;
           ret->set_value(this->evaluate(((AST::CallFunc*)x.ast)->args[0]));
         }
 
@@ -504,7 +499,6 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       auto obj = this->evaluate(ast->expr);
 
       if (ast->indexes.empty()) {
-        alert;
         return obj;
       }
 
@@ -546,15 +540,12 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_StructConstructor: {
       astdef(StructConstructor);
 
-      alert;
       auto ret = new ObjUserType(ast->p_struct);
 
       for (auto&& pair : ast->init_pair_list) {
-        alert;
         ret->add_member(this->evaluate(pair.expr));
       }
 
-      alert;
       return ret;
     }
 
@@ -563,17 +554,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Expr: {
       auto x = (AST::Expr*)_ast;
 
-      alert;
       auto ret = this->evaluate(x->first)->clone();
 
-      alert;
       ret->no_delete = true;
 
       for (auto&& elem : x->elements) {
         this->eval_expr_elem(elem, ret);
       }
 
-      alert;
       ret->no_delete = false;
 
       return ret;
@@ -584,18 +572,13 @@ Object* Evaluator::evaluate(AST::Base* _ast)
     case AST_Assign: {
       astdef(Assign);
 
-      alert;
       auto& dest = this->eval_left(ast->dest);
 
-      alert;
       dest->ref_count--;
 
-      alert;
       dest = this->evaluate(ast->expr);
-      alert;
       dest->ref_count++;
 
-      alert;
       return dest;
     }
 
@@ -630,16 +613,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto& vst = this->push_vst();
 
-      auto iter = ast->list.begin();
-      auto const& last = *ast->list.rbegin();
-
       Object* obj{};
 
-      for (auto&& item : ast->list) {
-        obj = this->evaluate(*iter++);
+      for (auto&& x : ast->list) {
+        obj = this->evaluate(x);
 
-        if (item == last) {
+        if (ast->return_last_expr && ast->of_function) {
           this->return_binds[obj] = ast;
+          obj->no_delete = 1;
         }
 
         if (vst.is_skipped)
@@ -657,15 +638,14 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       for (auto&& x : vst.lvar_list) {
         x->ref_count--;
-
-        this->delete_object(x);
       }
 
       this->pop_vst();
       this->clean_obj();
 
-      if (obj)
+      if (obj) {
         return obj;
+      }
 
       break;
     }
@@ -800,56 +780,41 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       auto& v = this->push_vst();
 
-      auto _obj = this->evaluate(ast->iterable);
-      _obj->ref_count++;
+      auto iterable = this->evaluate(ast->iterable);
+      iterable->ref_count++;
 
       auto& loop = this->loop_stack.emplace_front(v);
 
-      Object** p_iter = nullptr;
+      bool make_var = ast->iter->kind == AST_Variable;
 
-      if (ast->iter->kind == AST_Variable) {
-        alert;
-        v.append_lvar(nullptr);
-      }
-      else {
-        p_iter = &this->eval_left(ast->iter);
-      }
-
-      p_iter = &this->eval_left(ast->iter);
-
-      assert(p_iter);
-
-      switch (_obj->type.kind) {
+      switch (iterable->type.kind) {
         case TYPE_Range: {
-          auto& iter = *(ObjLong**)p_iter;
-          // auto& iter = (ObjLong*&)this->eval_left(ast->iter);
-          auto obj = (ObjRange*)_obj;
+          ObjLong* counter = nullptr;
+          auto obj = (ObjRange*)iterable;
 
-          iter = new ObjLong(obj->begin);
-          iter->ref_count = 1;
+          if (make_var) {
+            counter = (ObjLong*)v.append_lvar(new ObjLong(obj->begin));
+          }
+          else {
+            counter = (ObjLong*)this->eval_left(ast->iter);
+          }
 
-          assert(iter);
-          alertfmt("%p", iter);
+          assert(counter);
 
-          while (iter->value < obj->end) {
-            assert(iter);
+          counter->ref_count++;
 
-            alert;
+          while (counter->value < obj->end) {
             this->evaluate(ast->code);
-
-            alert;
 
             if (loop.is_breaked) {
               break;
             }
 
-            iter->value++;
+            counter->value++;
             loop.is_continued = false;
           }
 
-          // delete iter;
-          iter->ref_count = 0;
-          // this->delete_object(iter);
+          counter->ref_count--;
 
           break;
         }
@@ -863,7 +828,7 @@ Object* Evaluator::evaluate(AST::Base* _ast)
 
       this->loop_stack.pop_front();
 
-      _obj->ref_count--;
+      iterable->ref_count--;
       break;
     }
 
@@ -925,27 +890,24 @@ Object* Evaluator::eval_callfunc(AST::CallFunc* ast)
 {
   std::vector<Object*> args;
 
-  if (!ast->args.empty()) {
-    alert;
-    auto arg_iter = ast->args.begin();
+  for (auto&& arg : ast->args) {
+    Object* obj{};
 
-    if (ast->is_membercall && (*arg_iter)->is_lvalue) {
-      alert;
-      args.emplace_back(this->eval_left(*arg_iter++));
+    if (arg == *ast->args.begin() && ast->is_membercall && ast->is_lvalue) {
+      obj = this->eval_left(arg);
+    }
+    else {
+      obj = this->evaluate(arg);
     }
 
-    while (arg_iter != ast->args.end()) {
-      alert;
-      args.emplace_back(this->evaluate(*arg_iter++));
-    }
-  }
-  else {
-    alert;
+    args.emplace_back(obj)->ref_count++;
   }
 
   // 組み込み関数
   if (ast->is_builtin) {
-    alert;
+    for (auto&& obj : args)
+      obj->ref_count--;
+
     return ast->builtin_func->impl(args);
   }
 
@@ -958,35 +920,24 @@ Object* Evaluator::eval_callfunc(AST::CallFunc* ast)
   // 引数
   auto& vst = this->push_vst();
 
-  // vst.lvar_list = args;
-
-  for (auto&& obj : args) {
-    alert;
-    vst.append_lvar(obj)->ref_count++;
-  }
+  vst.lvar_list = args;
 
   // 関数実行
-  alert;
   auto ret = this->evaluate(func->code);
 
   // 戻り値を取得
   auto result = cf.result;
 
   if (!cf.is_returned) {
-    assert(func->code->return_last_expr);
-
-    alert;
     result = ret;
   }
 
   assert(result != nullptr);
 
   for (auto&& obj : args) {
-    alert;
     obj->ref_count--;
   }
 
-  alert;
   this->pop_vst();
 
   // コールスタック削除
@@ -1000,20 +951,6 @@ Object* Evaluator::eval_callfunc(AST::CallFunc* ast)
 
 Object*& Evaluator::get_var(AST::Variable* ast)
 {
-  alertmsg("var " << ast->name << " step=" << ast->step
-                  << " index=" << ast->index);
-
-#if METRO_DEBUG
-  auto it = this->vst_list.begin();
-
-  for (size_t i = 0; i < ast->index; i++)
-    it++;
-
-  alertmsg(it->to_string());
-
-  return it->get_lvar(ast->index);
-#endif
-
   return std::next(this->vst_list.begin(), ast->step)->get_lvar(ast->index);
 }
 
@@ -1109,15 +1046,10 @@ Object*& Evaluator::eval_index_ref(Object*& obj, AST::IndexRef* ast)
               }
             }
 
-            {
-              alert;
-              auto& item = obj_dict->append(
-                obj_index,
-                this->default_constructor(obj_dict->type.type_params[1]));
-
-              alert;
-              ret = &item.value;
-            }
+            ret = &obj_dict
+                     ->append(obj_index, this->default_constructor(
+                                           obj_dict->type.type_params[1]))
+                     .value;
 
             alert;
           _dict_value_found:

@@ -222,7 +222,8 @@ LoopController ::LoopController(Token const& token, ASTKind kind)
 
 Scope::Scope(Token const& token)
   : ListBase(AST_Scope, token),
-    return_last_expr(false)
+    return_last_expr(false),
+    of_function(false)
 {
 }
 

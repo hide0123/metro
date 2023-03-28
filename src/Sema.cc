@@ -1190,7 +1190,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       auto xx = this->check(ast->if_true);
 
       if (ast->if_false)
-        return this->expect(xx, ast->if_false);
+        _ret = this->expect(xx, ast->if_false);
 
       break;
     }
@@ -1369,6 +1369,8 @@ TypeInfo Sema::check(AST::Base* _ast)
       // 関数のスコープ　実装があるところ
       auto fn_scope = ast->code;
 
+      fn_scope->of_function = true;
+
       // スコープ追加
       auto& S = this->enter_scope(fn_scope);
 
@@ -1409,6 +1411,8 @@ TypeInfo Sema::check(AST::Base* _ast)
 
           goto err_specify_ast;
         }
+
+        ast->return_binder = *ast->code->list.rbegin();
       }
       else if (!res_type.equals(TYPE_None)) {
         if (ast->code->list.empty() || return_types.empty()) {
