@@ -95,9 +95,10 @@ void Sema::do_check()
         tr.walk((AST::Typeable*)x);
         break;
 
-      case AST_Impl:
+      case AST_Impl: {
         this->all_impl_list.emplace_back((AST::Impl*)x);
         break;
+      }
     }
   }
 
@@ -179,30 +180,32 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
 {
   FunctionFindResult result;
 
-  if (self) {
-    auto ast_struct = (AST::Struct*)self;
+  TypeInfo self_type;
 
-    for (auto&& impl : ast_struct->implements) {
+  if (self) {
+    self_type = this->check(self);
+
+    for (auto&& impl : this->all_impl_list) {
+      auto type = this->check(impl->type);
+
+      if (!self_type.equals(type))
+        continue;
+
       for (auto&& x : impl->list) {
         auto func = (AST::Function*)x;
 
-        alert;
         if (func->name.str != name)
           continue;
 
-        alert;
         if (func->have_self != have_self)
           continue;
 
-        alert;
         if (func->have_self &&
             !this->check(func->self_type).equals(this->check(self)))
           continue;
 
-        alert;
         auto cmp = this->compare_argument(this->make_arg_vector(func), args);
 
-        alert;
         if (cmp != ARG_OK) {
           return result;
         }
@@ -217,8 +220,6 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
   found_mf:
     return result;
   }
-
-  auto self_type = this->check(self);
 
   // find builtin
   for (auto&& func : BuiltinFunc::get_builtin_list()) {
@@ -512,12 +513,17 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
   AST::Typeable* usertype = nullptr;
   // auto with_instance = true;
 
+  bool is_first_typename = false;
+
   if (ast->expr->kind == AST_Variable)
     usertype = this->find_usertype(((AST::Variable*)ast->expr)->name);
 
   if (!usertype) {
     type = this->check(ast->expr);
     goto check_indexes;
+  }
+  else {
+    is_first_typename = true;
   }
 
   type.kind = TYPE_UserDef;
@@ -529,15 +535,17 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
   if (usertype->kind == AST_Enum) {
     auto ast_enum = (AST::Enum*)usertype;
 
+    is_first_typename = false;
+
     ast->is_enum = true;
     ast->enum_type = ast_enum;
 
-    if (ast->indexes.empty()) {
-      Error(ERR_InvalidSyntax, ast->expr,
-            "expected enumerator name after this token")
-        .emit()
-        .exit();
-    }
+    // if (ast->indexes.empty()) {
+    //   Error(ERR_InvalidSyntax, ast->expr,
+    //         "expected enumerator name after this token")
+    //     .emit()
+    //     .exit();
+    // }
     // else if (ast->indexes.size() > 1) {
     //   Error(ERR_InvalidSyntax, ast->indexes[1].ast, "???").emit().exit();
     // }
@@ -549,9 +557,13 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
     TypeInfo init_type;
 
     switch (sub->kind) {
-      case AST_Variable:
-        name = ((AST::Variable*)sub)->name;
+      case AST_Variable: {
+        auto x = (AST::Variable*)sub;
+
+        name = x->name;
+
         break;
+      }
 
       case AST_CallFunc: {
         auto x = (AST::CallFunc*)sub;
@@ -567,7 +579,9 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
       }
     }
 
-    for (auto&& E : ast_enum->enumerators) {
+    //
+    // find enumerator
+    for (size_t index = 0; auto&& E : ast_enum->enumerators) {
       if (E.name == name) {
         if (E.value_type) {
           auto deftype = this->check(E.value_type);
@@ -596,11 +610,19 @@ TypeInfo Sema::check_indexref(AST::IndexRef* ast)
         type = TYPE_Enumerator;
         type.userdef_type = ast_enum;
 
-        // return type;
+        auto tmp = new AST::NewEnumerator(ast_enum, ast->token);
+        tmp->index = index;
+
+        if (init)
+          tmp->args.emplace_back(init);
+
+        ast->expr = tmp;
+        ast->indexes.erase(ast->indexes.begin());
+
         goto check_indexes;
       }
 
-      ast->enumerator_index++;
+      index++;
     }
 
     Error(ERR_Undefined, sub,
@@ -713,7 +735,7 @@ check_indexes:
 
         //
         // if ast->expr is a type name, it's static member-function call.
-        cf->is_membercall = i > 0 || !usertype;
+        cf->is_membercall = i > 0 || !is_first_typename;
 
         type = this->check(cf);
 
@@ -725,7 +747,7 @@ check_indexes:
     }
   }
 
-  if (usertype) {
+  if (is_first_typename) {
     auto x = ast->expr;
 
     ast->expr = ast->indexes[0].ast;
@@ -1469,6 +1491,9 @@ TypeInfo Sema::check(AST::Base* _ast)
         this->check(e.value_type);
       }
 
+      _ret = TYPE_UserDef;
+      _ret.userdef_type = ast;
+
       break;
     }
 
@@ -1497,11 +1522,10 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Impl: {
       astdef(Impl);
 
-      AST::Struct* target = nullptr;
+      AST::Typeable* target = nullptr;
 
-      if (auto ut = this->find_usertype(ast->name);
-          !ut || ut->kind != AST_Struct) {
-        Error(ERR_Undefined, ast->type, "undefined struct name").emit().exit();
+      if (auto ut = this->find_usertype(ast->name); !ut) {
+        Error(ERR_Undefined, ast->type, "undefined type name").emit().exit();
       }
       else {
         target = (AST::Struct*)ut;

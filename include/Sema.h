@@ -259,7 +259,7 @@ private:
   AST::Scope* root;
 
   AST::Impl* cur_impl;
-  AST::Struct* impl_of;
+  AST::Typeable* impl_of;
 
   std::list<SemaScope> scope_list;
   std::list<AST::Function*> function_history;

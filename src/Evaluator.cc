@@ -482,19 +482,20 @@ Object* Evaluator::evaluate(AST::Base* _ast)
       return this->eval_left(_ast)->clone();
     }
 
+    case AST_NewEnumerator: {
+      astdef(NewEnumerator);
+
+      auto ret = new ObjEnumerator(ast->ast_enum, ast->index);
+
+      if (!ast->args.empty()) {
+        ret->set_value(this->evaluate(ast->args[0]));
+      }
+
+      return ret;
+    }
+
     case AST_IndexRef: {
       astdef(IndexRef);
-
-      if (ast->is_enum) {
-        auto ret = new ObjEnumerator(ast->enum_type, ast->enumerator_index);
-
-        if (auto& x = ast->indexes[0];
-            x.kind == AST::IndexRef::Subscript::SUB_CallFunc) {
-          ret->set_value(this->evaluate(((AST::CallFunc*)x.ast)->args[0]));
-        }
-
-        return ret;
-      }
 
       auto obj = this->evaluate(ast->expr);
 

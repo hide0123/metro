@@ -17,7 +17,6 @@ struct Struct : Typeable {
     }
   };
 
-  std::vector<Impl*> implements;
   std::vector<Member> members;
 
   Member& append(Token const& token, Type* type)

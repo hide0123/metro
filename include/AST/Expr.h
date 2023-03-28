@@ -49,6 +49,19 @@ struct CallFunc : ListBase {
   ~CallFunc();
 };
 
+struct NewEnumerator : CallFunc {
+  Enum* ast_enum;
+  size_t index;
+
+  NewEnumerator(Enum* e, Token const& token)
+    : CallFunc(token),
+      ast_enum(e),
+      index(0)
+  {
+    this->kind = AST_NewEnumerator;
+  }
+};
+
 struct Dict : Base {
   struct Item {
     Token const& colon;
