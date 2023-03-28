@@ -173,6 +173,16 @@ class Sema {
     }
   };
 
+  struct ImplementBlock {
+    TypeInfo type;
+    std::vector<AST::Function*> functions;
+
+    ImplementBlock(TypeInfo const& type)
+      : type(type)
+    {
+    }
+  };
+
 public:
   Sema(AST::Scope* root);
   ~Sema();
@@ -184,7 +194,7 @@ public:
 
   TypeInfo check(AST::Base* ast);
   TypeInfo check_function_call(AST::CallFunc* ast, bool have_self,
-                               AST::Typeable* self);
+                               std::optional<TypeInfo> self);
 
   void expect_lvalue(AST::Base* ast);
   TypeInfo as_lvalue(AST::Base* ast);
@@ -206,7 +216,7 @@ public:
   //
   // 関数を探す
   FunctionFindResult find_function(std::string_view name, bool have_self,
-                                   AST::Typeable* self,
+                                   std::optional<TypeInfo> self,
                                    ArgumentVector const& args,
                                    AST::Function* ignore = nullptr);
 
@@ -257,6 +267,8 @@ private:
 
   TypeInfo expect(TypeInfo const& type, AST::Base* ast);
 
+  ImplementBlock& add_impl_block(AST::Impl* ast);
+
   AST::Scope* root;
 
   AST::Impl* cur_impl;
@@ -267,7 +279,7 @@ private:
 
   std::vector<AST::Typeable*> type_check_stack;
 
-  std::vector<AST::Impl*> all_impl_list;
+  std::vector<ImplementBlock> all_impl_list;
 
   // captures
   std::vector<CaptureContext> captures;

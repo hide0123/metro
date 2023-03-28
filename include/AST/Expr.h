@@ -28,7 +28,7 @@ struct CallFunc : ListBase {
   BuiltinFunc const* builtin_func;
   Function* callee;
 
-  Typeable* selftype;
+  // Typeable* selftype;
   bool is_membercall;
 
   bool is_empty() const override

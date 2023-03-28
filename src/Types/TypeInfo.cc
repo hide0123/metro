@@ -91,15 +91,15 @@ std::string TypeInfo::to_string() const
 // 同じかどうか比較する
 bool TypeInfo::equals(TypeInfo const& type) const
 {
+  if (this->kind == TYPE_Template || type.kind == TYPE_Template)
+    return true;
+
   if ((this->kind == TYPE_Enumerator) != (type.kind == TYPE_Enumerator)) {
     if (this->kind != TYPE_UserDef && type.kind != TYPE_UserDef)
       return false;
 
     return this->userdef_type == type.userdef_type;
   }
-
-  if (this->kind == TYPE_Template || type.kind == TYPE_Template)
-    return true;
 
   if (this->kind != type.kind)
     return false;

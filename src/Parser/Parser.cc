@@ -80,13 +80,13 @@ AST::Base* Parser::factor()
   }
 
   if (this->eat("none"))
-    return new AST::ConstKeyword(AST_None, *this->ate);
+    return this->set_last_token(new AST::ConstKeyword(AST_None, *this->ate));
 
   if (this->eat("true"))
-    return new AST::ConstKeyword(AST_True, *this->ate);
+    return this->set_last_token(new AST::ConstKeyword(AST_True, *this->ate));
 
   if (this->eat("false"))
-    return new AST::ConstKeyword(AST_False, *this->ate);
+    return this->set_last_token(new AST::ConstKeyword(AST_False, *this->ate));
 
   if (this->eat("{")) {
     if (auto tok = this->ate; this->eat("}"))

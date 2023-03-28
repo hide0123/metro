@@ -78,14 +78,15 @@ static std::vector<BuiltinFunc> const _builtin_functions{
               }},
 
   // push
-  BuiltinFunc{
-    .name = "push",
-    .is_template = true,
-    .result_type = TYPE_None,
-    .arg_types = {TypeInfo(TYPE_Vector, {TYPE_Template}), TYPE_Template},
-    .impl = [](std::vector<Object*> const& args) -> Object* {
-      return ((ObjVector*)args[0])->append(args[1]);
-    }},
+  BuiltinFunc{.name = "push",
+              .is_template = true,
+              .have_self = true,
+              .self_type = TypeInfo(TYPE_Vector, {TYPE_Template}),
+              .result_type = TYPE_None,
+              .arg_types = {TYPE_Template},
+              .impl = [](std::vector<Object*> const& args) -> Object* {
+                return ((ObjVector*)args[0])->append(args[1]);
+              }},
 
   // to_string
   BuiltinFunc{.name = "to_string",

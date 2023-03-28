@@ -72,7 +72,6 @@ CallFunc::CallFunc(Token const& name)
     is_builtin(false),
     builtin_func(nullptr),
     callee(nullptr),
-    selftype(nullptr),
     is_membercall(false)
 {
 }
@@ -341,9 +340,9 @@ std::string Base::to_string(Base* _ast)
 
       std::string ret;
 
-      if (ast->selftype) {
-        ret = std::string(ast->selftype->name) + ".";
-      }
+      // if (ast->selftype) {
+      //   ret = std::string(ast->selftype->name) + ".";
+      // }
 
       ret += std::string(ast->name) + "(";
 
