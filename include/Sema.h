@@ -207,7 +207,8 @@ public:
   // 関数を探す
   FunctionFindResult find_function(std::string_view name, bool have_self,
                                    AST::Typeable* self,
-                                   ArgumentVector const& args);
+                                   ArgumentVector const& args,
+                                   AST::Function* ignore = nullptr);
 
   AST::Typeable* find_usertype(std::string_view name);
 

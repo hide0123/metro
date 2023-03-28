@@ -176,7 +176,8 @@ std::optional<TypeInfo> Sema::get_type_from_name(std::string_view name)
 Sema::FunctionFindResult Sema::find_function(std::string_view name,
                                              bool have_self,
                                              AST::Typeable* self,
-                                             ArgumentVector const& args)
+                                             ArgumentVector const& args,
+                                             AST::Function* ignore)
 {
   FunctionFindResult result;
 
@@ -198,10 +199,6 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
           continue;
 
         if (func->have_self != have_self)
-          continue;
-
-        if (func->have_self &&
-            !this->check(func->self_type).equals(this->check(self)))
           continue;
 
         auto cmp = this->compare_argument(this->make_arg_vector(func), args);
@@ -243,6 +240,9 @@ Sema::FunctionFindResult Sema::find_function(std::string_view name,
   // find user-def
   for (auto&& item : this->root->list) {
     auto func = (AST::Function*)item;
+
+    if (func == ignore)
+      continue;
 
     if (item->kind == AST_Function && func->name.str == name) {
       if (func->have_self != have_self)
@@ -951,6 +951,15 @@ TypeInfo Sema::check(AST::Base* _ast)
       break;
     }
 
+    case AST_NewEnumerator: {
+      astdef(NewEnumerator);
+
+      _ret = TYPE_UserDef;
+      _ret.userdef_type = ast->ast_enum;
+
+      break;
+    }
+
     //
     // Type Constructor
     case AST_StructConstructor: {
@@ -1371,7 +1380,7 @@ TypeInfo Sema::check(AST::Base* _ast)
 
       auto fresult =
         this->find_function(ast->name.str, ast->have_self, this->impl_of,
-                            this->make_arg_vector(ast));
+                            this->make_arg_vector(ast), ast);
 
       //
       // error: already exists function with same name
