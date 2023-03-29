@@ -721,20 +721,25 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Return: {
       auto ast = (AST::Return*)_ast;
 
+      auto func = this->CurFunc;
+
       if (ast->expr) {
         _ret = this->check(ast->expr);
       }
 
-      if (this->CurFunc) {
-        if (!this->CurFunc->result_type) {
-          Error(ast, "return-statement cannot have an expression").emit();
+      if (func) {
+        if (!func->result_type) {
+          Error(ast->token, "return-statement cannot have an expression")
+            .emit();
 
           if (!_ret.equals(TYPE_None)) {
-            Error(this->CurFunc->code->token, "").emit(EL_Note).exit();
+            Error(func->code->token,
+                  "insert '-> " + _ret.to_string() + "' before this token")
+              .emit(EL_Note)
+              .exit();
           }
         }
-        else if (auto t = this->check(this->CurFunc->result_type);
-                 t.equals(_ret)) {
+        else if (auto t = this->check(func->result_type); t.equals(_ret)) {
           Error(ast, "expected '" + t.to_string() +
                        "' type expression after this token")
             .emit()
@@ -742,7 +747,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         }
       }
       else {
-        Error(ast, "cannot use return-statement here").emit().exit();
+        Error(ast, "used 'return' without function").emit().exit();
       }
 
       break;

@@ -128,24 +128,22 @@ class Sema {
   };
 
   struct FunctionContext {
-    using ReturnStatement = std::pair<AST::Base*, TypeInfo>;
-
     AST::Function* func;
 
     std::optional<TypeInfo> self_type;
 
     TypeInfo result_type;
 
-    std::vector<ReturnStatement> return_statements;
+    std::vector<AST::Base*> return_statements;
 
     bool is_have_self() const
     {
       return func->have_self;
     }
 
-    ReturnStatement add_return_statement(Sema& S, AST::Base* ast)
+    AST::Base*& add_return_statement(AST::Base* ast)
     {
-      return this->return_statements.emplace_back(ast, S.check(ast));
+      return this->return_statements.emplace_back(ast);
     }
 
     explicit FunctionContext(AST::Function* func)

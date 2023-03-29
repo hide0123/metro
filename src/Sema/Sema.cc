@@ -268,9 +268,9 @@ Sema::FunctionContext& Sema::add_function(AST::Function* func)
 {
   auto& ctx = this->functions.emplace_back(func);
 
-  ASTWalker::walk(func->code, [&ctx, this](AST::Base* ast) -> bool {
+  ASTWalker::walk(func->code, [&ctx](AST::Base* ast) -> bool {
     if (ast->kind == AST_Return) {
-      ctx.add_return_statement(*this, ast);
+      ctx.add_return_statement(ast);
     }
 
     return true;
