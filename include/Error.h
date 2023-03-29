@@ -101,6 +101,10 @@ private:
   bool _is_single_line;
   std::string const _msg;
 
+  bool _custom;
+  Token const* _tbegin;
+  Token const* _tend;
+
   ScriptFileContext const* _pContext;
 
   static size_t _count;

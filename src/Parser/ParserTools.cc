@@ -109,11 +109,19 @@ AST::Function* Parser::parse_function()
   auto func = new AST::Function(*this->expect("fn"),
                                 *this->expect_identifier());  // AST 作成
 
-  this->expect("(");  // 引数リストの開きカッコ
+  func->args_brace_begin = &*this->expect("(");  // 引数リストの開きカッコ
 
   // 閉じかっこがなければ、引数を読み取っていく
   if (!this->eat(")")) {
+    std::map<std::string_view, bool> namemap;
+
     do {
+      if (!(namemap[this->cur->str] ^= 1)) {
+        Error(ERR_MultipleDefined, *this->cur,
+              "duplication argument name '" + std::string(this->cur->str) + "'")
+          .emit();
+      }
+
       if (this->eat("self")) {
         if (!this->in_impl) {
           Error(ERR_InvalidSyntax, *this->ate, "used 'self' without impl-block")
@@ -129,7 +137,10 @@ AST::Function* Parser::parse_function()
       }
     } while (this->eat(","));  // カンマがあれば続ける
 
-    this->expect(")");  // 閉じかっこ
+    func->args_brace_end = &*this->expect(")");  // 閉じかっこ
+  }
+  else {
+    func->args_brace_end = &*this->ate;
   }
 
   // 戻り値の型

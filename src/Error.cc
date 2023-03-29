@@ -35,6 +35,9 @@ Error::Error(ErrorKind kind, ErrorLocation&& loc, std::string const& msg)
     _loc(std::move(loc)),
     _is_single_line(false),
     _msg(msg),
+    _custom(false),
+    _tbegin(nullptr),
+    _tend(nullptr),
     _pContext(loc._context)
 {
 }

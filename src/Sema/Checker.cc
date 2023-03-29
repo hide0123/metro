@@ -721,23 +721,29 @@ TypeInfo Sema::check(AST::Base* _ast)
     case AST_Return: {
       auto ast = (AST::Return*)_ast;
 
-      auto cur_func = this->get_cur_func();
+      if (ast->expr) {
+        _ret = this->check(ast->expr);
+      }
 
-      // 関数の中ではない
-      if (!cur_func) {
+      if (this->CurFunc) {
+        if (!this->CurFunc->result_type) {
+          Error(ast, "return-statement cannot have an expression").emit();
+
+          if (!_ret.equals(TYPE_None)) {
+            Error(this->CurFunc->code->token, "").emit(EL_Note).exit();
+          }
+        }
+        else if (auto t = this->check(this->CurFunc->result_type);
+                 t.equals(_ret)) {
+          Error(ast, "expected '" + t.to_string() +
+                       "' type expression after this token")
+            .emit()
+            .exit();
+        }
+      }
+      else {
         Error(ast, "cannot use return-statement here").emit().exit();
       }
-
-      if (ast->expr) {
-        _ret = this->expect(this->check(cur_func->result_type), ast->expr);
-      }
-      // else if (auto t = this->check(cur_func->result_type);
-      //          !t.equals(TYPE_None)) {
-      //   Error(ast, "expected '" + t.to_string() +
-      //                "' type expression after this token")
-      //     .emit()
-      //     .exit();
-      // }
 
       break;
     }
