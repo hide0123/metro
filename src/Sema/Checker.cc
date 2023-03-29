@@ -739,9 +739,9 @@ TypeInfo Sema::check(AST::Base* _ast)
               .exit();
           }
         }
-        else if (auto t = this->check(func->result_type); t.equals(_ret)) {
-          Error(ast, "expected '" + t.to_string() +
-                       "' type expression after this token")
+        else if (auto t = this->check(func->result_type); !t.equals(_ret)) {
+          Error(ast->expr, "expected '" + t.to_string() + "' but found '" +
+                             _ret.to_string() + "'")
             .emit()
             .exit();
         }

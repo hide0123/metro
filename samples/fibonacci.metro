@@ -1,0 +1,12 @@
+fn fibo(n: int) -> int {
+    if n < 2 {
+        1
+    }
+    else {
+        fibo(n - 2) + fibo(n - 1)
+    }
+}
+
+for i in 0 .. 11 {
+    println(i, ": ", fibo(i));
+}
