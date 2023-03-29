@@ -5,7 +5,7 @@
 #pragma once
 
 #include <list>
-#include "ASTfwd.h"
+#include "AST/ASTfwd.h"
 
 class ScriptFileContext;
 class Parser {

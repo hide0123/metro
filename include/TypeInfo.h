@@ -130,4 +130,12 @@ struct TypeInfo {
 
     return -1;
   }
+
+  static TypeInfo from_usertype(AST::Typeable* type)
+  {
+    TypeInfo ret = TYPE_UserDef;
+    ret.userdef_type = type;
+
+    return ret;
+  }
 };

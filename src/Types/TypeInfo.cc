@@ -4,9 +4,7 @@
 #include "Utils.h"
 #include "debug/alert.h"
 
-#include "Token.h"
-#include "TypeInfo.h"
-#include "AST.h"
+#include "AST/AST.h"
 
 static std::vector<std::pair<TypeKind, char const*>> const g_kind_and_names{
   {TYPE_None, "none"},   {TYPE_Int, "int"},

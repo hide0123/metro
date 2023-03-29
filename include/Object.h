@@ -4,7 +4,7 @@
 #pragma once
 
 #include "TypeInfo.h"
-#include "ASTfwd.h"
+#include "AST/ASTfwd.h"
 #include "String.h"
 
 struct Object {

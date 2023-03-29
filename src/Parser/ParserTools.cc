@@ -1,7 +1,7 @@
 #include "Utils.h"
 #include "debug/alert.h"
 
-#include "AST.h"
+#include "AST/AST.h"
 #include "Parser.h"
 #include "Error.h"
 

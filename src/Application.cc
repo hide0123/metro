@@ -6,7 +6,7 @@
 #include "Utils.h"
 #include "debug/alert.h"
 
-#include "AST.h"
+#include "AST/AST.h"
 #include "Object.h"
 
 #include "ScriptFileContext.h"

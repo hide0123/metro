@@ -1,4 +1,4 @@
-#include "AST.h"
+#include "AST/AST.h"
 #include "Utils.h"
 
 namespace AST {

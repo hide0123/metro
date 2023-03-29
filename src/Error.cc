@@ -4,7 +4,7 @@
 #include "Utils.h"
 #include "debug/alert.h"
 
-#include "AST.h"
+#include "AST/AST.h"
 #include "Error.h"
 #include "ScriptFileContext.h"
 #include "Application.h"

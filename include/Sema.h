@@ -10,7 +10,7 @@
 #include <list>
 #include <map>
 
-#include "AST.h"
+#include "AST/AST.h"
 #include "TypeInfo.h"
 
 class Evaluator;
@@ -128,11 +128,30 @@ class Sema {
   };
 
   struct FunctionContext {
-    AST::Function* ast;
+    using ReturnStatement = std::pair<AST::Base*, TypeInfo>;
+
+    AST::Function* func;
+
+    std::optional<TypeInfo> self_type;
 
     TypeInfo result_type;
 
-    std::map<AST::Return*, TypeInfo> return_stmt_types;
+    std::vector<ReturnStatement> return_statements;
+
+    bool is_have_self() const
+    {
+      return func->have_self;
+    }
+
+    ReturnStatement add_return_statement(Sema& S, AST::Base* ast)
+    {
+      return this->return_statements.emplace_back(ast, S.check(ast));
+    }
+
+    explicit FunctionContext(AST::Function* func)
+      : func(func)
+    {
+    }
   };
 
   class TypeRecursionDetector {
@@ -173,16 +192,6 @@ class Sema {
     }
   };
 
-  struct ImplementBlock {
-    TypeInfo type;
-    std::vector<AST::Function*> functions;
-
-    ImplementBlock(TypeInfo const& type)
-      : type(type)
-    {
-    }
-  };
-
 public:
   Sema(AST::Scope* root);
   ~Sema();
@@ -201,24 +210,23 @@ public:
 
   TypeInfo check_indexref(AST::IndexRef* ast);
 
-  std::tuple<LocalVar*, size_t, size_t> find_variable(
-    std::string_view const& name);
-
   //
   // 構造体
-  void check_struct(AST::Struct* ast);
+  TypeInfo check_struct(AST::Struct* ast);
 
   //
   // 演算子の型の組み合わせが正しいかチェックする
   std::optional<TypeInfo> is_valid_expr(AST::ExprKind kind, TypeInfo const& lhs,
                                         TypeInfo const& rhs);
 
+  std::tuple<LocalVar*, size_t, size_t> find_variable(
+    std::string_view const& name);
+
   //
   // 関数を探す
   FunctionFindResult find_function(std::string_view name, bool have_self,
                                    std::optional<TypeInfo> self,
-                                   ArgumentVector const& args,
-                                   AST::Function* ignore = nullptr);
+                                   ArgumentVector const& args);
 
   AST::Typeable* find_usertype(std::string_view name);
 
@@ -267,19 +275,22 @@ private:
 
   TypeInfo expect(TypeInfo const& type, AST::Base* ast);
 
-  ImplementBlock& add_impl_block(AST::Impl* ast);
+  FunctionContext& add_function(AST::Function* func);
 
   AST::Scope* root;
 
   AST::Impl* cur_impl;
   AST::Typeable* impl_of;
 
+  AST::Scope* CurScope;
+  AST::Function* CurFunc;
+
   std::list<SemaScope> scope_list;
-  std::list<AST::Function*> function_history;
+  // std::list<AST::Function*> function_history;
 
   std::vector<AST::Typeable*> type_check_stack;
 
-  std::vector<ImplementBlock> all_impl_list;
+  std::vector<FunctionContext> functions;
 
   // captures
   std::vector<CaptureContext> captures;

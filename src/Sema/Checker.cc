@@ -1,490 +1,51 @@
 #include "Utils.h"
 #include "debug/alert.h"
 
-#include "AST.h"
+#include "AST/AST.h"
 #include "Object.h"
 #include "BuiltinFunc.h"
 
 #include "Error.h"
 #include "Sema.h"
 
-#define astdef(T) auto ast = (AST::T*)_ast
+#include "ASTWalker.h"
 
-std::map<AST::Base*, TypeInfo> Sema::value_type_cache;
-
-//
-// キャッシュを作成しちゃだめだったら true
-static bool is_dont_cache(ASTKind kind)
-{
-  return false;
-}
-
-Sema::Sema(AST::Scope* root)
-  : root(root),
-    cur_impl(nullptr),
-    impl_of(nullptr)
-{
-}
-
-Sema::~Sema()
-{
-}
-
-Sema::ArgumentVector Sema::make_arg_vector(AST::CallFunc* ast)
-{
-  ArgumentVector ret;
-
-  ret.caller = ast;
-
-  for (auto&& arg : ast->args) {
-    auto& W = ret.emplace_back(ArgumentWrap::ARG_Actual);
-
-    W.typeinfo = this->check(arg);
-    W.value = arg;
-  }
-
-  return ret;
-}
-
-Sema::ArgumentVector Sema::make_arg_vector(AST::Function* ast)
-{
-  ArgumentVector ret;
-
-  ret.userdef_func = ast;
-
-  for (auto&& arg : ast->args) {
-    auto& W = ret.emplace_back(ArgumentWrap::ARG_Formal);
-
-    W.typeinfo = this->check(arg->type);
-    W.defined = arg->type;
-  }
-
-  return ret;
-}
-
-Sema::ArgumentVector Sema::make_arg_vector(BuiltinFunc const* func)
-{
-  ArgumentVector ret;
-
-  ret.builtin = func;
-
-  for (auto&& arg : func->arg_types) {
-    auto& W = ret.emplace_back(ArgumentWrap::ARG_Formal);
-
-    W.typeinfo = arg;
-  }
-
-  return ret;
-}
-
+// ----------------------------------
+//  check
+// ----------------------------------
 void Sema::do_check()
 {
   TypeRecursionDetector tr{*this};
 
   for (auto&& x : this->root->list) {
     switch (x->kind) {
+      case AST_Function: {
+        this->add_function((AST::Function*)x);
+        break;
+      }
+
       case AST_Struct:
         tr.walk((AST::Typeable*)x);
         break;
 
       case AST_Impl: {
-        this->add_impl_block((AST::Impl*)x);
+        auto ast = (AST::Impl*)x;
+        auto type = this->check(ast->type);
+
+        for (auto&& e : ast->list) {
+          auto func = (AST::Function*)e;
+          auto& ctx = this->add_function(func);
+
+          if (ctx.is_have_self())
+            ctx.self_type = type;
+        }
+
         break;
       }
     }
   }
 
   this->check(this->root);
-}
-
-Sema::ArgumentsComparationResult Sema::compare_argument(
-  ArgumentVector const& formal, ArgumentVector const& actual)
-{
-  // formal = 定義側
-  // actual = 呼び出し側
-
-  // formal
-  auto f_it = formal.begin();
-
-  // actual
-  auto a_it = actual.begin();
-
-  while (f_it != formal.end()) {
-    if (f_it->typeinfo.kind == TYPE_Args) {
-      return ARG_OK;
-    }
-
-    if (a_it == actual.end()) {
-      return ARG_Few;
-      // Error(actual.caller, "too few arguments").emit().exit();
-    }
-
-    if (!f_it->typeinfo.equals(a_it->typeinfo)) {
-      return ARG_Mismatch;
-    }
-
-    f_it++;
-    a_it++;
-  }
-
-  if (a_it != actual.end()) {
-    return ARG_Many;
-  }
-
-  return ARG_OK;
-}
-
-//
-// 名前から型を探す
-std::optional<TypeInfo> Sema::get_type_from_name(std::string_view name)
-{
-  if (auto builtin = TypeInfo::get_kind_from_name(name); builtin)
-    return builtin.value();
-
-  if (auto usertype = this->find_usertype(name); usertype) {
-    TypeInfo ret{TYPE_UserDef};
-
-    ret.userdef_type = usertype;
-
-    if (usertype->kind == AST_Struct) {
-      for (auto&& member : ((AST::Struct*)usertype)->members)
-        ret.members.emplace_back(member.name, this->check(member.type));
-    }
-
-    return ret;
-  }
-
-  return std::nullopt;
-}
-
-//
-// ユーザー定義関数を探す
-Sema::FunctionFindResult Sema::find_function(std::string_view name,
-                                             bool have_self,
-                                             std::optional<TypeInfo> self,
-                                             ArgumentVector const& args,
-                                             AST::Function* ignore)
-{
-  FunctionFindResult result;
-
-  TypeInfo self_type;
-
-  if (self) {
-    self_type = self.value();
-
-    alertmsg(self_type.to_string() << "." << name);
-
-    for (auto&& impl : this->all_impl_list) {
-      auto const& type = impl.type;
-
-      if (!self_type.equals(type)) {
-        alertmsg("no match: " << self_type.to_string() << ", "
-                              << type.to_string());
-
-        continue;
-      }
-
-      for (auto&& func : impl.functions) {
-        if (func->name.str != name) {
-          alertmsg(func->name.str << " " << name);
-          continue;
-        }
-
-        if (func->have_self != have_self) {
-          alert;
-          continue;
-        }
-
-        auto cmp = this->compare_argument(this->make_arg_vector(func), args);
-
-        if (cmp != ARG_OK) {
-          return result;
-        }
-
-        result.type = FunctionFindResult::FN_UserDefined;
-        result.userdef = func;
-
-        // goto found_mf;
-        return result;
-      }
-    }
-
-    // found_mf:
-    //   return result;
-  }
-
-  // find builtin
-  for (auto&& func : BuiltinFunc::get_builtin_list()) {
-    if (func.name == name) {
-      if (func.have_self != have_self)
-        continue;
-
-      if (have_self) {
-        if (!func.self_type.equals(self_type))
-          continue;
-      }
-
-      if (this->compare_argument(make_arg_vector(&func), args) != ARG_OK)
-        continue;
-
-      result.type = FunctionFindResult::FN_Builtin;
-      result.builtin = &func;
-
-      return result;
-    }
-  }
-
-  // find user-def
-  for (auto&& item : this->root->list) {
-    auto func = (AST::Function*)item;
-
-    if (func == ignore)
-      continue;
-
-    if (item->kind == AST_Function && func->name.str == name) {
-      // if (func->have_self != have_self)
-      //   continue;
-
-      // if (!this->check(func->self_type).equals(self_type))
-      //   continue;
-
-      if (this->compare_argument(make_arg_vector(func), args) != ARG_OK)
-        continue;
-
-      result.type = FunctionFindResult::FN_UserDefined;
-      result.userdef = func;
-
-      return result;
-    }
-  }
-
-  return result;
-}
-
-//
-// ユーザー定義構造体を探す
-AST::Typeable* Sema::find_usertype(std::string_view name)
-{
-  for (auto&& item : this->root->list) {
-    switch (item->kind) {
-      case AST_Enum:
-      case AST_Struct:
-        if (((AST::Typeable*)item)->name == name)
-          return (AST::Typeable*)item;
-    }
-  }
-
-  return nullptr;
-}
-
-//
-// 今いる関数
-AST::Function* Sema::get_cur_func()
-{
-  return *this->function_history.begin();
-}
-
-// ----------
-//  Expect value to ast
-// ----------------
-TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
-{
-  auto type = this->check(ast);
-
-  // 同じならそのまま返す
-  if (expected.equals(type))
-    return expected;
-
-  switch (expected.kind) {
-    case TYPE_Vector: {
-      if (ast->is_empty_vector())
-        goto matched;
-
-      break;
-    }
-
-    case TYPE_Dict: {
-      auto x = (AST::Dict*)ast;
-
-      if (ast->is_empty_scope())
-        goto matched;
-
-      if (ast->kind == AST_Dict && !x->key_type && x->elements.empty())
-        goto matched;
-
-      break;
-    }
-
-    case TYPE_UserDef: {
-      if (expected.userdef_type->kind == AST_Enum) {
-        if (type.kind == TYPE_Enumerator &&
-            type.userdef_type == expected.userdef_type)
-          goto matched;
-      }
-
-      break;
-    }
-  }
-
-  //
-  // ast がスコープ
-  if (ast->kind == AST_Scope) {
-    // 最後の要素を評価結果とする場合、エラー指摘場所をそれに変更する
-    if (auto x = (AST::Scope*)ast; x->return_last_expr)
-      ast = *x->list.rbegin();
-  }
-
-  Error(ast, "expected '" + expected.to_string() + "' but found '" +
-               type.to_string() + "'")
-    .emit()
-    .exit();
-
-matched:
-  ast->use_default = true;
-  return this->value_type_cache[ast] = expected;
-}
-
-void Sema::TypeRecursionDetector::walk(AST::Typeable* ast)
-{
-  switch (ast->kind) {
-    case AST_Type: {
-      if (ast->name == "vector") {
-        return;
-      }
-
-      break;
-    }
-  }
-
-  if (std::find(this->stack.begin(), this->stack.end(), ast) !=
-      this->stack.end()) {
-    Error(ast,
-          "recursive type '" + std::string(ast->name) + "' have infinity size")
-      .single_line()
-      .emit();
-
-    Error(*this->stack.rbegin(), "recursive without indirection")
-      .emit(EL_Note)
-      .exit();
-  }
-
-  this->stack.emplace_back(ast);
-
-  switch (ast->kind) {
-    case AST_Enum: {
-      auto x = (AST::Enum*)ast;
-
-      for (auto&& e : x->enumerators) {
-        if (e.value_type)
-          this->walk(e.value_type);
-      }
-
-      break;
-    }
-
-    case AST_Struct: {
-      auto x = (AST::Struct*)ast;
-
-      for (auto&& m : x->members)
-        this->walk(m.type);
-
-      break;
-    }
-
-    case AST_Type: {
-      auto x = (AST::Type*)ast;
-
-      if (auto find = this->S.find_usertype(x->name); find) {
-        this->walk(find);
-      }
-
-      break;
-    }
-  }
-
-  this->stack.pop_back();
-}
-
-//
-// 演算子の型の組み合わせが正しいかチェックする
-std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
-                                            TypeInfo const& lhs,
-                                            TypeInfo const& rhs)
-{
-  if (lhs.equals(TYPE_None) || rhs.equals(TYPE_None))
-    return std::nullopt;
-
-  switch (kind) {
-    //
-    // add
-    case AST::EX_Add: {
-      if (lhs.equals(rhs))
-        return lhs;
-
-      break;
-    }
-
-    //
-    // sub
-    case AST::EX_Sub: {
-      // remove element from vector
-      if (lhs.kind == TYPE_Vector) {
-        if (lhs.type_params[0].equals(rhs)) {
-          return lhs;
-        }
-      }
-
-      // 数値同士
-      if (lhs.is_numeric() && rhs.is_numeric()) {
-        // float を優先する
-        return lhs.kind == TYPE_Float ? lhs : rhs;
-      }
-
-      break;
-    }
-
-    //
-    // mul
-    case AST::EX_Mul: {
-      if (rhs.is_numeric())
-        return lhs;
-
-      break;
-    }
-
-    //
-    // div
-    case AST::EX_Div: {
-      if (lhs.is_numeric() && rhs.is_numeric())
-        return lhs;
-
-      break;
-    }
-
-    //
-    // bit-calc
-    case AST::EX_LShift:
-    case AST::EX_RShift:
-    case AST::EX_BitAND:
-    case AST::EX_BitXOR:
-    case AST::EX_BitOR:
-      if (lhs.equals(TYPE_Int) && rhs.equals(TYPE_Int))
-        return lhs;
-
-      break;
-
-    case AST::EX_And:
-    case AST::EX_Or:
-      if (lhs.equals(TYPE_Bool) && rhs.equals(TYPE_Bool))
-        return lhs;
-
-      break;
-
-    default:
-      todo_impl;
-  }
-
-  return std::nullopt;
 }
 
 // ------------------------------------------------ //
@@ -759,13 +320,11 @@ TypeInfo Sema::check(AST::Base* _ast)
   if (!_ast)
     return TYPE_None;
 
+  if (this->value_type_cache.contains(_ast))
+    return this->value_type_cache[_ast];
+
   for (auto&& cap : this->captures) {
     cap.func(_ast);
-  }
-
-  if (!is_dont_cache(_ast->kind)) {
-    if (this->value_type_cache.contains(_ast))
-      return this->value_type_cache[_ast];
   }
 
   auto& _ret = this->value_type_cache[_ast];
@@ -1172,13 +731,13 @@ TypeInfo Sema::check(AST::Base* _ast)
       if (ast->expr) {
         _ret = this->expect(this->check(cur_func->result_type), ast->expr);
       }
-      else if (auto t = this->check(cur_func->result_type);
-               !t.equals(TYPE_None)) {
-        Error(ast, "expected '" + t.to_string() +
-                     "' type expression after this token")
-          .emit()
-          .exit();
-      }
+      // else if (auto t = this->check(cur_func->result_type);
+      //          !t.equals(TYPE_None)) {
+      //   Error(ast, "expected '" + t.to_string() +
+      //                "' type expression after this token")
+      //     .emit()
+      //     .exit();
+      // }
 
       break;
     }
@@ -1358,7 +917,7 @@ TypeInfo Sema::check(AST::Base* _ast)
         ast->name.str, ast->have_self,
         ast->have_self ? std::optional<TypeInfo>(this->check(this->impl_of))
                        : std::nullopt,
-        this->make_arg_vector(ast), ast);
+        this->make_arg_vector(ast));
 
       //
       // error: already exists function with same name
@@ -1369,7 +928,7 @@ TypeInfo Sema::check(AST::Base* _ast)
           .exit();
       }
 
-      this->function_history.emplace_front(ast);
+      this->CurFunc = ast;
 
       // 関数のスコープ　実装があるところ
       auto fn_scope = ast->code;
@@ -1455,7 +1014,7 @@ TypeInfo Sema::check(AST::Base* _ast)
       // スコープ削除
       this->leave_scope();
 
-      this->function_history.pop_front();
+      this->CurFunc = nullptr;
 
       break;
     }
@@ -1585,51 +1144,6 @@ TypeInfo Sema::check(AST::Base* _ast)
 }
 
 // ------------------------------------------------ //
-//  check_as_left
-// ------------------------------------------------ //
-void Sema::expect_lvalue(AST::Base* _ast)
-{
-  switch (_ast->kind) {
-    case AST_Variable:
-      break;
-
-    case AST_IndexRef: {
-      astdef(IndexRef);
-
-      this->expect_lvalue(ast->expr);
-
-      break;
-    }
-
-    default:
-      Error(_ast, "expected lvalue expression").emit().exit();
-  }
-
-  _ast->is_lvalue = true;
-}
-
-TypeInfo Sema::as_lvalue(AST::Base* ast)
-{
-  this->expect_lvalue(ast);
-  return this->check(ast);
-}
-
-std::tuple<Sema::LocalVar*, size_t, size_t> Sema::find_variable(
-  std::string_view const& name)
-{
-  for_indexed(step, scope, this->scope_list)
-  {
-    for_indexed(index, var, scope.lvar.variables)
-    {
-      if (var.name == name)
-        return {&var, step, index};
-    }
-  }
-
-  return {};
-}
-
-// ------------------------------------------------ //
 //  関数呼び出しをチェックする
 // ------------------------------------------------ //
 TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
@@ -1675,7 +1189,7 @@ TypeInfo Sema::check_function_call(AST::CallFunc* ast, bool have_self,
   Error(ast, "function '" + func_name + "' not found").emit().exit();
 }
 
-void Sema::check_struct(AST::Struct* ast)
+TypeInfo Sema::check_struct(AST::Struct* ast)
 {
   std::map<std::string_view, bool> map;
 
@@ -1688,79 +1202,88 @@ void Sema::check_struct(AST::Struct* ast)
 
     this->check(item.type);
   }
+
+  return TypeInfo::from_usertype(ast);
 }
 
 //
-// キャプチャ追加
-void Sema::begin_capture(Sema::CaptureFunction cap_func)
+// 演算子の型の組み合わせが正しいかチェックする
+std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
+                                            TypeInfo const& lhs,
+                                            TypeInfo const& rhs)
 {
-  this->captures.emplace_back(cap_func);
-}
+  if (lhs.equals(TYPE_None) || rhs.equals(TYPE_None))
+    return std::nullopt;
 
-//
-// キャプチャ削除
-void Sema::end_capture()
-{
-  this->captures.pop_back();
-}
+  switch (kind) {
+    //
+    // add
+    case AST::EX_Add: {
+      if (lhs.equals(rhs))
+        return lhs;
 
-void Sema::begin_return_capture(Sema::ReturnCaptureFunction cap_func)
-{
-  this->return_captures.emplace_back(cap_func);
-}
-
-void Sema::end_return_capture()
-{
-  this->return_captures.pop_back();
-}
-
-int Sema::find_member(TypeInfo const& type, std::string_view name)
-{
-  for (int i = 0; auto&& m : ((AST::Struct*)type.userdef_type)->members) {
-    if (m.name == name)
-      return i;
-
-    i++;
-  }
-
-  return -1;
-}
-
-Sema::SemaScope& Sema::get_cur_scope()
-{
-  return *this->scope_list.begin();
-}
-
-Sema::SemaScope& Sema::enter_scope(AST::Scope* ast)
-{
-  return this->scope_list.emplace_front(ast);
-}
-
-void Sema::leave_scope()
-{
-  this->scope_list.pop_front();
-}
-
-Sema::ImplementBlock& Sema::add_impl_block(AST::Impl* ast)
-{
-  auto type = this->check(ast->type);
-
-  ImplementBlock* p_impl = nullptr;
-
-  for (auto&& impl : this->all_impl_list) {
-    if (impl.type.equals(type)) {
-      p_impl = &impl;
       break;
     }
+
+    //
+    // sub
+    case AST::EX_Sub: {
+      // remove element from vector
+      if (lhs.kind == TYPE_Vector) {
+        if (lhs.type_params[0].equals(rhs)) {
+          return lhs;
+        }
+      }
+
+      // 数値同士
+      if (lhs.is_numeric() && rhs.is_numeric()) {
+        // float を優先する
+        return lhs.kind == TYPE_Float ? lhs : rhs;
+      }
+
+      break;
+    }
+
+    //
+    // mul
+    case AST::EX_Mul: {
+      if (rhs.is_numeric())
+        return lhs;
+
+      break;
+    }
+
+    //
+    // div
+    case AST::EX_Div: {
+      if (lhs.is_numeric() && rhs.is_numeric())
+        return lhs;
+
+      break;
+    }
+
+    //
+    // bit-calc
+    case AST::EX_LShift:
+    case AST::EX_RShift:
+    case AST::EX_BitAND:
+    case AST::EX_BitXOR:
+    case AST::EX_BitOR:
+      if (lhs.equals(TYPE_Int) && rhs.equals(TYPE_Int))
+        return lhs;
+
+      break;
+
+    case AST::EX_And:
+    case AST::EX_Or:
+      if (lhs.equals(TYPE_Bool) && rhs.equals(TYPE_Bool))
+        return lhs;
+
+      break;
+
+    default:
+      todo_impl;
   }
 
-  if (p_impl == nullptr) {
-    p_impl = &all_impl_list.emplace_back(type);
-  }
-
-  for (auto&& func : ast->list) {
-    p_impl->functions.emplace_back((AST::Function*)func);
-  }
-
-  return *p_impl;
+  return std::nullopt;
 }

@@ -4,7 +4,7 @@
 #pragma once
 
 #include <memory>
-#include "AST.h"
+#include "AST/ASTfwd.h"
 #include "color.h"
 
 enum ErrorKind {
