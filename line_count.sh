@@ -1,1 +1,1 @@
-python3 srctools/__main__.py -lcount.ext=cc.h,include,src
+python3 srctools/tools.py -lcount.ext=cc.h,include,src

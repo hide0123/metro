@@ -1,6 +1,6 @@
 #include "AST/AST.h"
 #include "ASTWalker.h"
-#include "debug/alert.h"
+#include "Debug.h"
 
 namespace ASTWalker {
 

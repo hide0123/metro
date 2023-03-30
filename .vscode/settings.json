@@ -70,5 +70,15 @@
     "*.inc": "cpp",
     "cassert": "cpp",
     "ranges": "cpp"
+  },
+
+  "[cpp]": {
+    "editor.tabSize": 2
+  },
+
+  "[python]": {
+    "editor.tabSize": 4,
+    "diffEditor.ignoreTrimWhitespace": false,
+    "editor.wordBasedSuggestions": false
   }
 }

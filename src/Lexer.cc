@@ -1,5 +1,5 @@
 #include "Utils.h"
-#include "debug/alert.h"
+#include "Debug.h"
 
 #include "Token.h"
 #include "Lexer.h"

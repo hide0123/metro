@@ -1,13 +1,23 @@
 #include <iostream>
 
 #include "Utils.h"
-#include "debug/alert.h"
+#include "Debug.h"
 
 #include "Object.h"
 #include "BuiltinFunc.h"
 #include "Error.h"
 
+#define DEFINE_BUILTIN_FUNC(name) \
+  static Object* name(BuiltinFunc::ArgumentVector const& args)
+
 #define ImplementLambda [](BuiltinFunc::ArgumentVector const& args) -> Object*
+
+#define BUILTIN_FUNC(Name, IsTemplate, IsHaveSelf, SelfType, ResultType, Impl, \
+                     ArgTypes...)                                              \
+  BuiltinFunc                                                                  \
+  {                                                                            \
+    .name = Name, .is_template = IsTemplate                                    \
+  }
 
 static Object* print_impl(BuiltinFunc::ArgumentVector const& args)
 {

@@ -1,6 +1,7 @@
 /build
 /build-debug
 /build-debug-noalert
+/_backup
 /__pychache__
 
 # binary

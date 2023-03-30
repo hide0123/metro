@@ -3,7 +3,7 @@
 #include <map>
 
 #include "Utils.h"
-#include "debug/alert.h"
+#include "Debug.h"
 
 #include "Token.h"
 #include "Object.h"

@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "Utils.h"
-#include "debug/alert.h"
+#include "Debug.h"
 
 #include "AST/AST.h"
 

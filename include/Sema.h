@@ -273,7 +273,13 @@ private:
 
   TypeInfo expect(TypeInfo const& type, AST::Base* ast);
 
+  //
+  // add a new function context from ast
   FunctionContext& add_function(AST::Function* func);
+
+  //
+  // replace ast between dest and src
+  static AST::Base*& replace(AST::Base*& dest, AST::Base* src);
 
   AST::Scope* root;
 
@@ -284,7 +290,6 @@ private:
   AST::Function* CurFunc;
 
   std::list<SemaScope> scope_list;
-  // std::list<AST::Function*> function_history;
 
   std::vector<AST::Typeable*> type_check_stack;
 
