@@ -5,7 +5,7 @@
 #pragma once
 
 #include <list>
-#include "ASTfwd.h"
+#include "AST/ASTfwd.h"
 
 class ScriptFileContext;
 class Parser {
@@ -55,7 +55,6 @@ private:
 
   AST::Variable* new_variable();
 
-  AST::Type* parse_typename();
   AST::Type* expect_typename();
 
   AST::Scope* parse_scope(token_iter tok = {}, AST::Base* first = nullptr);

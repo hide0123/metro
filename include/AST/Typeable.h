@@ -21,7 +21,6 @@ struct Type : Typeable {
     : Typeable(AST_Type, token),
       is_const(false)
   {
-    this->name = token.str;
   }
 
   ~Type()

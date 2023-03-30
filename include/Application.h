@@ -3,7 +3,7 @@
 #include <list>
 #include <string>
 #include <vector>
-#include "ASTfwd.h"
+#include "AST/ASTfwd.h"
 
 class ScriptFileContext;
 class Application {

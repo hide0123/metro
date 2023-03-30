@@ -8,7 +8,7 @@
 #include "Token.h"
 #include "Object.h"
 
-#include "AST.h"
+#include "AST/AST.h"
 
 // --------------------------------------------------------
 //  Object

@@ -1,0 +1,9 @@
+import struct
+import fibonacci
+
+impl int {
+    fn fibo(self) -> int {
+        fibo(self)
+    }
+}
+

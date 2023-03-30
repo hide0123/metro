@@ -4,8 +4,5 @@ struct MyStruct {
 }
 
 let x = 123;
-let x = new MyStruct{ .a = x, .b = [] };
-println(x);
-
-x = new MyStruct{ .a = 1, .b = [x] };
+let x = new MyStruct(a: x, b: []);
 println(x);

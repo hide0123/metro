@@ -3,6 +3,8 @@
 // ---------------------------------------------
 #pragma once
 
+#define astdef(T) auto ast = (AST::T*)_ast
+
 #include <map>
 #include <vector>
 #include <concepts>
@@ -11,11 +13,11 @@
 #include "TypeInfo.h"
 #include "ASTfwd.h"
 
-#include "AST/Kind.h"
-#include "AST/Base.h"
+#include "Kind.h"
+#include "Base.h"
 
-#include "AST/Expr.h"
-#include "AST/Stmt.h"
+#include "Expr/Expr.h"
+#include "Stmt/Stmt.h"
 
 #include "AST/Typeable.h"
 

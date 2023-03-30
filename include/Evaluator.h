@@ -5,7 +5,7 @@
 #pragma once
 
 #include <map>
-#include "AST.h"
+#include "AST/ASTfwd.h"
 #include "GC.h"
 
 class Evaluator {

@@ -3,7 +3,7 @@
 #include <list>
 #include <string>
 #include <vector>
-#include "ASTfwd.h"
+#include "AST/ASTfwd.h"
 
 class Lexer;
 class Application;
@@ -37,11 +37,13 @@ private:
     std::string_view get_line(Token const& token) const;
 
     SourceData(std::string const& path);
+    SourceData(SourceData&&);
     ~SourceData();
   };
 
 public:
   explicit ScriptFileContext(std::string const& path);
+  ScriptFileContext(ScriptFileContext&&);
   ~ScriptFileContext();
 
   bool is_opened() const;

@@ -5,7 +5,7 @@
 #include "Utils.h"
 #include "debug/alert.h"
 
-#include "AST.h"
+#include "AST/AST.h"
 #include "Object.h"
 
 #include "Lexer.h"
@@ -22,6 +22,13 @@ using SFContext = ScriptFileContext;
 
 SFContext::SourceData::SourceData(std::string const& path)
   : _path(path)
+{
+}
+
+SFContext::SourceData::SourceData(SourceData&& sd)
+  : _path(std::move(sd._path)),
+    _data(std::move(sd._data)),
+    _lines(std::move(sd._lines))
 {
 }
 
@@ -67,6 +74,21 @@ SFContext::ScriptFileContext(std::string const& path)
     _importer_token(nullptr)
 {
   debug(std::cout << this->_srcdata._path << std::endl);
+}
+
+SFContext::ScriptFileContext(SFContext&& c)
+  : _is_open(c._is_open),
+    _srcdata(std::move(c._srcdata)),
+    _token_list(std::move(c._token_list)),
+    _ast(c._ast),
+    _owner(c._owner),
+    _importer_token(c._importer_token),
+    _imported(std::move(c._imported))
+{
+  c._is_open = false;
+  c._ast = nullptr;
+  c._owner = nullptr;
+  c._importer_token = nullptr;
 }
 
 SFContext::~ScriptFileContext()
@@ -130,9 +152,9 @@ bool SFContext::import(std::string const& path, Token const& token,
   ctx._owner = this;
   ctx._importer_token = &token;
 
-  auto found = Application::get_instance()->get_context(ctx.get_path());
+  auto pContext = Application::get_instance()->get_context(ctx.get_path());
 
-  if (found && found != &ctx) {
+  if (pContext && pContext != &ctx) {
     for (auto p = this->_owner; p; p = p->_owner) {
       if (p->get_path() == ctx.get_path()) {
         Error(token, "cannot import recursively").emit();
@@ -152,7 +174,10 @@ bool SFContext::import(std::string const& path, Token const& token,
       }
     }
 
-    Error(token, "cannot import self").emit().exit();
+    if (pContext->get_path() == this->get_path())
+      Error(token, "cannot import self").emit().exit();
+
+    Error(token, "cannot import same file twice").emit().exit();
   }
 
   if (!ctx.lex())
@@ -184,6 +209,10 @@ bool SFContext::parse()
 
   this->_ast = parser.parse();
 
+  // debug(std::cout << AST::Base::to_string(this->_ast)
+  //                 << "\n------------------------------------------"
+  //                 << std::endl);
+
   assert(this->_ast->kind == AST_Scope);
 
   return !Error::was_emitted();
@@ -195,9 +224,9 @@ bool SFContext::check()
 
   sema.do_check();
 
-  debug(std::cout << AST::Base::to_string(this->_ast)
-                  << "\n------------------------------------------"
-                  << std::endl);
+  // debug(std::cout << AST::Base::to_string(this->_ast)
+  //                 << "\n------------------------------------------"
+  //                 << std::endl);
 
   return !Error::was_emitted();
 }

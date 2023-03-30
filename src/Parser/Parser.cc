@@ -1,7 +1,7 @@
 #include "Utils.h"
 #include "debug/alert.h"
 
-#include "AST.h"
+#include "AST/AST.h"
 #include "Parser.h"
 #include "Error.h"
 
@@ -39,6 +39,8 @@ AST::Scope* Parser::parse()
       if (!this->_context.import(path, token, root_scope)) {
         Error(token, "failed to import file '" + path + "'").emit().exit();
       }
+
+      alertmsg(this->cur->str);
 
       continue;
     }
@@ -582,7 +584,7 @@ AST::Base* Parser::stmt()
     ast->name = this->expect_identifier()->str;
 
     if (this->eat(":")) {
-      ast->type = this->parse_typename();
+      ast->type = this->expect_typename();
     }
 
     if (this->eat("=")) {

@@ -23,6 +23,9 @@ struct Function : Base {
   Token const& name;  // 名前
   std::vector<Argument*> args;  // 引数
 
+  Token const* args_brace_begin;
+  Token const* args_brace_end;
+
   bool have_self;
   Typeable* self_type;
 
@@ -53,6 +56,8 @@ struct Function : Base {
   explicit Function(Token const& token, Token const& name)
     : Base(AST_Function, token),
       name(name),
+      args_brace_begin(nullptr),
+      args_brace_end(nullptr),
       have_self(false),
       self_type(nullptr),
       result_type(nullptr),
