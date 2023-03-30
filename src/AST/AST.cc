@@ -26,14 +26,6 @@ bool Base::is_empty_vector() const
   return this->kind == AST_Vector && ((AST::Vector*)this)->is_empty();
 }
 
-ListBase::ASTVector::~ASTVector()
-{
-  for (auto&& x : *this) {
-    if (x)
-      delete x;
-  }
-}
-
 ListBase::ListBase(ASTKind kind, Token const& token)
   : Base(kind, token)
 {
@@ -232,6 +224,10 @@ Scope::Scope(Token const& token)
 
 Scope::~Scope()
 {
+  for (auto&& ast : this->list) {
+    if(ast)
+      delete ast;
+  }
 }
 
 If::If(Token const& token)

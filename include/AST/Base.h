@@ -52,18 +52,17 @@ protected:
 };
 
 struct ListBase : Base {
-  class ASTVector : public std::vector<Base*> {
-  public:
-    using std::vector<Base*>::vector;
-
-    ~ASTVector();
-  };
+  using ASTVector = std::vector<Base*>;
 
   virtual bool is_empty() const = 0;
   virtual Base*& append(Base* ast) = 0;
 
 protected:
   ListBase(ASTKind kind, Token const& token);
+
+  virtual ~ListBase()
+  {
+  }
 };
 
 template <class Kind, ASTKind _self_kind>
