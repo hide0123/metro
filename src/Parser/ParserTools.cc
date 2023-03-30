@@ -244,7 +244,7 @@ AST::Impl* Parser::parse_impl()
  *
  * @return AST::Type*
  */
-AST::Type* Parser::parse_typename()
+AST::Type* Parser::expect_typename()
 {
   static int depth = 0;
   static bool pass_rbrace = 0;
@@ -279,25 +279,6 @@ AST::Type* Parser::parse_typename()
   this->set_last_token(ast);
 
   return ast;
-}
-
-/**
- * @brief 型名を求める
- *
- * @return AST::Type* ない場合はエラー
- */
-AST::Type* Parser::expect_typename()
-{
-  if (auto ast = this->parse_typename(); ast)
-    return ast;
-
-  Error(*({
-    auto tok = this->cur;
-    --tok;
-  }),
-        "expected typename after this token")
-    .emit()
-    .exit();
 }
 
 /**

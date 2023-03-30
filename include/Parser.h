@@ -55,7 +55,6 @@ private:
 
   AST::Variable* new_variable();
 
-  AST::Type* parse_typename();
   AST::Type* expect_typename();
 
   AST::Scope* parse_scope(token_iter tok = {}, AST::Base* first = nullptr);

@@ -152,7 +152,10 @@ bool SFContext::import(std::string const& path, Token const& token,
       }
     }
 
-    Error(token, "cannot import self").emit().exit();
+    if (found->get_path() == this->get_path())
+      Error(token, "cannot import self").emit().exit();
+
+    Error(token, "cannot import same file twice").emit().exit();
   }
 
   if (!ctx.lex())
@@ -184,6 +187,10 @@ bool SFContext::parse()
 
   this->_ast = parser.parse();
 
+  // debug(std::cout << AST::Base::to_string(this->_ast)
+  //                 << "\n------------------------------------------"
+  //                 << std::endl);
+
   assert(this->_ast->kind == AST_Scope);
 
   return !Error::was_emitted();
@@ -195,9 +202,9 @@ bool SFContext::check()
 
   sema.do_check();
 
-  debug(std::cout << AST::Base::to_string(this->_ast)
-                  << "\n------------------------------------------"
-                  << std::endl);
+  // debug(std::cout << AST::Base::to_string(this->_ast)
+  //                 << "\n------------------------------------------"
+  //                 << std::endl);
 
   return !Error::was_emitted();
 }

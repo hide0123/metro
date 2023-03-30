@@ -28,8 +28,10 @@ bool Base::is_empty_vector() const
 
 ListBase::ASTVector::~ASTVector()
 {
-  for (auto&& x : *this)
-    delete x;
+  for (auto&& x : *this) {
+    if (x)
+      delete x;
+  }
 }
 
 ListBase::ListBase(ASTKind kind, Token const& token)
@@ -38,7 +40,8 @@ ListBase::ListBase(ASTKind kind, Token const& token)
 }
 
 Typeable::Typeable(ASTKind kind, Token const& token)
-  : Base(kind, token)
+  : Base(kind, token),
+    name(token.str)
 {
 }
 
@@ -227,9 +230,10 @@ Scope::Scope(Token const& token)
 {
 }
 
-Scope ::~Scope()
+Scope::~Scope()
 {
 }
+
 If::If(Token const& token)
   : Base(AST_If, token),
     condition(nullptr),
@@ -237,6 +241,7 @@ If::If(Token const& token)
     if_false(nullptr)
 {
 }
+
 If ::~If()
 {
   delete this->condition;
@@ -245,12 +250,14 @@ If ::~If()
   if (this->if_false)
     delete this->if_false;
 }
+
 Case::Case(Token const& token)
   : Base(AST_Case, token),
     cond(nullptr),
     scope(nullptr)
 {
 }
+
 Case::~Case()
 {
   delete this->cond;
@@ -326,6 +333,9 @@ Loop::~Loop()
 std::string Base::to_string(Base* _ast)
 {
 #define astdef(T) auto ast = (AST::T*)_ast
+
+  if (!_ast)
+    return "(null)";
 
   switch (_ast->kind) {
     case AST_None:
@@ -420,10 +430,7 @@ std::string Base::to_string(Base* _ast)
     case AST_Scope: {
       astdef(Scope);
 
-      std::string ret =
-        "{ " + Utils::String::join(";\n", ast->list, [](auto& x) {
-          return to_string(x);
-        });
+      std::string ret = "{ " + Utils::String::join(";\n", ast->list, to_string);
 
       if (!ast->return_last_expr)
         ret += ";";
