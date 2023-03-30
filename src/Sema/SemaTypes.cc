@@ -122,6 +122,12 @@ TypeInfo Sema::expect(TypeInfo const& expected, AST::Base* ast)
     return expected;
 
   switch (expected.kind) {
+    case TYPE_USize:
+      if (type.equals(TYPE_Int))
+        goto matched;
+
+      break;
+
     case TYPE_Vector: {
       if (ast->is_empty_vector())
         goto matched;

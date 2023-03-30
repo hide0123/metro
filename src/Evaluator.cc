@@ -899,10 +899,14 @@ Object* Evaluator::eval_callfunc(AST::CallFunc* ast)
 
   // 組み込み関数
   if (ast->is_builtin) {
-    for (auto&& obj : args)
-      obj->ref_count--;
+    BuiltinFunc::ArgumentVector bargs;
 
-    return ast->builtin_func->impl(args);
+    for (auto argiter = ast->args.begin(); auto&& obj : args) {
+      obj->ref_count--;
+      bargs.emplace_back(obj, *argiter++);
+    }
+
+    return ast->builtin_func->impl(bargs);
   }
 
   // ユーザー定義関数

@@ -16,7 +16,19 @@ enum BuiltinKind {
 
 struct Object;
 struct BuiltinFunc {
-  using Implementation = std::function<Object*(std::vector<Object*> const&)>;
+  struct ArgumentObject {
+    Object* object;
+    AST::Base* ast;
+
+    explicit ArgumentObject(Object* object, AST::Base* ast)
+      : object(object),
+        ast(ast)
+    {
+    }
+  };
+
+  using ArgumentVector = std::vector<ArgumentObject>;
+  using Implementation = std::function<Object*(ArgumentVector const&)>;
 
   // BuiltinKind kind;
   std::string name;  // 関数名
