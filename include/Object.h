@@ -281,6 +281,11 @@ struct ObjString : Object {
     return ret;
   }
 
+  static ObjString* from_u8_string(std::string const& str)
+  {
+    return new ObjString(Utils::String::to_wstr(str));
+  }
+
   ObjString(std::wstring const& value = L"")
     : Object(TYPE_String)
   {

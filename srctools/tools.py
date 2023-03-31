@@ -95,7 +95,7 @@ def com_line_count(folders: list, ext: list):
 # ------------------------------
 def main() -> int:
     COM_CHECK_DUPLICATE         = '-dup.'
-    COM_LINE_COUNT                    = '-lcount.'
+    COM_LINE_COUNT              = '-lcount.'
 
     try:
         for i, arg in enumerate(sys.argv):

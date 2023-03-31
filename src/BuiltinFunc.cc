@@ -10,16 +10,24 @@
 #define DEFINE_BUILTIN_FUNC(name) \
   static Object* name(BuiltinFunc::ArgumentVector const& args)
 
-#define ImplementLambda [](BuiltinFunc::ArgumentVector const& args) -> Object*
-
-#define BUILTIN_FUNC(Name, IsTemplate, IsHaveSelf, SelfType, ResultType, Impl, \
-                     ArgTypes...)                                              \
-  BuiltinFunc                                                                  \
-  {                                                                            \
-    .name = Name, .is_template = IsTemplate                                    \
+#define BUILTIN_FUNC_FULL(Name, Impl, IsTemplate, IsHaveSelf, SelfType,     \
+                          ResultType, ArgTypes...)                          \
+  BuiltinFunc                                                               \
+  {                                                                         \
+    .name = Name, .is_template = IsTemplate, .have_self = IsHaveSelf,       \
+    .self_type = SelfType, .result_type = ResultType, .arg_types{ArgTypes}, \
+    .impl = Impl                                                            \
   }
 
-static Object* print_impl(BuiltinFunc::ArgumentVector const& args)
+#define BUILTIN_FUNC(Name, Impl, ResultType, ArgTypes...) \
+  BUILTIN_FUNC_FULL(Name, Impl, false, false, ResultType, {}, ArgTypes)
+
+#define BUILTIN_FUNC_TEMPLATE(Name, Impl, ResultType, ArgTypes...) \
+  BUILTIN_FUNC_FULL(Name, Impl, true, false, ResultType, {}, ArgTypes)
+
+namespace builtin {
+
+DEFINE_BUILTIN_FUNC(print)
 {
   size_t len = 0;
 
@@ -34,137 +42,101 @@ static Object* print_impl(BuiltinFunc::ArgumentVector const& args)
   return new ObjLong(len);
 }
 
+DEFINE_BUILTIN_FUNC(println)
+{
+  auto ret = print(args);
+
+  std::cout << "\n";
+  ((ObjLong*)ret)->value += 1;
+
+  return ret;
+}
+
+//
+// id(T)
+DEFINE_BUILTIN_FUNC(id)
+{
+  return ObjString::from_u8_string(Utils::format("%p", args[0]));
+}
+
+//
+// type(T)
+DEFINE_BUILTIN_FUNC(type)
+{
+  return ObjString::from_u8_string(args[0].object->type.to_string());
+}
+
+//
+// to_string(T)
+DEFINE_BUILTIN_FUNC(to_string)
+{
+  return ObjString::from_u8_string(args[0].object->to_string());
+}
+
+//
+// length(string)
+DEFINE_BUILTIN_FUNC(length)
+{
+  return new ObjUSize(((ObjString*)args[0].object)->characters.size());
+}
+
+//
+// push(vector<T>)
+DEFINE_BUILTIN_FUNC(push)
+{
+  return ((ObjVector*)args[0].object)->append(args[1].object);
+}
+
+//
+// substr
+DEFINE_BUILTIN_FUNC(substr)
+{
+  return ObjString::from_u8_string(args[0].object->to_string());
+}
+
+//
+// input
+DEFINE_BUILTIN_FUNC(input)
+{
+  std::string input;
+
+  std::getline(std::cin, input);
+
+  return ObjString::from_u8_string(input);
+}
+
+//
+// exit
+DEFINE_BUILTIN_FUNC(exit)
+{
+  std::exit((int)((ObjLong*)args[0].object)->value);
+}
+
+}  // namespace builtin
+
 static std::vector<BuiltinFunc> const _builtin_functions{
-  // id
-  BuiltinFunc{.name = "id",
-              .is_template = true,
-              .have_self = false,
-              .result_type = TYPE_Int,
-              .arg_types = {TYPE_Template},
-              .impl = ImplementLambda{return new ObjString(
-                Utils::String::to_wstr(Utils::format("%p", args[0])));
-}
-}
-,
+  BUILTIN_FUNC("print", builtin::print, TYPE_Int, TYPE_Args),
+  BUILTIN_FUNC("println", builtin::println, TYPE_Int, TYPE_Args),
 
-  // length
-  BuiltinFunc{.name = "length",
-              .is_template = true,
-              .result_type = TYPE_USize,
-              .arg_types = {TYPE_String},
-              .impl = ImplementLambda{return new ObjUSize(
-                ((ObjString*)args[0].object)->characters.size());
-}
-}
-,
+  BUILTIN_FUNC("id", builtin::id, TYPE_Int, TYPE_Template),
+  BUILTIN_FUNC("type", builtin::type, TYPE_String, TYPE_Template),
 
-  // print
-  BuiltinFunc{.name = "print",
-              .is_template = false,
-              .result_type = TYPE_Int,
-              .arg_types = {TYPE_Args},
-              .impl = print_impl},
+  BUILTIN_FUNC_TEMPLATE("to_string", builtin::to_string, TYPE_String,
+                        TYPE_Template),
 
-  // println
-  BuiltinFunc{.name = "println",
-              .is_template = false,
-              .result_type = TYPE_Int,
-              .arg_types = {TYPE_Args},
-              .impl = ImplementLambda{auto ret = print_impl(args);
+  BUILTIN_FUNC("length", builtin::length, TYPE_Int, TYPE_String),
 
-std::cout << "\n";
-((ObjLong*)ret)->value += 1;
+  BUILTIN_FUNC_FULL("push", builtin::push, true, true,
+                    TypeInfo(TYPE_Vector, {TYPE_Template}), TYPE_None, {},
+                    TYPE_Template),
 
-return ret;
-}
-}
-,
+  BUILTIN_FUNC_FULL("substr", builtin::substr, false, true, TYPE_String,
+                    TYPE_String, TYPE_USize),
 
-  BuiltinFunc{.name = "input",
-              .is_template = false,
-              .result_type = TYPE_String,
-              .arg_types = {},
-              .impl = ImplementLambda{(void)args;
+  BUILTIN_FUNC("input", builtin::input, TYPE_String),
 
-std::string input;
-
-std::getline(std::cin, input);
-
-return new ObjString(Utils::String::to_wstr(input));
-}
-}
-,
-
-  // push
-  BuiltinFunc{.name = "push",
-              .is_template = true,
-              .have_self = true,
-              .self_type = TypeInfo(TYPE_Vector, {TYPE_Template}),
-              .result_type = TYPE_None,
-              .arg_types = {TYPE_Template},
-              .impl = ImplementLambda{
-                return ((ObjVector*)args[0].object)->append(args[1].object);
-}
-}
-,
-
-  // to_string
-  BuiltinFunc{.name = "to_string",
-              .is_template = true,
-              .result_type = TYPE_String,
-              .arg_types = {TYPE_Template},
-              .impl = ImplementLambda{return new ObjString(
-                Utils::String::to_wstr(args[0].object->to_string()));
-}
-}
-,
-
-  // substr
-  BuiltinFunc{.name = "substr",
-              .is_template = false,
-              .have_self = true,
-              .self_type = TYPE_String,
-              .result_type = TYPE_String,
-              .arg_types = {TYPE_USize},
-              .impl = ImplementLambda{auto ret = (ObjString*)args[0].object;
-auto const& index = args[1];
-
-if (((ObjUSize*)(index.object))->value >= ret->characters.size()) {
-  Error(index.ast, "index out of range").emit().exit();
-}
-
-for (size_t i = 0; i < ((ObjUSize*)index.object)->value; i++) {
-  ret->characters.erase(ret->characters.begin());
-}
-
-return ret;
-}
-}
-,
-
-  // type
-  BuiltinFunc{.name = "type",
-              .is_template = true,
-              .result_type = TYPE_String,
-              .arg_types = {TYPE_Template},
-              .impl = ImplementLambda{return new ObjString(
-                Utils::String::to_wstr(args[0].object->type.to_string()));
-}
-}
-,
-
-  // exit
-  BuiltinFunc{
-    .name = "exit",
-    .is_template = false,
-    .result_type = TYPE_None,
-    .arg_types = {TYPE_Int},
-    .impl = ImplementLambda{std::exit((int)((ObjLong*)args[0].object)->value);
-}
-}
-,
-}
-;
+  BUILTIN_FUNC("exit", builtin::exit, TYPE_Int),
+};
 
 std::vector<BuiltinFunc> const& BuiltinFunc::get_builtin_list()
 {
