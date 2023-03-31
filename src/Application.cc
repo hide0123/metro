@@ -15,10 +15,10 @@
 
 static char const* g_help_string = R"(
 usage:
-  metro [options] [input files]
+    metro [options] [input files]
 
 options:
-  --help, -h      show this messages
+    --help, -h      show this messages
 )";
 
 static Application* _g_inst;
@@ -50,6 +50,19 @@ int Application::main(int argc, char** argv)
 
     if (arg == "--help" || arg == "-h") {
       std::cout << g_help_string;
+
+#if METRO_DEBUG
+      std::cout << "\n"
+                << "debug options to enable macro (use -d):\n"
+                   "    a      alert\n"
+                   "    c      alert in constructor\n"
+                   "    d      alert in destructor\n"
+                   "    D      debug scope\n"
+                   "    P      show syntax tree after parsed\n"
+                   "    C      show syntax tree after checked semantics\n"
+                   "    X      all";
+#endif
+
       return 0;
     }
 
@@ -66,37 +79,38 @@ int Application::main(int argc, char** argv)
 
 #if METRO_DEBUG
     else if (arg.starts_with("-d")) {
+      static std::pair<char, bool*> const charflagmap[] = {
+        {'a', &this->_debug.flags.Alert},
+        {'c', &this->_debug.flags.AlertConstructor},
+        {'d', &this->_debug.flags.AlertDestructor},
+        {'d', &this->_debug.flags.DebugScope},
+        {'P', &this->_debug.flags.ShowASTAfterParsed},
+        {'C', &this->_debug.flags.ShowASTAfterChecked},
+      };
+
       arg = arg.substr(2);
 
       for (auto&& ch : arg) {
-        switch (ch) {
-          case 'a':
-            this->_debug.flags.Alert = true;
-            break;
+        if (ch == 'X') {
+          for (auto&& [c, b] : charflagmap) {
+            *b = true;
+          }
 
-          case 'c':
-            this->_debug.flags.AlertConstructor = true;
-            break;
+          std::cout << COL_BOLD COL_RED
+            "\t[warn: enabled all debug flags]" COL_DEFAULT "\n";
 
-          case 'd':
-            this->_debug.flags.AlertDestructor = true;
-            break;
-
-          case 'D':
-            this->_debug.flags.DebugScope = true;
-            break;
-
-          case 'P':
-            this->_debug.flags.ShowParsedTree = true;
-            break;
-
-          case 'C':
-            this->_debug.flags.ShowCheckedTree = true;
-            break;
-
-          default:
-            Error::fatal_error("unknown option name: '", ch, "'");
+          break;
         }
+
+        for (auto&& [c, p] : charflagmap) {
+          if (c == ch) {
+            *p = true;
+            goto _endloop;
+          }
+        }
+
+        Error::fatal_error("unknown option name: '", ch, "'");
+      _endloop:;
       }
     }
 #endif

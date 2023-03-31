@@ -210,7 +210,7 @@ bool SFContext::parse()
   this->_ast = parser.parse();
 
 #if METRO_DEBUG
-  if (Debug::get_instance().flags.ShowParsedTree) {
+  if (Debug::get_instance().flags.ShowASTAfterParsed) {
     std::cout << "---- Parsed tree of " << this->get_path() << ": ---------\n"
               << AST::Base::to_string(this->_ast) << std::endl
               << "----------------------------------------------------\n"
@@ -230,7 +230,7 @@ bool SFContext::check()
   sema.do_check();
 
 #if METRO_DEBUG
-  if (Debug::get_instance().flags.ShowCheckedTree) {
+  if (Debug::get_instance().flags.ShowASTAfterChecked) {
     std::cout << "---- Checked tree of " << this->get_path() << ": ---------\n"
               << AST::Base::to_string(this->_ast) << std::endl
               << "----------------------------------------------------\n"

@@ -67,8 +67,8 @@ public:
 
     bool DebugScope;
 
-    bool ShowParsedTree;
-    bool ShowCheckedTree;
+    bool ShowASTAfterParsed;
+    bool ShowASTAfterChecked;
   };
 
   Flags flags{};
