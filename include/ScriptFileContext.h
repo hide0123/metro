@@ -65,8 +65,11 @@ public:
 
   ScriptFileContext const* is_imported(std::string const& path) const;
 
+  static ScriptFileContext from_cmdline(std::string&& source);
+
 private:
   bool _is_open;
+  bool _in_cmdline;
 
   SourceData _srcdata;
 

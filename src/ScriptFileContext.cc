@@ -67,17 +67,17 @@ std::string_view SFContext::SourceData::get_line(Token const& token) const
 
 SFContext::ScriptFileContext(std::string const& path)
   : _is_open(false),
-    // _srcdata(std::filesystem::canonical(path).string()),
+    _in_cmdline(false),
     _srcdata(path),
     _ast(nullptr),
     _owner(nullptr),
     _importer_token(nullptr)
 {
-  debug(std::cout << this->_srcdata._path << std::endl);
 }
 
 SFContext::ScriptFileContext(SFContext&& c)
   : _is_open(c._is_open),
+    _in_cmdline(c._in_cmdline),
     _srcdata(std::move(c._srcdata)),
     _token_list(std::move(c._token_list)),
     _ast(c._ast),
@@ -242,7 +242,7 @@ Object* SFContext::evaluate()
 
 void SFContext::execute_full()
 {
-  if (!this->open_file()) {
+  if (!this->_in_cmdline && !this->open_file()) {
     std::cout << "metro: cannot open file '" << this->get_path() << "'"
               << std::endl;
 
@@ -294,4 +294,24 @@ ScriptFileContext const* SFContext::is_imported(std::string const& path) const
   }
 
   return nullptr;
+}
+
+ScriptFileContext ScriptFileContext::from_cmdline(std::string&& source)
+{
+  ScriptFileContext ret{"<command-line>"};
+
+  ret._is_open = true;
+  ret._in_cmdline = true;
+
+  auto& src = ret._srcdata;
+
+  src._data = std::move(source);
+
+  LineView lview{0, 0, src._data.length()};
+
+  lview.str_view = src._data;
+
+  src._lines = {lview};
+
+  return ret;
 }

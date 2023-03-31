@@ -16,6 +16,9 @@
 static char const* g_help_string = R"(
 usage:
   metro [options] [input files]
+
+options:
+  --help, -h      show this messages
 )";
 
 static Application* _g_inst;
@@ -45,21 +48,75 @@ int Application::main(int argc, char** argv)
   for (int i = 1; i < argc; i++) {
     std::string arg = argv[i];
 
+    if (arg == "--help" || arg == "-h") {
+      std::cout << g_help_string;
+      return 0;
+    }
+
     // option
-    if (arg.starts_with("--")) {
+    else if (arg.starts_with("--")) {
       arg = arg.substr(2);
 
       if (arg.empty()) {
         Error::fatal_error("missing option name");
       }
 
-      if (arg == "help") {
-        std::cout << g_help_string;
-        return 0;
+#if METRO_DEBUG
+      else if (arg == "alert") {
+        this->_debug.flags.Alert = true;
       }
-      else {
-        Error::fatal_error("unknown option name: '", arg, "'");
+
+      else if (arg == "alert-ctor") {
+        this->_debug.flags.AlertConstructor = true;
       }
+
+      else if (arg == "alert-dtor") {
+        this->_debug.flags.AlertDestructor = true;
+      }
+
+      else if (arg == "debug-scope") {
+        this->_debug.flags.AlertDestructor = true;
+      }
+#endif
+
+      Error::fatal_error("unknown option name: '", arg, "'");
+    }
+
+#if METRO_DEBUG
+    else if (arg.starts_with("-d")) {
+      arg = arg.substr(2);
+
+      for (auto&& ch : arg) {
+        switch (ch) {
+          case 'a':
+            this->_debug.flags.Alert = true;
+            break;
+
+          case 'c':
+            this->_debug.flags.AlertConstructor = true;
+            break;
+
+          case 'd':
+            this->_debug.flags.AlertDestructor = true;
+            break;
+
+          case 'D':
+            this->_debug.flags.DebugScope = true;
+            break;
+
+          default:
+            Error::fatal_error("unknown option name: '", ch, "'");
+        }
+      }
+    }
+#endif
+
+    else if (arg.starts_with("-c")) {
+      if (i == argc - 1) {
+        Error::fatal_error("missing expression");
+      }
+
+      this->_contexts.emplace_back(ScriptFileContext::from_cmdline(argv[++i]));
     }
 
     // script file

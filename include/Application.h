@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include "AST/ASTfwd.h"
+#include "Debug.h"
 
 class ScriptFileContext;
 class Application {
@@ -28,4 +29,8 @@ private:
 
   ScriptFileContext const* _cur_ctx;
   std::vector<ScriptFileContext> _contexts;
+
+#if METRO_DEBUG
+  Debug _debug;
+#endif
 };

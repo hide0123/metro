@@ -8,10 +8,10 @@
 #include <cassert>
 #include "color.h"
 
-#define ENABLE_CDSTRUCT 1
-
 #define _RGB MAKE_COLOR
 #define _BRGB MAKE_BK_COLOR
+
+#if METRO_DEBUG && !METRO_NO_ALERT
 
 #define TAG_ALERT COL_YELLOW "#alert"
 #define TAG_ALERTMSG COL_MAGENTA "#alertmsg "
@@ -28,9 +28,12 @@
     _alert_impl(tag, ss.str().c_str(), __FILE__, __LINE__); \
   })
 
-#if METRO_DEBUG && !METRO_NO_ALERT
-
-#define debug(...) __VA_ARGS__
+#define debug(...)                                \
+  ({                                              \
+    if (Debug::get_instance().flags.DebugScope) { \
+      __VA_ARGS__;                                \
+    }                                             \
+  })
 
 #define alert _alert_impl(TAG_ALERT, nullptr, __FILE__, __LINE__)
 
@@ -42,14 +45,41 @@
     _streamalert(TAG_ALERTFMT, COL_WHITE << _buf); \
   })
 
-#if ENABLE_CDSTRUCT
-#define alert_ctor _streamalert(TAG_ALERTCTOR, __func__ << "  " << this)
+#define alert_ctor                                           \
+  ({                                                         \
+    if (Debug::get_instance().flags.AlertConstructor)        \
+      _streamalert(TAG_ALERTCTOR, __func__ << "  " << this); \
+  })
 
-#define alert_dtor _streamalert(TAG_ALERTDTOR, __func__ << " " << this)
-#else
-#define alert_ctor 0
-#define alert_dtor 0
-#endif
+#define alert_dtor                                           \
+  ({                                                         \
+    if (Debug::get_instance().flags.AlertDestructor)         \
+      _streamalert(TAG_ALERTCTOR, __func__ << "  " << this); \
+  })
+
+class Application;
+class Debug {
+public:
+  struct Flags {
+    bool Alert;
+    bool AlertConstructor;
+    bool AlertDestructor;
+    bool DebugScope;
+  };
+
+  Flags flags{};
+
+  static Debug const& get_instance();
+
+private:
+  friend class Application;
+
+  Debug();
+};
+
+char* _make_location_str(char* buf, char const* file, size_t line);
+void _alert_impl(char const* tag, char const* msg, char const* file,
+                 size_t line);
 
 #else
 
@@ -62,15 +92,14 @@
 
 #endif
 
-#define todo_impl \
-  _alert_impl(TAG_TODOIMPL, nullptr, __FILE__, __LINE__), exit(1)
-
-#define panic(e...)             \
-  {                             \
-    _streamalert(TAG_PANIC, e); \
-    std::exit(222);             \
+#define todo_impl                                                              \
+  {                                                                            \
+    printf(COL_RED "\t#todo_impl %s:%d" COL_DEFAULT "\n", __FILE__, __LINE__); \
+    std::exit(999);                                                            \
   }
 
-char* _make_location_str(char* buf, char const* file, size_t line);
-void _alert_impl(char const* tag, char const* msg, char const* file,
-                 size_t line);
+#define panic(e...)                                                         \
+  {                                                                         \
+    printf(COL_RED "\t#panic! %s:%d" COL_DEFAULT "\n", __FILE__, __LINE__); \
+    std::exit(222);                                                         \
+  }

@@ -1,4 +1,18 @@
+#if METRO_DEBUG
+
 #include "Debug.h"
+
+static Debug* _instance;
+
+Debug::Debug()
+{
+  _instance = this;
+}
+
+Debug const& Debug::get_instance()
+{
+  return *_instance;
+}
 
 char* _make_location_str(char* buf, char const* file, size_t line)
 {
@@ -9,6 +23,9 @@ char* _make_location_str(char* buf, char const* file, size_t line)
 void _alert_impl(char const* tag, char const* msg, char const* file,
                  size_t line)
 {
+  if (!Debug::get_instance().flags.Alert)
+    return;
+
   char buf[0x100];
   char buf2[0x400]{' '};
   char colstr[50];
@@ -48,3 +65,5 @@ void _alert_impl(char const* tag, char const* msg, char const* file,
 
   printf("%s" COL_DEFAULT "\n", buf2);
 }
+
+#endif
