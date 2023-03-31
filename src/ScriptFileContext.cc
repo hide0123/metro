@@ -209,9 +209,10 @@ bool SFContext::parse()
 
   this->_ast = parser.parse();
 
-  // debug(std::cout << AST::Base::to_string(this->_ast)
-  //                 << "\n------------------------------------------"
-  //                 << std::endl);
+  debug(std::cout << "---- Parsed tree: ------------------------\n"
+                  << AST::Base::to_string(this->_ast) << std::endl
+                  << "------------------------------------------\n"
+                  << std::endl);
 
   assert(this->_ast->kind == AST_Scope);
 
@@ -224,9 +225,10 @@ bool SFContext::check()
 
   sema.do_check();
 
-  // debug(std::cout << AST::Base::to_string(this->_ast)
-  //                 << "\n------------------------------------------"
-  //                 << std::endl);
+  debug(std::cout << "---- Checked tree: -----------------------\n"
+                  << AST::Base::to_string(this->_ast) << std::endl
+                  << "------------------------------------------\n"
+                  << std::endl);
 
   return !Error::was_emitted();
 }

@@ -1,5 +1,6 @@
 #include "AST/AST.h"
 #include "Utils.h"
+#include "Debug.h"
 
 namespace AST {
 
@@ -225,7 +226,7 @@ Scope::Scope(Token const& token)
 Scope::~Scope()
 {
   for (auto&& ast : this->list) {
-    if(ast)
+    if (ast)
       delete ast;
   }
 }
@@ -330,6 +331,14 @@ std::string Base::to_string(Base* _ast)
 {
 #define astdef(T) auto ast = (AST::T*)_ast
 
+  static int indent = 0;
+
+  std::string ret;
+  std::string tabstr;
+
+  for (int i = 0; i < indent; i++)
+    tabstr += "  ";
+
   if (!_ast)
     return "(null)";
 
@@ -339,26 +348,16 @@ std::string Base::to_string(Base* _ast)
     case AST_Variable:
     case AST_True:
     case AST_False:
+      ret = _ast->token.str;
       break;
 
     case AST_CallFunc: {
       astdef(CallFunc);
 
-      std::string ret;
+      ret = std::string(ast->name) + "(" +
+            Utils::String::join(", ", ast->args, to_string) + ")";
 
-      // if (ast->selftype) {
-      //   ret = std::string(ast->selftype->name) + ".";
-      // }
-
-      ret += std::string(ast->name) + "(";
-
-      for (auto&& arg : ast->args) {
-        ret += to_string(arg);
-        if (arg != *ast->args.rbegin())
-          ret += ",";
-      }
-
-      return ret + ")";
+      break;
     }
 
     case AST_StructConstructor: {
@@ -394,6 +393,18 @@ std::string Base::to_string(Base* _ast)
       return ret;
     }
 
+    case AST_Expr: {
+      astdef(Expr);
+
+      ret = to_string(ast->first);
+
+      for (auto&& elem : ast->elements) {
+        ret += " " + std::string(elem.op.str) + " " + to_string(elem.ast);
+      }
+
+      break;
+    }
+
     case AST_Assign: {
       astdef(Assign);
 
@@ -426,12 +437,16 @@ std::string Base::to_string(Base* _ast)
     case AST_Scope: {
       astdef(Scope);
 
-      std::string ret = "{ " + Utils::String::join(";\n", ast->list, to_string);
+      indent++;
+
+      ret = Utils::String::join(";\n  " + tabstr, ast->list, to_string);
 
       if (!ast->return_last_expr)
         ret += ";";
 
-      return ret + "}";
+      indent--;
+
+      return "{\n  " + tabstr + ret + "\n" + tabstr + "}";
     }
 
     case AST_Argument: {
@@ -443,7 +458,7 @@ std::string Base::to_string(Base* _ast)
     case AST_Function: {
       astdef(Function);
 
-      std::string ret = "fn " + std::string(ast->name.str) + "(";
+      ret = "fn " + std::string(ast->name.str) + "(";
 
       if (ast->have_self) {
         ret += "self";
@@ -457,7 +472,9 @@ std::string Base::to_string(Base* _ast)
       if (ast->result_type)
         ret += " -> " + to_string(ast->result_type) + " ";
 
-      return ret + to_string(ast->code);
+      ret += to_string(ast->code);
+
+      break;
     }
 
     case AST_Enum: {
@@ -496,12 +513,38 @@ std::string Base::to_string(Base* _ast)
     case AST_Impl: {
       astdef(Impl);
 
-      return "impl " + to_string(ast->type) + "{" +
-             Utils::String::join(" ", ast->list, to_string) + "}";
+      indent++;
+
+      ret = Utils::String::join("\n  " + tabstr, ast->list, to_string);
+
+      indent--;
+
+      return "impl " + to_string(ast->type) + " {\n  " + tabstr + ret + "\n" +
+             tabstr + "}";
     }
+
+    case AST_Type: {
+      astdef(Type);
+
+      ret = ast->name;
+
+      if (!ast->parameters.empty()) {
+        ret +=
+          "<" + Utils::String::join(", ", ast->parameters, to_string) + ">";
+      }
+
+      if (ast->is_const)
+        ret += " const";
+
+      break;
+    }
+
+    default:
+      alertmsg((int)_ast->kind);
+      todo_impl;
   }
 
-  return std::string(_ast->token.str);
+  return ret;
 }
 
 StructConstructor::StructConstructor(Token const& token, Type* type)
