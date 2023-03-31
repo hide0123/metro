@@ -69,6 +69,9 @@ public:
 
     bool ShowASTAfterParsed;
     bool ShowASTAfterChecked;
+
+    bool AddASTInfo;
+    bool AddTokenInfo;
   };
 
   Flags flags{};

@@ -47,7 +47,7 @@ AST::Scope* Parser::parse()
 
     auto x = root_scope->append(this->top());
 
-    if (this->check() && !this->is_ended_with_scope(x))
+    if (this->check() && !x->is_ended_with_scope())
       this->expect_semi();
   }
 

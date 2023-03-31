@@ -34,3 +34,38 @@ inline std::string make_color_string(uint8_t r, uint8_t g, uint8_t b,
   sprintf(buf, "\033[%s;2;%d;%d;%dm", is_bk ? "48" : "38", r, g, b);
   return buf;
 }
+
+class Color {
+public:
+  uint8_t r;
+  uint8_t g;
+  uint8_t b;
+
+  Color(uint8_t r, uint8_t g, uint8_t b)
+    : r(r),
+      g(g),
+      b(b)
+  {
+  }
+
+  static uint8_t getRandom()
+  {
+    static constexpr int begin = 100;
+    static constexpr int unit = 30;
+    static constexpr int range = (255 - begin) / unit;
+
+    static_assert(begin + range * unit <= 255);
+
+    return (uint8_t)(begin + (rand() % range) * unit);
+  }
+
+  static Color getRandomColor()
+  {
+    return Color(getRandom(), getRandom(), getRandom());
+  }
+
+  std::string to_string() const
+  {
+    return make_color_string(this->r, this->g, this->b);
+  }
+};

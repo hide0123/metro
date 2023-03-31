@@ -49,8 +49,6 @@ private:
   bool eat_semi();
   token_iter expect_semi();
 
-  bool is_ended_with_scope(AST::Base* ast);
-
   token_iter expect_identifier();
 
   AST::Variable* new_variable();

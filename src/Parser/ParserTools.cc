@@ -11,25 +11,6 @@ AST::Variable* Parser::new_variable()
     new AST::Variable(*this->expect_identifier()));
 }
 
-bool Parser::is_ended_with_scope(AST::Base* ast)
-{
-  switch (ast->kind) {
-    case AST_If:
-    case AST_Switch:
-    case AST_Loop:
-    case AST_For:
-    case AST_While:
-    case AST_Scope:
-    case AST_Enum:
-    case AST_Struct:
-    case AST_Function:
-    case AST_Impl:
-      return true;
-  }
-
-  return false;
-}
-
 /**
  * @brief スコープをパースする
  *
@@ -50,7 +31,7 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok, AST::Base* first)
     ast->append(first);
 
     if (!this->eat("}")) {
-      if (this->is_ended_with_scope(first))
+      if (first->is_ended_with_scope())
         this->expect_semi();
     }
     else {
@@ -66,7 +47,7 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok, AST::Base* first)
 
     if ((ast->return_last_expr = !this->eat_semi())) {
       if (!(ast->return_last_expr = this->cur->str == "}") &&
-          !this->is_ended_with_scope(x)) {
+          !x->is_ended_with_scope()) {
         this->expect_semi();
       }
     }

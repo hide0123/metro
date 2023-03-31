@@ -29,7 +29,10 @@ struct Base {
   // 空の vector であるか
   bool is_empty_vector() const;
 
-  static std::string to_string(Base* ast);
+  bool is_ended_with_scope() const;
+
+  static std::string to_string(Base* ast, bool add_ast_info,
+                               bool add_token_info);
 
 protected:
   Base(ASTKind kind, Token const& token);

@@ -1,7 +1,6 @@
 #include <iostream>
 #include <fstream>
-#include <codecvt>
-#include <locale>
+#include <ctime>
 
 #include "Utils.h"
 #include "Debug.h"
@@ -60,6 +59,8 @@ int Application::main(int argc, char** argv)
                    "    D      debug scope\n"
                    "    P      show syntax tree after parsed\n"
                    "    C      show syntax tree after checked semantics\n"
+                   "    x      show ast infomations in option P/C\n"
+                   "    y      show token infomations in option P/C\n"
                    "    X      all";
 #endif
 
@@ -86,6 +87,8 @@ int Application::main(int argc, char** argv)
         {'d', &this->_debug.flags.DebugScope},
         {'P', &this->_debug.flags.ShowASTAfterParsed},
         {'C', &this->_debug.flags.ShowASTAfterChecked},
+        {'x', &this->_debug.flags.AddASTInfo},
+        {'y', &this->_debug.flags.AddTokenInfo},
       };
 
       arg = arg.substr(2);
@@ -171,6 +174,7 @@ ScriptFileContext const* Application::get_current_context() const
 // 初期化
 void Application::initialize()
 {
+  srand((unsigned)time(nullptr));
 }
 
 Application* Application::get_instance()
