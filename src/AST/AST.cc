@@ -360,16 +360,29 @@ std::string Base::to_string(Base* _ast)
       break;
     }
 
+    case AST_NewEnumerator: {
+      astdef(NewEnumerator);
+
+      ret = std::string(ast->ast_enum->name) + "." +
+            std::string(ast->ast_enum->enumerators[ast->index].name);
+
+      if (!ast->args.empty())
+        ret += std::string(ast->name) + "(" +
+               Utils::String::join(", ", ast->args, to_string) + ")";
+
+      break;
+    }
+
     case AST_StructConstructor: {
       astdef(StructConstructor);
 
-      return "new " + to_string(ast->type) + "{" +
+      return "new " + to_string(ast->type) + "(" +
              Utils::String::join(", ", ast->init_pair_list,
                                  [](StructConstructor::Pair& pair) {
-                                   return "." + std::string(pair.name) + ": " +
+                                   return std::string(pair.name) + ": " +
                                           to_string(pair.expr);
                                  }) +
-             "}";
+             ")";
     }
 
     case AST_IndexRef: {
@@ -391,6 +404,14 @@ std::string Base::to_string(Base* _ast)
       }
 
       return ret;
+    }
+
+    case AST_Vector: {
+      astdef(Vector);
+
+      ret = "[" + Utils::String::join(", ", ast->elements, to_string) + "]";
+
+      break;
     }
 
     case AST_Range: {
@@ -464,7 +485,7 @@ std::string Base::to_string(Base* _ast)
           if (*ast->list.rbegin() == x)
             return s;
 
-          if (s.ends_with("}"))
+          if (x->kind != AST_Let && s.ends_with("}"))
             s += "\n";
           else
             s += ";";
@@ -532,7 +553,7 @@ std::string Base::to_string(Base* _ast)
     case AST_Enum: {
       astdef(Enum);
 
-      std::string ret = "enum " + std::string(ast->name) + " {";
+      std::string ret = "enum " + std::string(ast->name) + " {\n  " + tabstr;
 
       for (auto&& e : ast->enumerators) {
         ret += std::string(e.name);
@@ -541,25 +562,25 @@ std::string Base::to_string(Base* _ast)
           ret += "(" + to_string(e.value_type) + ")";
 
         if (&e != &*ast->enumerators.rbegin())
-          ret += ", ";
+          ret += ",\n  " + tabstr;
       }
 
-      return ret + "}";
+      return ret + "\n" + tabstr + "}";
     }
 
     case AST_Struct: {
       astdef(Struct);
 
-      std::string ret = "struct " + std::string(ast->name) + " {";
+      std::string ret = "struct " + std::string(ast->name) + " {\n  " + tabstr;
 
       for (auto&& m : ast->members) {
         ret += std::string(m.name) + ": " + to_string(m.type);
 
         if (&m != &*ast->members.rbegin())
-          ret += ", ";
+          ret += ",\n  " + tabstr;
       }
 
-      return ret + "}";
+      return ret + "\n" + tabstr + "}";
     }
 
     case AST_Impl: {
