@@ -61,24 +61,6 @@ int Application::main(int argc, char** argv)
         Error::fatal_error("missing option name");
       }
 
-#if METRO_DEBUG
-      else if (arg == "alert") {
-        this->_debug.flags.Alert = true;
-      }
-
-      else if (arg == "alert-ctor") {
-        this->_debug.flags.AlertConstructor = true;
-      }
-
-      else if (arg == "alert-dtor") {
-        this->_debug.flags.AlertDestructor = true;
-      }
-
-      else if (arg == "debug-scope") {
-        this->_debug.flags.AlertDestructor = true;
-      }
-#endif
-
       Error::fatal_error("unknown option name: '", arg, "'");
     }
 
@@ -102,6 +84,14 @@ int Application::main(int argc, char** argv)
 
           case 'D':
             this->_debug.flags.DebugScope = true;
+            break;
+
+          case 'P':
+            this->_debug.flags.ShowParsedTree = true;
+            break;
+
+          case 'C':
+            this->_debug.flags.ShowCheckedTree = true;
             break;
 
           default:

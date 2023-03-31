@@ -209,10 +209,14 @@ bool SFContext::parse()
 
   this->_ast = parser.parse();
 
-  debug(std::cout << "---- Parsed tree: ------------------------\n"
-                  << AST::Base::to_string(this->_ast) << std::endl
-                  << "------------------------------------------\n"
-                  << std::endl);
+#if METRO_DEBUG
+  if (Debug::get_instance().flags.ShowParsedTree) {
+    std::cout << "---- Parsed tree of " << this->get_path() << ": ---------\n"
+              << AST::Base::to_string(this->_ast) << std::endl
+              << "----------------------------------------------------\n"
+              << std::endl;
+  }
+#endif
 
   assert(this->_ast->kind == AST_Scope);
 
@@ -225,10 +229,14 @@ bool SFContext::check()
 
   sema.do_check();
 
-  debug(std::cout << "---- Checked tree: -----------------------\n"
-                  << AST::Base::to_string(this->_ast) << std::endl
-                  << "------------------------------------------\n"
-                  << std::endl);
+#if METRO_DEBUG
+  if (Debug::get_instance().flags.ShowCheckedTree) {
+    std::cout << "---- Checked tree of " << this->get_path() << ": ---------\n"
+              << AST::Base::to_string(this->_ast) << std::endl
+              << "----------------------------------------------------\n"
+              << std::endl;
+  }
+#endif
 
   return !Error::was_emitted();
 }

@@ -393,8 +393,26 @@ std::string Base::to_string(Base* _ast)
       return ret;
     }
 
+    case AST_Range: {
+      astdef(Range);
+
+      return to_string(ast->begin) + " .. " + to_string(ast->end);
+    }
+
     case AST_Expr: {
       astdef(Expr);
+
+      ret = to_string(ast->first);
+
+      for (auto&& elem : ast->elements) {
+        ret += " " + std::string(elem.op.str) + " " + to_string(elem.ast);
+      }
+
+      break;
+    }
+
+    case AST_Compare: {
+      astdef(Compare);
 
       ret = to_string(ast->first);
 
@@ -439,14 +457,48 @@ std::string Base::to_string(Base* _ast)
 
       indent++;
 
-      ret = Utils::String::join(";\n  " + tabstr, ast->list, to_string);
+      ret =
+        Utils::String::join("\n  " + tabstr, ast->list, [&ast](AST::Base* x) {
+          auto s = to_string(x);
 
-      if (!ast->return_last_expr)
+          if (*ast->list.rbegin() == x)
+            return s;
+
+          if (s.ends_with("}"))
+            s += "\n";
+          else
+            s += ";";
+
+          return s;
+        });
+
+      if (!ast->return_last_expr && !ret.ends_with("}"))
         ret += ";";
 
       indent--;
 
       return "{\n  " + tabstr + ret + "\n" + tabstr + "}";
+    }
+
+    case AST_If: {
+      astdef(If);
+
+      ret = "if " + to_string(ast->condition) + " " + to_string(ast->if_true);
+
+      if (ast->if_false) {
+        ret += "\n" + tabstr + "else " + to_string(ast->if_false);
+      }
+
+      break;
+    }
+
+    case AST_For: {
+      astdef(For);
+
+      ret = "for " + to_string(ast->iter) + " in " + to_string(ast->iterable) +
+            " " + to_string(ast->code);
+
+      break;
     }
 
     case AST_Argument: {

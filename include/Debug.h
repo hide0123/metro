@@ -64,7 +64,11 @@ public:
     bool Alert;
     bool AlertConstructor;
     bool AlertDestructor;
+
     bool DebugScope;
+
+    bool ShowParsedTree;
+    bool ShowCheckedTree;
   };
 
   Flags flags{};
