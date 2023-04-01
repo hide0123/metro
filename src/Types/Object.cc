@@ -6,7 +6,7 @@
 #include "Debug.h"
 
 #include "Token.h"
-#include "Object.h"
+#include "Object/Object.h"
 
 #include "AST/AST.h"
 

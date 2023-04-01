@@ -6,7 +6,7 @@
 #include "Debug.h"
 
 #include "AST/AST.h"
-#include "Object.h"
+#include "Object/Object.h"
 
 #include "ScriptFileContext.h"
 #include "Application.h"

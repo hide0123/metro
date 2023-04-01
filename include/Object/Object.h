@@ -5,7 +5,7 @@
 
 #include "TypeInfo.h"
 #include "AST/ASTfwd.h"
-#include "String.h"
+#include "mt_string.h"
 
 struct Object {
   TypeInfo type;

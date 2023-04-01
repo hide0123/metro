@@ -2,7 +2,7 @@
 #include "Debug.h"
 
 #include "AST/AST.h"
-#include "Object.h"
+#include "Object/Object.h"
 #include "BuiltinFunc.h"
 
 #include "Error.h"
