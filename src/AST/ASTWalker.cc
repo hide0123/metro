@@ -167,6 +167,17 @@ bool walk(AST::Base* _ast, std::function<bool(AST::Base*)> func)
 
       return walk(ast->result_type, func) && walk(ast->code, func);
     }
+
+    case AST_Type: {
+      astdef(Type);
+
+      for (auto&& param : ast->parameters)
+        if (!walk(param, func))
+          return false;
+
+      break;
+    }
+
     default:
       alertmsg((int)_ast->kind);
       todo_impl;
