@@ -281,6 +281,11 @@ struct ObjString : Object {
     return ret;
   }
 
+  size_t length() const
+  {
+    return this->characters.size();
+  }
+
   static ObjString* from_u8_string(std::string const& str)
   {
     return new ObjString(Utils::String::to_wstr(str));

@@ -115,14 +115,14 @@ DEFINE_BUILTIN_FUNC(replace)
   for (size_t i = 0, end = str->length() - fromLen; i < end;) {
     for (size_t j = 0; j < fromLen; j++) {
       if (str->characters[i + j]->value != _from->characters[j]->value)
-        goto not_eq_1;
+        goto not_eq_L;
     }
 
     posv.emplace_back(i);
     i += fromLen;
     continue;
 
-  not_eq_1:
+  not_eq_L:
     i++;
   }
 
