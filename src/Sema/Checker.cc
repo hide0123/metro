@@ -710,8 +710,10 @@ TypeInfo Sema::check(AST::Base* _ast)
       }
       // そうでなければ新規追加
       else {
-        scope_emu.lvar.append(type, ast->name);
+        pvar = &scope_emu.lvar.append(type, ast->name);
       }
+
+      pvar->type.is_const = ast->is_const;
 
       break;
     }

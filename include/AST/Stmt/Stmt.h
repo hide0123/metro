@@ -9,8 +9,10 @@ struct VariableDeclaration : Base {
   Type* type;
   Base* init;
 
-  bool is_shadowing;
   size_t index;
+
+  bool is_shadowing;
+  bool is_const;
 
   bool ignore_initializer;
 

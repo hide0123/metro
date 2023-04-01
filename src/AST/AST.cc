@@ -203,8 +203,9 @@ VariableDeclaration::VariableDeclaration(Token const& token)
   : Base(AST_Let, token),
     type(nullptr),
     init(nullptr),
-    is_shadowing(false),
     index(0),
+    is_shadowing(false),
+    is_const(false),
     ignore_initializer(false)
 {
 }

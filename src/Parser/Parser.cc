@@ -593,7 +593,25 @@ AST::Base* Parser::stmt()
       ast->init = this->expr();
     }
 
-    // ast->end_token = this->expect_semi();
+    return this->set_last_token(ast);
+  }
+
+  //
+  // const
+  if (this->eat("const")) {
+    auto ast = new AST::VariableDeclaration(*this->ate);
+
+    ast->name = this->expect_identifier()->str;
+
+    if (this->eat(":")) {
+      ast->type = this->expect_typename();
+    }
+
+    this->expect("=");
+
+    ast->init = this->expr();
+
+    ast->is_const = true;
 
     return this->set_last_token(ast);
   }
@@ -607,7 +625,6 @@ AST::Base* Parser::stmt()
       return ast;
 
     ast->expr = this->expr();
-    // ast->end_token = this->expect_semi();
 
     return this->set_last_token(ast);
   }
@@ -616,16 +633,12 @@ AST::Base* Parser::stmt()
   if (this->eat("break")) {
     auto ast = new AST::LoopController(*this->ate, AST_Break);
 
-    // ast->end_token = this->expect_semi();
-
     return this->set_last_token(ast);
   }
 
   // continue
   if (this->eat("continue")) {
     auto ast = new AST::LoopController(*this->ate, AST_Continue);
-
-    // ast->end_token = this->expect_semi();
 
     return this->set_last_token(ast);
   }
