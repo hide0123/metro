@@ -21,10 +21,10 @@
   }
 
 #define BUILTIN_FUNC(Name, Impl, ResultType, ArgTypes...) \
-  BUILTIN_FUNC_FULL(Name, Impl, false, false, ResultType, {}, ArgTypes)
+  BUILTIN_FUNC_FULL(Name, Impl, false, false, {}, ResultType, ArgTypes)
 
 #define BUILTIN_FUNC_TEMPLATE(Name, Impl, ResultType, ArgTypes...) \
-  BUILTIN_FUNC_FULL(Name, Impl, true, false, ResultType, {}, ArgTypes)
+  BUILTIN_FUNC_FULL(Name, Impl, true, false, {}, ResultType, ArgTypes)
 
 namespace builtin {
 

@@ -167,8 +167,8 @@ bool walk(AST::Base* _ast, std::function<bool(AST::Base*)> func)
 
       return walk(ast->result_type, func) && walk(ast->code, func);
     }
-
     default:
+      alertmsg((int)_ast->kind);
       todo_impl;
   }
 
