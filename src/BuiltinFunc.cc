@@ -96,6 +96,67 @@ DEFINE_BUILTIN_FUNC(substr)
 }
 
 //
+// replace(str, from, to)
+DEFINE_BUILTIN_FUNC(replace)
+{
+  auto str = (ObjString*)args[0].object;
+  auto _from = (ObjString*)args[1].object;
+  auto _to = (ObjString*)args[2].object;
+
+  size_t fromLen = _from->length();
+  size_t toLen = _to->length();
+
+  if (str->length() < fromLen) {
+    return str;
+  }
+
+  std::vector<size_t> posv;
+
+  for (size_t i = 0, end = str->length() - fromLen; i < end;) {
+    for (size_t j = 0; j < fromLen; j++) {
+      if (str->characters[i + j]->value != _from->characters[j]->value)
+        goto not_eq_1;
+    }
+
+    posv.emplace_back(i);
+    i += fromLen;
+    continue;
+
+  not_eq_1:
+    i++;
+  }
+
+  if (fromLen == toLen) {
+    for (auto&& pos : posv) {
+      for (size_t i = 0; i < fromLen; i++) {
+        str->characters[pos + i]->value = _to->characters[i]->value;
+      }
+    }
+
+    return str;
+  }
+
+  bool b = fromLen < toLen;
+  size_t diff = b ? toLen - fromLen : fromLen - toLen;
+
+  for (auto&& pos : posv) {
+    for (size_t i = 0; i < diff; i++) {
+      if (b)
+        str->characters.insert(str->characters.begin() + pos + i,
+                               _to->characters[i]->clone());
+      else
+        str->characters.erase(str->characters.begin() + pos);
+    }
+
+    for (size_t i = b ? diff : 0; i < toLen; i++) {
+      str->characters[pos + i]->value = _to->characters[i]->value;
+    }
+  }
+
+  return str;
+}
+
+//
 // input
 DEFINE_BUILTIN_FUNC(input)
 {
@@ -161,6 +222,9 @@ static std::vector<BuiltinFunc> const _builtin_functions{
 
   BUILTIN_FUNC_FULL("substr", builtin::substr, false, true, TYPE_String,
                     TYPE_String, TYPE_USize),
+
+  BUILTIN_FUNC_FULL("replace", builtin::replace, false, true, TYPE_String,
+                    TYPE_String, TYPE_String, TYPE_String),
 
   BUILTIN_FUNC("input", builtin::input, TYPE_String),
 
