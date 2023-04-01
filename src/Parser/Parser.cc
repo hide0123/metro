@@ -49,6 +49,8 @@ AST::Scope* Parser::parse()
 
     if (this->check() && !x->is_ended_with_scope())
       this->expect_semi();
+    else
+      this->eat_semi();
   }
 
   root_scope->end_token = --this->cur;

@@ -61,6 +61,7 @@ int Application::main(int argc, char** argv)
                    "    C      show syntax tree after checked semantics\n"
                    "    x      show ast infomations in option P/C\n"
                    "    y      show token infomations in option P/C\n"
+                   "    g      enable text coloring of option P/C\n"
                    "    X      all";
 #endif
 
@@ -79,7 +80,7 @@ int Application::main(int argc, char** argv)
     }
 
 #if METRO_DEBUG
-    else if (arg.starts_with("-d")) {
+    else if (arg.starts_with("-debug-")) {
       static std::pair<char, bool*> const charflagmap[] = {
         {'a', &this->_debug.flags.Alert},
         {'c', &this->_debug.flags.AlertConstructor},
@@ -89,9 +90,10 @@ int Application::main(int argc, char** argv)
         {'C', &this->_debug.flags.ShowASTAfterChecked},
         {'x', &this->_debug.flags.AddASTInfo},
         {'y', &this->_debug.flags.AddTokenInfo},
+        {'g', &this->_debug.flags.ColoringTreeView},
       };
 
-      arg = arg.substr(2);
+      arg = arg.substr(7);
 
       for (auto&& ch : arg) {
         if (ch == 'X') {
@@ -112,13 +114,13 @@ int Application::main(int argc, char** argv)
           }
         }
 
-        Error::fatal_error("unknown option name: '", ch, "'");
+        Error::fatal_error("unknown debug option name: '", ch, "'");
       _endloop:;
       }
     }
 #endif
 
-    else if (arg.starts_with("-c")) {
+    else if (arg == ("-c")) {
       if (i == argc - 1) {
         Error::fatal_error("missing expression");
       }

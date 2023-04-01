@@ -61,7 +61,12 @@ static std::string to_string(Base* _ast)
   std::string ret;
   std::string tabstr;
 
-  auto color = Utils::format("\033[3%dm", colValue++);
+  std::string color;
+
+#if METRO_DEBUG
+  if (Debug::get_instance().flags.ColoringTreeView)
+#endif
+    color = Utils::format("\033[3%dm", colValue++);
 
   colorstrlist.push_front(color);
 

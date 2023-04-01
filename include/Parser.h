@@ -5,11 +5,12 @@
 #pragma once
 
 #include <list>
+#include <functional>
 #include "AST/ASTfwd.h"
 
 class ScriptFileContext;
 class Parser {
-  using token_iter = std::list<Token>::iterator;
+  using TokenIterator = std::list<Token>::iterator;
 
 public:
   Parser(ScriptFileContext& context, std::list<Token>& token_list);
@@ -38,27 +39,28 @@ public:
 
 private:
   bool check();
-  token_iter next();
+  TokenIterator next();
 
   bool eat(char const* s);
   bool found(char const* s);
-  token_iter expect(char const* s);
+  TokenIterator expect(char const* s);
 
-  token_iter get(size_t offs);
+  TokenIterator get(size_t offs);
 
   bool eat_semi();
-  token_iter expect_semi();
+  TokenIterator expect_semi();
 
-  token_iter expect_identifier();
+  TokenIterator expect_identifier();
 
   AST::Variable* new_variable();
 
   AST::Type* expect_typename();
 
-  AST::Scope* parse_scope(token_iter tok = {}, AST::Base* first = nullptr);
+  AST::Scope* parse_scope(TokenIterator tok = {}, AST::Base* first = nullptr);
   AST::Scope* expect_scope();
 
   AST::Function* parse_function();
+
   AST::Enum* parse_enum();
   AST::Struct* parse_struct();
   AST::Impl* parse_impl();
@@ -81,8 +83,8 @@ private:
 
   bool in_impl;
 
-  token_iter cur;
-  token_iter ate;
+  TokenIterator cur;
+  TokenIterator ate;
 
   ScriptFileContext& _context;
   std::list<Token>& _token_list;

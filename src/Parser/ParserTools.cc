@@ -19,7 +19,7 @@ AST::Variable* Parser::new_variable()
  *
  * @return AST::Scope*
  */
-AST::Scope* Parser::parse_scope(Parser::token_iter tok, AST::Base* first)
+AST::Scope* Parser::parse_scope(Parser::TokenIterator tok, AST::Base* first)
 {
   if (!first && !this->eat("{")) {
     Error(*--this->cur, "expected scope after this token").emit().exit();
@@ -31,7 +31,7 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok, AST::Base* first)
     ast->append(first);
 
     if (!this->eat("}")) {
-      if (first->is_ended_with_scope())
+      if (!first->is_ended_with_scope())
         this->expect_semi();
     }
     else {
@@ -47,9 +47,8 @@ AST::Scope* Parser::parse_scope(Parser::token_iter tok, AST::Base* first)
 
     if ((ast->return_last_expr = !this->eat_semi())) {
       if (!(ast->return_last_expr = this->cur->str == "}") &&
-          !x->is_ended_with_scope()) {
+          !x->is_ended_with_scope())
         this->expect_semi();
-      }
     }
   }
 
@@ -277,7 +276,7 @@ bool Parser::check()
  * @return 進める前のトークン
  *
  */
-Parser::token_iter Parser::next()
+Parser::TokenIterator Parser::next()
 {
   return this->cur++;
 }
@@ -308,10 +307,10 @@ bool Parser::found(char const* s)
  *
  * @param s: 文字列
  * @return
- *  食べたらそのトークンへのイテレータ (Parser::token_iter)
+ *  食べたらそのトークンへのイテレータ (Parser::TokenIterator)
  *  を返し、無ければエラーで終了
  */
-Parser::token_iter Parser::expect(char const* s)
+Parser::TokenIterator Parser::expect(char const* s)
 {
   if (!this->eat(s)) {
     Error(*(--this->cur), "expected '" + std::string(s) + "' after this token")
@@ -322,7 +321,7 @@ Parser::token_iter Parser::expect(char const* s)
   return this->ate;
 }
 
-Parser::token_iter Parser::get(size_t offs)
+Parser::TokenIterator Parser::get(size_t offs)
 {
   auto it = this->cur;
 
@@ -341,13 +340,13 @@ bool Parser::eat_semi()
 }
 
 // セミコロン求める
-Parser::token_iter Parser::expect_semi()
+Parser::TokenIterator Parser::expect_semi()
 {
   return this->expect(";");
 }
 
 // 識別子を求める
-Parser::token_iter Parser::expect_identifier()
+Parser::TokenIterator Parser::expect_identifier()
 {
   if (this->cur->kind != TOK_Ident) {
     throw Error(*(--this->cur), "expected identifier after this token");

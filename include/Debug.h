@@ -72,6 +72,8 @@ public:
 
     bool AddASTInfo;
     bool AddTokenInfo;
+
+    bool ColoringTreeView;
   };
 
   Flags flags{};

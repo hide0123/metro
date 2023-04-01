@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 
 #include "Utils.h"
 #include "Debug.h"
@@ -106,6 +107,34 @@ DEFINE_BUILTIN_FUNC(input)
 }
 
 //
+// open
+DEFINE_BUILTIN_FUNC(open)
+{
+  std::ifstream ifs;
+
+  auto path = ((ObjString*)args[0].object)->to_string();
+
+  ifs.open(path);
+
+  if (ifs.fail()) {
+    Error(args[0].ast,
+          "cannnot open file. (feature: this error will be exception.)")
+      .emit()
+      .exit();
+  }
+
+  ObjString* ret = new ObjString();
+
+  std::string line;
+
+  while (std::getline(ifs, line)) {
+    ret->append(Utils::String::to_wstr(line + '\n'));
+  }
+
+  return ret;
+}
+
+//
 // exit
 DEFINE_BUILTIN_FUNC(exit)
 {
@@ -134,6 +163,8 @@ static std::vector<BuiltinFunc> const _builtin_functions{
                     TYPE_String, TYPE_USize),
 
   BUILTIN_FUNC("input", builtin::input, TYPE_String),
+
+  BUILTIN_FUNC("open", builtin::open, TYPE_String, TYPE_String),
 
   BUILTIN_FUNC("exit", builtin::exit, TYPE_Int),
 };
