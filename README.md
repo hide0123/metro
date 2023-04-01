@@ -1,6 +1,6 @@
 # About
 
-Metro is a scripting language that uses Rust-like syntax, but is simpler than Rust and can be executed easily as a script. Additionally, it is written entirely in C++ without using any libraries such as Lex or Yacc.
+Metro is a interpreted language that uses Rust-like syntax, but is simpler than Rust and can be executed easily as a script. Additionally, it is written entirely in C++ without using any libraries such as Lex or Yacc.
 
 [Repository](https//github.com/bomkei/metro)
 [Documentation](https//github.com/bomkei/metro-docs)
