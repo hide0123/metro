@@ -5,6 +5,14 @@
 #include "Parser.h"
 #include "Error.h"
 
+AST::Base* Parser::set_last_token(AST::Base* ast)
+{
+  ast->end_token = this->cur;
+  ast->end_token--;
+
+  return ast;
+}
+
 AST::Variable* Parser::new_variable()
 {
   return (AST::Variable*)this->set_last_token(

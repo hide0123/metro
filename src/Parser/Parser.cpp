@@ -532,10 +532,14 @@ AST::Base* Parser::stmt()
   }
 
   //
-  // loop
-  if (this->eat("loop")) {
-    return this->set_last_token(new AST::Loop(this->expect_scope()));
-  }
+  // match
+  if (this->eat(""))
+
+    //
+    // loop
+    if (this->eat("loop")) {
+      return this->set_last_token(new AST::Loop(this->expect_scope()));
+    }
 
   //
   // for

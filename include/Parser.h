@@ -68,18 +68,10 @@ private:
   // ast を return 文でラップする
   AST::Return* new_return_stmt(AST::Base* ast);
 
-  AST::Base* set_last_token(AST::Base* ast)
-  {
-    ast->end_token = this->cur;
-    ast->end_token--;
+  AST::Base* set_last_token(AST::Base* ast);
 
-    return ast;
-  }
-
-  auto& to_return_stmt(AST::Base*& ast)
-  {
-    return ast = (AST::Base*)this->new_return_stmt(ast);
-  }
+  template <class... Args>
+  bool token_match(Args&&... args);  // Parser.cc
 
   bool in_impl;
 

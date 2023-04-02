@@ -38,7 +38,7 @@ LDFLAGS			:= -Wl,--gc-sections
 	@echo $(notdir $<)
 	@$(CC) $(CFLAGS) -MP -MMD -MF $*.d -c -o $@ $<
 
-%.o: %.cc
+%.o: %.cpp
 	@echo $(notdir $<)
 	@$(CXX) $(CXXFLAGS) -MP -MMD -MF $*.d -c -o $@ $<
 
@@ -50,9 +50,9 @@ export VPATH		= $(foreach dir,$(SOURCES),$(TOPDIR)/$(dir))
 export INCLUDES		= $(foreach dir,$(INCLUDE),-I$(TOPDIR)/$(dir))
 
 CFILES			= $(notdir $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c)))
-CXXFILES		= $(notdir $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cc)))
+CXXFILES		= $(notdir $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.cpp)))
 
-export OFILES		= $(CFILES:.c=.o) $(CXXFILES:.cc=.o)
+export OFILES		= $(CFILES:.c=.o) $(CXXFILES:.cpp=.o)
 
 DEBUGDIR			= $(BUILD)$(EXT_DEBUG)
 DEBUGDIR_NO_ALERT	= $(BUILD)$(EXT_DEBUG_NOALERT)
