@@ -1276,6 +1276,15 @@ std::optional<TypeInfo> Sema::is_valid_expr(AST::ExprKind kind,
     }
 
     //
+    // mod
+    case AST::EX_Mod: {
+      if (lhs.equals(TYPE_Int) && rhs.equals(TYPE_Int))
+        return lhs;
+
+      break;
+    }
+
+    //
     // bit-calc
     case AST::EX_LShift:
     case AST::EX_RShift:

@@ -7,6 +7,9 @@
 #include "AST/ASTfwd.h"
 #include "mt_string.h"
 
+struct ObjLong;
+struct ObjString;
+
 struct Object {
   TypeInfo type;
   size_t ref_count;
@@ -18,6 +21,11 @@ struct Object {
   virtual bool is_numeric() const
   {
     return false;
+  }
+
+  ObjLong* as_long() const
+  {
+    return (ObjLong*)this;
   }
 
   bool equals(Object* object) const;

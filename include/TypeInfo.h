@@ -87,13 +87,25 @@ struct TypeInfo {
     return false;
   }
 
-  bool is_numeric() const
+  //
+  // 自身が数値型であるかどうか
+  //
+  // 引数:
+  //  is_only_integer   整数型以外の数値型を対象外とする
+  //
+  // 戻り値:
+  //  数値型であれば true
+  //  そうでなければ false
+  bool is_numeric(bool is_only_integer = false) const
   {
     switch (this->kind) {
       case TYPE_Int:
       case TYPE_USize:
-      case TYPE_Float:
         return true;
+
+      case TYPE_Float:
+        if (!is_only_integer)
+          return true;
     }
 
     return false;

@@ -219,6 +219,11 @@ void Evaluator::eval_expr_elem(AST::Expr::Element const& elem, Object* dest)
       break;
     }
 
+    case AST::EX_Mod: {
+      dest->as_long()->value %= right->as_long()->value;
+      break;
+    }
+
     case AST::EX_LShift:
       ((ObjLong*)dest)->value <<= ((ObjLong*)right)->value;
       break;
