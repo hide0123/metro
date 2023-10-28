@@ -1,0 +1,15 @@
+cmake_minimum_required(VERSION 3.18...3.22)
+project(metro)
+
+set(CMAKE_C_COMPILER clang)
+set(CMAKE_CXX_COMPILER clang++)
+set(CMAKE_CXX_LINKER ${CMAKE_CXX_COMPILER})
+set(CMAKE_C_FLAGS "-O3 -Wall -Wextra -Wno-switch")
+set(CMAKE_CXX_FLAGS ${CMAKE_C_FLAGS})
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,--gc-sections")
+set(CMAKE_CXX_STANDARD 20)
+
+include_directories(include)
+file(GLOB_RECURSE SRC src/*.cpp)
+add_executable(${PROJECT_NAME} ${SRC})
+install(TARGETS ${PROJECT_NAME} RUNTIME DESTINATION .)
